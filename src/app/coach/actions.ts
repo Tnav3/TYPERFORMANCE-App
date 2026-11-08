@@ -19,6 +19,10 @@ export async function setAthleteStatus(formData: FormData) {
   } = await supabase.auth.getUser();
   if (!user || user.id === id) return; // never change your own account here
 
-  await supabase.from("profiles").update({ status }).eq("id", id).eq("role", "athlete");
+  await supabase
+    .from("profiles")
+    .update({ status })
+    .eq("id", id)
+    .eq("role", "athlete");
   revalidatePath("/coach");
 }

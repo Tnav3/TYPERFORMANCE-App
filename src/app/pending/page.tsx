@@ -14,15 +14,20 @@ export default async function PendingPage() {
         </div>
       </div>
       <Card className="text-center">
-        <h1 className="mb-2 text-xl font-black uppercase">You&apos;re in the queue{first ? `, ${first}` : ""}</h1>
+        <h1 className="mb-2 text-xl font-black uppercase">
+          You&apos;re in the queue{first ? `, ${first}` : ""}
+        </h1>
         <p className="text-muted">
-          Your coach needs to approve your account before you can start logging. You&apos;ll be able to log in as
-          normal once that&apos;s done.
+          Your coach needs to approve your account before you can start logging.
+          You&apos;ll be able to log in as normal once that&apos;s done.
         </p>
       </Card>
       <div className="mt-6 flex items-center justify-between">
         {profile.role === "athlete" ? (
-          <Link href="/profile" className="text-sm text-muted underline underline-offset-4">
+          <Link
+            href="/profile"
+            className="text-sm text-muted underline underline-offset-4"
+          >
             Edit my profile
           </Link>
         ) : (

@@ -12,7 +12,11 @@ export async function getSessionProfile() {
   } = await supabase.auth.getUser();
   if (!user) return { supabase, user: null, profile: null as Profile | null };
 
-  const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).single<Profile>();
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", user.id)
+    .single<Profile>();
   return { supabase, user, profile: profile ?? null };
 }
 

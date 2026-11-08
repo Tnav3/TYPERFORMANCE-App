@@ -35,10 +35,21 @@ export default function LoginPage() {
       {error && <Alert>{error}</Alert>}
       <form onSubmit={onSubmit} noValidate>
         <Field label="Email">
-          <Input name="email" type="email" autoComplete="email" inputMode="email" required />
+          <Input
+            name="email"
+            type="email"
+            autoComplete="email"
+            inputMode="email"
+            required
+          />
         </Field>
         <Field label="Password">
-          <Input name="password" type="password" autoComplete="current-password" required />
+          <Input
+            name="password"
+            type="password"
+            autoComplete="current-password"
+            required
+          />
         </Field>
         <Button type="submit" disabled={busy}>
           {busy ? "Logging in…" : "Log in"}

@@ -13,7 +13,10 @@ export type GateState =
   | "coach";
 
 export function gateState(
-  p: Pick<Profile, "role" | "status" | "consent_version" | "profile_completed_at"> | null
+  p: Pick<
+    Profile,
+    "role" | "status" | "consent_version" | "profile_completed_at"
+  > | null,
 ): GateState {
   if (!p) return "signed_out";
   if (p.status === "inactive") return "inactive";

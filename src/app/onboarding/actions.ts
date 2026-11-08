@@ -16,16 +16,26 @@ export async function acceptConsent(formData: FormData) {
 
   const { error } = await supabase
     .from("profiles")
-    .update({ consent_version: CONSENT_VERSION, consent_accepted_at: new Date().toISOString() })
+    .update({
+      consent_version: CONSENT_VERSION,
+      consent_accepted_at: new Date().toISOString(),
+    })
     .eq("id", user.id);
   if (error) redirect("/onboarding/consent?error=2");
   revalidatePath("/", "layout");
   redirect("/");
 }
 
-export type ProfileFormState = { errors?: ProfileErrors; message?: string; saved?: boolean };
+export type ProfileFormState = {
+  errors?: ProfileErrors;
+  message?: string;
+  saved?: boolean;
+};
 
-export async function saveProfile(_prev: ProfileFormState, formData: FormData): Promise<ProfileFormState> {
+export async function saveProfile(
+  _prev: ProfileFormState,
+  formData: FormData,
+): Promise<ProfileFormState> {
   const result = validateProfile(formData, todayISO());
   if (!result.ok) return { errors: result.errors };
 
@@ -62,7 +72,8 @@ export async function saveProfile(_prev: ProfileFormState, formData: FormData): 
       weight_class_limit_kg: d.weight_class_limit_kg,
       next_fight_date: d.next_fight_date,
       training_age_years: d.training_age_years,
-      profile_completed_at: before?.profile_completed_at ?? new Date().toISOString(),
+      profile_completed_at:
+        before?.profile_completed_at ?? new Date().toISOString(),
     })
     .eq("id", user.id);
 

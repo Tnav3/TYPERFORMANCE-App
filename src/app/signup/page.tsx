@@ -22,7 +22,8 @@ export default function SignupPage() {
 
     if (full_name.length < 2) return setError("Enter your name.");
     if (!/^\S+@\S+\.\S+$/.test(email)) return setError("Enter a valid email.");
-    if (password.length < 8) return setError("Password must be at least 8 characters.");
+    if (password.length < 8)
+      return setError("Password must be at least 8 characters.");
 
     setBusy(true);
     setError(null);
@@ -51,10 +52,14 @@ export default function SignupPage() {
     return (
       <AuthShell title="Check your email">
         <Alert tone="ok">
-          We sent a confirmation link to <b>{sentTo}</b>. Open it on this phone to finish signing up. Check spam if it
-          isn&apos;t there in a few minutes.
+          We sent a confirmation link to <b>{sentTo}</b>. Open it on this phone
+          to finish signing up. Check spam if it isn&apos;t there in a few
+          minutes.
         </Alert>
-        <Link href="/login" className="text-sm text-muted underline underline-offset-4">
+        <Link
+          href="/login"
+          className="text-sm text-muted underline underline-offset-4"
+        >
           Back to log in
         </Link>
       </AuthShell>
@@ -69,10 +74,22 @@ export default function SignupPage() {
           <Input name="full_name" autoComplete="name" required />
         </Field>
         <Field label="Email">
-          <Input name="email" type="email" autoComplete="email" inputMode="email" required />
+          <Input
+            name="email"
+            type="email"
+            autoComplete="email"
+            inputMode="email"
+            required
+          />
         </Field>
         <Field label="Password" hint="At least 8 characters">
-          <Input name="password" type="password" autoComplete="new-password" minLength={8} required />
+          <Input
+            name="password"
+            type="password"
+            autoComplete="new-password"
+            minLength={8}
+            required
+          />
         </Field>
         <Button type="submit" disabled={busy}>
           {busy ? "Creating account…" : "Sign up"}

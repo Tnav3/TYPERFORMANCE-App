@@ -3,9 +3,14 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "TYPERFORMANCE",
-  description: "Training load, testing and strength tools for TYPERFORMANCE athletes",
+  description:
+    "Training load, testing and strength tools for TYPERFORMANCE athletes",
   applicationName: "TYPERFORMANCE",
-  appleWebApp: { capable: true, title: "TYPERFORMANCE", statusBarStyle: "black-translucent" },
+  appleWebApp: {
+    capable: true,
+    title: "TYPERFORMANCE",
+    statusBarStyle: "black-translucent",
+  },
   formatDetection: { telephone: false },
 };
 
@@ -16,7 +21,11 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="en-AU">
       <body className="antialiased">{children}</body>

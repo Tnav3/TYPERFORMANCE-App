@@ -15,10 +15,13 @@ export function ProfileForm({
   submitLabel: string;
   today: string;
 }) {
-  const [state, action, pending] = useActionState<ProfileFormState, FormData>(saveProfile, {});
+  const [state, action, pending] = useActionState<ProfileFormState, FormData>(
+    saveProfile,
+    {},
+  );
   const [, startTransition] = useTransition();
   const [competing, setCompeting] = useState<boolean>(
-    profile.profile_completed_at ? profile.weight_class != null : true
+    profile.profile_completed_at ? profile.weight_class != null : true,
   );
   const e = state.errors ?? {};
 
@@ -37,11 +40,18 @@ export function ProfileForm({
       {state.saved && <Alert tone="ok">Saved.</Alert>}
 
       <Field label="Full name" error={e.full_name}>
-        <Input name="full_name" defaultValue={profile.full_name ?? ""} autoComplete="name" />
+        <Input
+          name="full_name"
+          defaultValue={profile.full_name ?? ""}
+          autoComplete="name"
+        />
       </Field>
 
       <Field label="Main discipline" error={e.main_discipline_id}>
-        <Select name="main_discipline_id" defaultValue={profile.main_discipline_id ?? ""}>
+        <Select
+          name="main_discipline_id"
+          defaultValue={profile.main_discipline_id ?? ""}
+        >
           <option value="" disabled>
             Choose…
           </option>
@@ -53,7 +63,11 @@ export function ProfileForm({
         </Select>
       </Field>
 
-      <Field label="Training age (years)" hint="How long you've trained seriously. Halves are fine, e.g. 2.5" error={e.training_age_years}>
+      <Field
+        label="Training age (years)"
+        hint="How long you've trained seriously. Halves are fine, e.g. 2.5"
+        error={e.training_age_years}
+      >
         <Input
           name="training_age_years"
           inputMode="decimal"
@@ -63,8 +77,14 @@ export function ProfileForm({
       </Field>
 
       <fieldset className="mb-4">
-        <legend className="mb-1.5 text-sm font-semibold">Do you compete?</legend>
-        <input type="hidden" name="competing" value={competing ? "yes" : "no"} />
+        <legend className="mb-1.5 text-sm font-semibold">
+          Do you compete?
+        </legend>
+        <input
+          type="hidden"
+          name="competing"
+          value={competing ? "yes" : "no"}
+        />
         <div className="grid grid-cols-2 gap-3">
           {[
             { v: true, l: "Yes" },
@@ -76,7 +96,9 @@ export function ProfileForm({
               onClick={() => setCompeting(o.v)}
               aria-pressed={competing === o.v}
               className={`min-h-12 rounded-xl border font-semibold transition ${
-                competing === o.v ? "border-brand bg-brand/15 text-text" : "border-line bg-surface-2 text-muted"
+                competing === o.v
+                  ? "border-brand bg-brand/15 text-text"
+                  : "border-line bg-surface-2 text-muted"
               }`}
             >
               {o.l}
@@ -88,9 +110,16 @@ export function ProfileForm({
       {competing && (
         <div className="rounded-2xl border border-line p-4 pb-0">
           <Field label="Weight class" error={e.weight_class}>
-            <Input name="weight_class" defaultValue={profile.weight_class ?? ""} placeholder="e.g. Lightweight" />
+            <Input
+              name="weight_class"
+              defaultValue={profile.weight_class ?? ""}
+              placeholder="e.g. Lightweight"
+            />
           </Field>
-          <Field label="Weight class limit (kg)" error={e.weight_class_limit_kg}>
+          <Field
+            label="Weight class limit (kg)"
+            error={e.weight_class_limit_kg}
+          >
             <Input
               name="weight_class_limit_kg"
               inputMode="decimal"
@@ -98,8 +127,17 @@ export function ProfileForm({
               placeholder="e.g. 70.3"
             />
           </Field>
-          <Field label="Next fight date" hint="Leave blank if not booked yet" error={e.next_fight_date}>
-            <Input name="next_fight_date" type="date" min={today} defaultValue={profile.next_fight_date ?? ""} />
+          <Field
+            label="Next fight date"
+            hint="Leave blank if not booked yet"
+            error={e.next_fight_date}
+          >
+            <Input
+              name="next_fight_date"
+              type="date"
+              min={today}
+              defaultValue={profile.next_fight_date ?? ""}
+            />
           </Field>
         </div>
       )}

@@ -14,8 +14,12 @@ export default async function OnboardingProfilePage() {
 
   return (
     <Screen>
-      <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted">Step 2 of 2</p>
-      <Heading sub="This helps your coach plan your training around fights and weight.">Your profile</Heading>
+      <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted">
+        Step 2 of 2
+      </p>
+      <Heading sub="This helps your coach plan your training around fights and weight.">
+        Your profile
+      </Heading>
       <ProfileForm
         profile={profile}
         disciplines={(disciplines ?? []) as Discipline[]}

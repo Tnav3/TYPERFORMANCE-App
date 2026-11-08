@@ -16,8 +16,10 @@ export default function ResetPasswordPage() {
     if (busy) return;
     const fd = new FormData(e.currentTarget);
     const password = String(fd.get("password"));
-    if (password.length < 8) return setError("Password must be at least 8 characters.");
-    if (password !== String(fd.get("confirm"))) return setError("Passwords don't match.");
+    if (password.length < 8)
+      return setError("Password must be at least 8 characters.");
+    if (password !== String(fd.get("confirm")))
+      return setError("Passwords don't match.");
     setBusy(true);
     setError(null);
     const { error } = await createClient().auth.updateUser({ password });
@@ -32,10 +34,20 @@ export default function ResetPasswordPage() {
       {error && <Alert>{error}</Alert>}
       <form onSubmit={onSubmit} noValidate>
         <Field label="New password" hint="At least 8 characters">
-          <Input name="password" type="password" autoComplete="new-password" required />
+          <Input
+            name="password"
+            type="password"
+            autoComplete="new-password"
+            required
+          />
         </Field>
         <Field label="Confirm new password">
-          <Input name="confirm" type="password" autoComplete="new-password" required />
+          <Input
+            name="confirm"
+            type="password"
+            autoComplete="new-password"
+            required
+          />
         </Field>
         <Button type="submit" disabled={busy}>
           {busy ? "Saving…" : "Save password"}

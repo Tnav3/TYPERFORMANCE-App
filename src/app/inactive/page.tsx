@@ -11,7 +11,8 @@ export default async function InactivePage() {
       <Card className="text-center">
         <h1 className="mb-2 text-xl font-black uppercase">Account paused</h1>
         <p className="text-muted">
-          Your access has been turned off. If you think this is a mistake, contact your coach.
+          Your access has been turned off. If you think this is a mistake,
+          contact your coach.
         </p>
       </Card>
       <div className="mt-6 text-center">

@@ -15,26 +15,38 @@ export default function ForgotPasswordPage() {
     if (busy) return;
     setBusy(true);
     setError(null);
-    const email = String(new FormData(e.currentTarget).get("email")).trim().toLowerCase();
+    const email = String(new FormData(e.currentTarget).get("email"))
+      .trim()
+      .toLowerCase();
     const { error } = await createClient().auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/auth/callback?next=/reset-password`,
     });
     setBusy(false);
     // Don't reveal whether an account exists — only surface rate limits / network issues
-    if (error && /rate|too many|fetch|network/i.test(error.message)) return setError(friendlyAuthError(error.message));
+    if (error && /rate|too many|fetch|network/i.test(error.message))
+      return setError(friendlyAuthError(error.message));
     setSent(true);
   }
 
   return (
     <AuthShell title="Reset password">
       {sent ? (
-        <Alert tone="ok">If that email has an account, a reset link is on its way. Check spam too.</Alert>
+        <Alert tone="ok">
+          If that email has an account, a reset link is on its way. Check spam
+          too.
+        </Alert>
       ) : (
         <>
           {error && <Alert>{error}</Alert>}
           <form onSubmit={onSubmit} noValidate>
             <Field label="Email">
-              <Input name="email" type="email" autoComplete="email" inputMode="email" required />
+              <Input
+                name="email"
+                type="email"
+                autoComplete="email"
+                inputMode="email"
+                required
+              />
             </Field>
             <Button type="submit" disabled={busy}>
               {busy ? "Sending…" : "Send reset link"}
@@ -42,7 +54,10 @@ export default function ForgotPasswordPage() {
           </form>
         </>
       )}
-      <Link href="/login" className="mt-6 block text-sm text-muted underline underline-offset-4">
+      <Link
+        href="/login"
+        className="mt-6 block text-sm text-muted underline underline-offset-4"
+      >
         Back to log in
       </Link>
     </AuthShell>

@@ -27,19 +27,32 @@ export function editableFrom(todayISO: string): string {
 /** Weeks an athlete may open, newest first. */
 export function editableWeeks(todayISO: string): string[] {
   const cur = mondayOf(todayISO);
-  return Array.from({ length: EDITABLE_PAST_WEEKS + 1 }, (_, i) => addDays(cur, -7 * i));
+  return Array.from({ length: EDITABLE_PAST_WEEKS + 1 }, (_, i) =>
+    addDays(cur, -7 * i),
+  );
 }
 
 export function isEditableWeek(monday: string, todayISO: string): boolean {
-  return isISODate(monday) && mondayOf(monday) === monday && editableWeeks(todayISO).includes(monday);
+  return (
+    isISODate(monday) &&
+    mondayOf(monday) === monday &&
+    editableWeeks(todayISO).includes(monday)
+  );
 }
 
 export function isLoggableDate(iso: string, todayISO: string): boolean {
   return isISODate(iso) && iso <= todayISO && iso >= editableFrom(todayISO);
 }
 
-const DAY = new Intl.DateTimeFormat("en-AU", { weekday: "short", timeZone: "UTC" });
-const DAYNUM = new Intl.DateTimeFormat("en-AU", { day: "numeric", month: "short", timeZone: "UTC" });
+const DAY = new Intl.DateTimeFormat("en-AU", {
+  weekday: "short",
+  timeZone: "UTC",
+});
+const DAYNUM = new Intl.DateTimeFormat("en-AU", {
+  day: "numeric",
+  month: "short",
+  timeZone: "UTC",
+});
 
 /** "Mon" */
 export function dayShort(iso: string) {
