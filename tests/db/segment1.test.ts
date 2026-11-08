@@ -43,11 +43,11 @@ describe("seed data", () => {
         )
       ).rows.map((r) => r.name);
     expect(await types("Muay Thai")).toEqual(["Bag work", "Pad work", "Sparring", "Clinch", "Drilling"]);
-    expect(await types("Boxing")).toEqual(["Bag", "Pads", "Sparring"]);
+    expect(await types("Boxing")).toEqual(["Bag work", "Pad work", "Sparring"]);
     expect(await types("BJJ")).toEqual(["Drilling", "Positional sparring", "Rolling"]);
     expect(await types("Wrestling")).toEqual(["Drilling", "Live wrestling", "Conditioning"]);
     expect(await types("MMA")).toEqual(["Striking", "Grappling", "Sparring", "Pad work", "Drilling"]);
-    expect(await types("Kickboxing")).toEqual(["Bag", "Pads", "Sparring", "Drilling"]);
+    expect(await types("Kickboxing")).toEqual(["Bag work", "Pad work", "Sparring", "Drilling"]);
     expect(await types("S&C")).toEqual(["Strength", "Conditioning", "Running", "Sprints"]);
   });
 });

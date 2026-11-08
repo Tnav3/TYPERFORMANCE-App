@@ -19,7 +19,7 @@ beforeEach(async () => {
   const ids = await q(`
     select d.name as d, s.name as s, d.id as did, s.id as sid
     from session_types s join disciplines d on d.id = s.discipline_id
-    where (d.name, s.name) in (('Muay Thai','Bag work'), ('Boxing','Pads'))`);
+    where (d.name, s.name) in (('Muay Thai','Bag work'), ('Boxing','Pad work'))`);
   for (const r of ids.rows) {
     if (r.d === "Muay Thai") { mt = r.did as string; bag = r.sid as string; }
     else { boxing = r.did as string; boxingPads = r.sid as string; }
@@ -186,5 +186,17 @@ describe("migration 003 re-run safety", () => {
     const r = await q(`select active from session_types where id = $1`, [ply]);
     expect(r.rows[0].active).toBe(false);
     expect((await q(`select count(*)::int n from training_sessions where session_type_id = $1`, [ply])).rows[0].n).toBe(1);
+  });
+});
+
+describe("migration 004", () => {
+  it("renames keep logged sessions attached and every discipline uses the same names", async () => {
+    const r = await q(`select distinct name from session_types where name in ('Pads','Bag')`);
+    expect(r.rows).toHaveLength(0);
+    const fs = await import("node:fs");
+    const path = await import("node:path");
+    await db.exec(fs.readFileSync(path.join(__dirname, "../../supabase/migrations/004_consistent_session_names.sql"), "utf8"));
+    const s = await addSession(alice, 0, { d: boxing, s: boxingPads });
+    expect(s.rows).toHaveLength(1);
   });
 });
