@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireState } from "@/lib/session";
 import { formatDate, todayISO } from "@/lib/dates";
@@ -167,6 +168,12 @@ export default async function AthleteDetail({
           </span>
         </div>
       </header>
+      <Link
+        href={`/coach/athlete/${id}/tests`}
+        className="mb-6 flex min-h-12 items-center justify-between rounded-xl border border-line bg-surface-2 px-4 font-extrabold"
+      >
+        Testing: results, DSI, MAS, clips <span aria-hidden>→</span>
+      </Link>
 
       <div className="mb-6 grid grid-cols-2 gap-2 sm:grid-cols-4">
         <Tile

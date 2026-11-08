@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { requireState } from "@/lib/session";
 import { getCatalog } from "@/lib/catalog";
 import { disciplineColors } from "@/lib/colors";
@@ -36,6 +37,13 @@ export default async function SettingsPage({
         Disciplines & session types
       </Heading>
       {error && <Alert>{error}</Alert>}
+
+      <Link
+        href="/coach/settings/tests"
+        className="mb-6 flex min-h-12 items-center justify-between rounded-xl border border-line bg-surface-2 px-4 font-extrabold"
+      >
+        Field test videos & instructions <span aria-hidden>→</span>
+      </Link>
 
       <div className="space-y-4">
         {catalog.map((d, di) => (
