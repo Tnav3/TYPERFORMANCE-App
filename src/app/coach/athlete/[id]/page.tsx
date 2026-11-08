@@ -134,6 +134,7 @@ export default async function AthleteDetail({
     !!latestNiggle?.niggle,
   );
   const fight = fightCountdown(p.next_fight_date, today);
+  const joinedWeek = mondayOf(todayISO(new Date(p.created_at)));
   const limit =
     p.weight_class_limit_kg != null ? Number(p.weight_class_limit_kg) : null;
 
@@ -235,87 +236,93 @@ export default async function AthleteDetail({
         Week by week
       </h2>
       <div className="mb-8 space-y-3">
-        {[...weekInfo].reverse().map(({ w, cur, tl }) => {
-          const c = ck(w);
-          const s = rows.filter((r) => r.week_start === w);
-          const n = nt(w);
-          return (
-            <Card key={w} className="!p-4">
-              <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                <p className="font-extrabold">
-                  {dayMonth(w)} – {dayMonth(addDays(w, 6))}
-                  {w === thisWeek && (
-                    <span className="ml-2 text-xs font-normal text-brand">
-                      This week
-                    </span>
-                  )}
-                  {w === fightWeek && (
-                    <span className="ml-2 text-xs font-bold">FIGHT WEEK</span>
-                  )}
-                </p>
-                <div className="flex items-center gap-2 text-sm">
-                  <span>
-                    Load <b>{cur.load}</b>{" "}
-                    {w !== thisWeek && (
-                      <span className="text-muted">
-                        {formatChange(tl.changePct)}
+        {[...weekInfo]
+          // Start the list at the week they joined (or their first session, if logged earlier)
+          .filter(({ w, cur }) => w >= joinedWeek || cur.count > 0)
+          .reverse()
+          .map(({ w, cur, tl }) => {
+            const c = ck(w);
+            const s = rows.filter((r) => r.week_start === w);
+            const n = nt(w);
+            return (
+              <Card key={w} className="!p-4">
+                <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                  <p className="font-extrabold">
+                    {dayMonth(w)} – {dayMonth(addDays(w, 6))}
+                    {w === thisWeek && (
+                      <span className="ml-2 text-xs font-normal text-brand">
+                        This week
                       </span>
                     )}
-                  </span>
-                  {w !== thisWeek && <TrafficLight level={tl.level} />}
-                </div>
-              </div>
-
-              <p className="mb-2 text-sm text-muted">
-                {cur.count} sessions · {cur.minutes} min
-                {c ? ` · wellness ${c.wellness}/10` : " · not submitted"}
-                {c?.bodyweight_kg != null
-                  ? ` · ${Number(c.bodyweight_kg)} kg`
-                  : ""}
-              </p>
-              {c?.niggle && (
-                <p className="mb-2 rounded-lg border border-warn/50 bg-warn/10 px-3 py-2 text-sm">
-                  <b>Niggle:</b> {c.niggle_note}
-                </p>
-              )}
-
-              {s.length > 0 && (
-                <details className="mb-1">
-                  <summary className="cursor-pointer text-sm text-muted">
-                    Sessions
-                  </summary>
-                  <ul className="mt-2 space-y-1 text-sm">
-                    {s.map((x) => (
-                      <li
-                        key={x.id}
-                        className="flex justify-between gap-3 border-t border-line pt-1"
-                      >
-                        <span>
-                          <span
-                            className="mr-1.5 inline-block h-2 w-2 rounded-sm align-middle"
-                            style={{ background: colors[x.discipline_id] }}
-                          />
-                          {dayMonth(x.session_date)} {formatTime(x.start_time)}{" "}
-                          · {names.disc.get(x.discipline_id)} ·{" "}
-                          {names.type.get(x.session_type_id)} · {x.duration_min}{" "}
-                          min · RPE {x.rpe} {RPE_LABELS[x.rpe]?.label}
-                          {x.notes && (
-                            <span className="block text-xs text-muted">
-                              “{x.notes}”
-                            </span>
-                          )}
+                    {w === fightWeek && (
+                      <span className="ml-2 text-xs font-bold">FIGHT WEEK</span>
+                    )}
+                  </p>
+                  <div className="flex items-center gap-2 text-sm">
+                    <span>
+                      Load <b>{cur.load}</b>{" "}
+                      {w !== thisWeek && (
+                        <span className="text-muted">
+                          {formatChange(tl.changePct)}
                         </span>
-                        <b className="shrink-0">{x.load_au}</b>
-                      </li>
-                    ))}
-                  </ul>
-                </details>
-              )}
+                      )}
+                    </span>
+                    {w !== thisWeek && <TrafficLight level={tl.level} />}
+                  </div>
+                </div>
 
-              <CoachNoteForm athleteId={id} week={w} initial={n} />
-            </Card>
-          );
-        })}
+                <p className="mb-2 text-sm text-muted">
+                  {cur.count} sessions · {cur.minutes} min
+                  {c ? ` · wellness ${c.wellness}/10` : " · not submitted"}
+                  {c?.bodyweight_kg != null
+                    ? ` · ${Number(c.bodyweight_kg)} kg`
+                    : ""}
+                </p>
+                {c?.niggle && (
+                  <p className="mb-2 rounded-lg border border-warn/50 bg-warn/10 px-3 py-2 text-sm">
+                    <b>Niggle:</b> {c.niggle_note}
+                  </p>
+                )}
+
+                {s.length > 0 && (
+                  <details className="mb-1">
+                    <summary className="cursor-pointer text-sm text-muted">
+                      Sessions
+                    </summary>
+                    <ul className="mt-2 space-y-1 text-sm">
+                      {s.map((x) => (
+                        <li
+                          key={x.id}
+                          className="flex justify-between gap-3 border-t border-line pt-1"
+                        >
+                          <span>
+                            <span
+                              className="mr-1.5 inline-block h-2 w-2 rounded-sm align-middle"
+                              style={{ background: colors[x.discipline_id] }}
+                            />
+                            {dayMonth(x.session_date)}{" "}
+                            {formatTime(x.start_time)} ·{" "}
+                            {names.disc.get(x.discipline_id)} ·{" "}
+                            {names.type.get(x.session_type_id)} ·{" "}
+                            {x.duration_min} min · RPE {x.rpe}{" "}
+                            {RPE_LABELS[x.rpe]?.label}
+                            {x.notes && (
+                              <span className="block text-xs text-muted">
+                                “{x.notes}”
+                              </span>
+                            )}
+                          </span>
+                          <b className="shrink-0">{x.load_au}</b>
+                        </li>
+                      ))}
+                    </ul>
+                  </details>
+                )}
+
+                <CoachNoteForm athleteId={id} week={w} initial={n} />
+              </Card>
+            );
+          })}
       </div>
 
       <form action={setAthleteStatus} className="mb-8">
