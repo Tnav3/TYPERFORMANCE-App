@@ -1,6 +1,7 @@
 // Server-side data for the coach dashboard.
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { addDays, mondayOf } from "./week";
+import { todayISO as sydneyDate } from "./dates";
 import {
   trafficLight,
   weeklyTotals,
@@ -31,6 +32,8 @@ export interface DashboardRow {
   lastCheckin: CheckinLite | null; // for the last completed week
   latestCheckin: CheckinLite | null; // most recent of this/last week (drives niggle)
   latestBodyweight: number | null;
+  /** True only if they had an account before last week ended and didn't submit it */
+  missedLastWeek: boolean;
 }
 
 /**
@@ -97,6 +100,7 @@ export async function getDashboard(supabase: SupabaseClient, todayISO: string) {
         lastCheckin,
         latestCheckin,
         latestBodyweight: bw != null ? Number(bw) : null,
+        missedLastWeek: !lastCheckin && sydneyDate(new Date(p.created_at)) < thisWeek,
       };
     });
 

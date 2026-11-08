@@ -24,7 +24,7 @@ export default async function CoachHome() {
   );
   const counts = { red: 0, amber: 0, green: 0, none: 0 };
   rows.forEach((r) => counts[r.light]++);
-  const notSubmitted = rows.filter((r) => !r.lastCheckin).length;
+  const notSubmitted = rows.filter((r) => r.missedLastWeek).length;
 
   return (
     <Screen wide>
@@ -175,7 +175,7 @@ function AthleteCard({ r, today }: { r: DashboardRow; today: string }) {
           <TrafficLight level={r.light} />
         </div>
 
-        {(r.reasons.length > 0 || !r.lastCheckin) && (
+        {(r.reasons.length > 0 || r.missedLastWeek) && (
           <div className="mb-3 flex flex-wrap gap-1.5">
             {r.reasons.map((x) => (
               <span
@@ -185,7 +185,7 @@ function AthleteCard({ r, today }: { r: DashboardRow; today: string }) {
                 {x}
               </span>
             ))}
-            {!r.lastCheckin && (
+            {r.missedLastWeek && (
               <span className="rounded-md bg-surface-2 px-2 py-0.5 text-xs text-muted">
                 Last week not submitted
               </span>
