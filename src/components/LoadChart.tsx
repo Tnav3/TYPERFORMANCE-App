@@ -20,16 +20,22 @@ export interface LoadChartWeek {
 export function LoadChart({
   weeks,
   disciplines,
+  onActiveChange,
 }: {
   weeks: LoadChartWeek[];
   disciplines: { id: string; name: string; color: string }[];
+  onActiveChange?: (index: number) => void;
 }) {
   const [ref, width] = useWidth<HTMLDivElement>();
   // Open on the last COMPLETED week (the current one is still filling up)
   const lastDone = weeks.map((w) => !w.inProgress).lastIndexOf(true);
-  const [active, setActive] = useState<number>(
+  const [active, setActiveState] = useState<number>(
     lastDone >= 0 ? lastDone : weeks.length - 1,
   );
+  const setActive = (i: number) => {
+    setActiveState(i);
+    onActiveChange?.(i);
+  };
   const W = width,
     H = 220,
     padL = 40,

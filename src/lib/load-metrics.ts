@@ -96,3 +96,37 @@ export function formatChange(pct: number | null): string {
   const r = Math.round(pct);
   return `${r > 0 ? "+" : ""}${r}%`;
 }
+
+export interface DayTotals {
+  date: string;
+  load: number;
+  minutes: number;
+  count: number;
+  byDiscipline: Record<string, number>;
+}
+
+/** Load per day for the given dates (zeros for rest days), split by discipline. */
+export function dailyTotals(
+  sessions: {
+    session_date: string;
+    discipline_id: string;
+    duration_min: number;
+    load_au: number;
+  }[],
+  days: string[],
+): DayTotals[] {
+  return days.map((date) => {
+    const s = sessions.filter((x) => x.session_date === date);
+    const byDiscipline: Record<string, number> = {};
+    for (const x of s)
+      byDiscipline[x.discipline_id] =
+        (byDiscipline[x.discipline_id] ?? 0) + x.load_au;
+    return {
+      date,
+      load: s.reduce((a, x) => a + x.load_au, 0),
+      minutes: s.reduce((a, x) => a + x.duration_min, 0),
+      count: s.length,
+      byDiscipline,
+    };
+  });
+}

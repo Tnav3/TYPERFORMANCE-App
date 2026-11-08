@@ -2,10 +2,11 @@ import { notFound } from "next/navigation";
 import { requireState } from "@/lib/session";
 import { formatDate, todayISO } from "@/lib/dates";
 import { fightCountdown } from "@/lib/fight";
-import { addDays, dayMonth, formatTime, mondayOf } from "@/lib/week";
+import { addDays, dayMonth, formatTime, mondayOf, weekDays } from "@/lib/week";
 import { getCatalog, catalogNames } from "@/lib/catalog";
 import { disciplineColors } from "@/lib/colors";
 import {
+  dailyTotals,
   emptyWeek,
   formatChange,
   trafficLight,
@@ -16,7 +17,8 @@ import { RPE_LABELS, wellnessLabel } from "@/lib/scales";
 import type { Profile } from "@/lib/types";
 import { BackLink, Card, Screen } from "@/components/ui";
 import { TrafficLight } from "@/components/TrafficLight";
-import { LoadChart, type LoadChartWeek } from "@/components/LoadChart";
+import { type LoadChartWeek } from "@/components/LoadChart";
+import { CoachLoadCharts } from "@/components/CoachLoadCharts";
 import { WeightChart } from "@/components/WeightChart";
 import { CoachNoteForm } from "@/components/CoachNoteForm";
 import { setAthleteStatus } from "../../actions";
@@ -202,7 +204,14 @@ export default async function AthleteDetail({
         <h2 className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted">
           Weekly load · last {WEEKS} weeks
         </h2>
-        <LoadChart weeks={chartWeeks} disciplines={discList} />
+        <CoachLoadCharts
+          weeks={chartWeeks}
+          daily={Object.fromEntries(
+            weekList.map((w) => [w, dailyTotals(rows, weekDays(w))]),
+          )}
+          disciplines={discList}
+          today={today}
+        />
       </Card>
 
       <Card className="mb-6">

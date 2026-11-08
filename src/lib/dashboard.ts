@@ -100,7 +100,8 @@ export async function getDashboard(supabase: SupabaseClient, todayISO: string) {
         lastCheckin,
         latestCheckin,
         latestBodyweight: bw != null ? Number(bw) : null,
-        missedLastWeek: !lastCheckin && sydneyDate(new Date(p.created_at)) < thisWeek,
+        missedLastWeek:
+          !lastCheckin && sydneyDate(new Date(p.created_at)) < thisWeek,
       };
     });
 

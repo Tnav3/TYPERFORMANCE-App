@@ -95,3 +95,55 @@ describe("threshold edges across many baselines", () => {
     }
   });
 });
+
+import { dailyTotals } from "@/lib/load-metrics";
+describe("daily totals (7-day view)", () => {
+  it("gives every day of the week, zeros on rest days, split by discipline", () => {
+    const days = [
+      "2026-11-02",
+      "2026-11-03",
+      "2026-11-04",
+      "2026-11-05",
+      "2026-11-06",
+      "2026-11-07",
+      "2026-11-08",
+    ];
+    const r = dailyTotals(
+      [
+        {
+          session_date: "2026-11-02",
+          discipline_id: "MT",
+          duration_min: 60,
+          load_au: 420,
+        },
+        {
+          session_date: "2026-11-02",
+          discipline_id: "SC",
+          duration_min: 45,
+          load_au: 270,
+        },
+        {
+          session_date: "2026-11-05",
+          discipline_id: "MT",
+          duration_min: 90,
+          load_au: 720,
+        },
+        {
+          session_date: "2026-10-30",
+          discipline_id: "MT",
+          duration_min: 90,
+          load_au: 999,
+        }, // other week: ignored
+      ],
+      days,
+    );
+    expect(r).toHaveLength(7);
+    expect(r.map((d) => d.load)).toEqual([690, 0, 0, 720, 0, 0, 0]);
+    expect(r[0]).toMatchObject({
+      count: 2,
+      minutes: 105,
+      byDiscipline: { MT: 420, SC: 270 },
+    });
+    expect(r[1]).toMatchObject({ count: 0, byDiscipline: {} });
+  });
+});

@@ -67,7 +67,12 @@ describe("seed data", () => {
       "Clinch",
       "Drilling",
     ]);
-    expect(await types("Boxing")).toEqual(["Bag work", "Pad work", "Sparring"]);
+    expect(await types("Boxing")).toEqual([
+      "Bag work",
+      "Pad work",
+      "Sparring",
+      "Drilling",
+    ]);
     expect(await types("BJJ")).toEqual([
       "Drilling",
       "Positional sparring",

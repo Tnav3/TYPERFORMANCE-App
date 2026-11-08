@@ -15,6 +15,9 @@ import {
 } from "@/lib/week";
 import { RPE_LABELS } from "@/lib/scales";
 import { catalogNames, getCatalog } from "@/lib/catalog";
+import { disciplineColors } from "@/lib/colors";
+import { dailyTotals } from "@/lib/load-metrics";
+import { DailyLoadChart } from "@/components/DailyLoadChart";
 import { Alert, Card, Screen, BackLink } from "@/components/ui";
 import { CheckinForm, type ExistingCheckin } from "@/components/CheckinForm";
 
@@ -73,6 +76,7 @@ export default async function WeekPage({
         .maybeSingle(),
     ]);
   const names = catalogNames(catalog);
+  const colors = disciplineColors(catalog);
   const list = (sessions ?? []) as SessionRow[];
   const totalLoad = list.reduce((s, r) => s + r.load_au, 0);
   const totalMin = list.reduce((s, r) => s + r.duration_min, 0);
@@ -149,6 +153,23 @@ export default async function WeekPage({
           </div>
         ))}
       </div>
+
+      {list.length > 0 && (
+        <Card className="mb-4 !p-4">
+          <h2 className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted">
+            Load by day
+          </h2>
+          <DailyLoadChart
+            days={dailyTotals(list, days)}
+            disciplines={catalog.map((d) => ({
+              id: d.id,
+              name: d.name,
+              color: colors[d.id],
+            }))}
+            today={today}
+          />
+        </Card>
+      )}
 
       <Link
         href={`/week/${start}/session/new?day=${addDay}`}
