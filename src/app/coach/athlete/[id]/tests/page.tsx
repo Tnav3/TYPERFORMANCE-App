@@ -14,6 +14,7 @@ import {
   dsiFrom,
   headlineValue,
   masFrom,
+  bikeMasFrom,
 } from "@/lib/testing";
 import { BackLink, Card, Screen } from "@/components/ui";
 import { ForceDecksDayForm } from "@/components/ForceDecksDayForm";
@@ -85,6 +86,7 @@ export default async function CoachAthleteTests({
   const dsiHistory = latestDsi(entries);
   const dsiNow = dsiHistory.at(-1);
   const mas = summaries.find((s) => s.def.key === "mas_5min")?.latest;
+  const bikeMas = summaries.find((s) => s.def.key === "mas_bike_5min")?.latest;
 
   // Signed links (1 hour) so the coach can watch private clips
   const paths = entries
@@ -152,7 +154,16 @@ export default async function CoachAthleteTests({
               </p>
             </>
           ) : (
-            <p className="mt-1 text-sm text-muted">No 5-minute test yet.</p>
+            <p className="mt-1 text-sm text-muted">No 5-minute run test yet.</p>
+          )}
+          {bikeMas && (
+            <p className="mt-3 border-t border-line pt-2 text-sm">
+              <span className="font-bold">Assault Bike: </span>
+              {bikeMasFrom(bikeMas.values.distance_km).kmh} km/h
+              <span className="block text-xs text-muted">
+                {bikeMas.values.distance_km} km in 5 min · {formatDate(bikeMas.tested_on)}
+              </span>
+            </p>
           )}
         </Card>
       </div>

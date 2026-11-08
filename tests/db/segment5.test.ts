@@ -116,3 +116,13 @@ describe("saved e1RMs", () => {
     expect(d2.rows).toHaveLength(1);
   });
 });
+
+describe("bike MAS test definition (migration 009)", () => {
+  it("sits right after the run test with no duplicate field order", async () => {
+    const r = await q(`select key, name, sort_order from test_definitions where mode = 'field' order by sort_order`);
+    const keys = r.rows.map((x) => x.key);
+    expect(keys.indexOf("mas_bike_5min")).toBe(keys.indexOf("mas_5min") + 1);
+    expect(new Set(r.rows.map((x) => x.sort_order)).size).toBe(r.rows.length);
+    expect(r.rows.find((x) => x.key === "mas_5min")!.name).toBe("5-minute MAS test (run)");
+  });
+});

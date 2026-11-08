@@ -53,9 +53,15 @@ export default async function CoachHome() {
         </Link>
         <Link
           href="/calculator"
-          className="col-span-2 flex min-h-12 items-center justify-center rounded-xl border border-line bg-surface-2 text-sm font-extrabold uppercase tracking-wide"
+          className="flex min-h-12 items-center justify-center rounded-xl border border-line bg-surface-2 text-sm font-extrabold uppercase tracking-wide"
         >
           1RM calculator
+        </Link>
+        <Link
+          href="/mas"
+          className="flex min-h-12 items-center justify-center rounded-xl border border-line bg-surface-2 text-sm font-extrabold uppercase tracking-wide"
+        >
+          MAS calculator
         </Link>
       </div>
 

@@ -128,3 +128,36 @@ describe("helpers", () => {
     expect(slugify("Paused Back Squat (3s)")).toBe("paused_back_squat_3s");
   });
 });
+
+import { bikeMasFrom, masOf, masTargets, MAS_CALC_PCTS, validateTestValues, headlineValue, derivedFor } from "@/lib/testing";
+
+describe("Assault Bike MAS", () => {
+  const fd = (o: Record<string, string>) => ({ get: (k: string) => o[k] ?? null });
+  it("uses console km ÷ 300 s (same maths as run)", () => {
+    expect(bikeMasFrom(2.45)).toEqual({ ms: 8.17, kmh: 29.4 });
+    expect(masOf("mas_bike_5min", { distance_km: 2.45 })).toEqual(bikeMasFrom(2.45));
+    expect(masOf("mas_5min", { distance_m: 1350 })?.ms).toBe(4.5);
+    expect(masOf("bench_3rm", { load_kg: 100 })).toBeNull();
+  });
+  it("accepts 2-decimal km and rejects run-style metres", () => {
+    expect(validateTestValues("mas_bike_5min", fd({ distance_km: "2,45" }))).toEqual({ ok: true, values: { distance_km: 2.45 } });
+    expect(validateTestValues("mas_bike_5min", fd({ distance_km: "2450" })).ok).toBe(false);
+  });
+  it("headline and derived values are labelled as bike", () => {
+    expect(headlineValue("mas_bike_5min", { distance_km: 2.4 })).toEqual({ value: 8, unit: "m/s (bike)" });
+    expect(derivedFor("mas_bike_5min", { distance_km: 2.4 }, null)[0].label).toBe("Bike MAS");
+  });
+});
+
+describe("MAS calculator targets", () => {
+  it("gives 15/30/60 s distances at 70–130 %", () => {
+    const t = masTargets(4.5, MAS_CALC_PCTS);
+    expect(t.map((r) => r.pct)).toEqual([70, 80, 90, 100, 110, 120, 130]);
+    const hundred = t.find((r) => r.pct === 100)!;
+    expect([hundred.m15, hundred.m30, hundred.m60, hundred.kmh]).toEqual([68, 135, 270, 16.2]);
+    expect(t.find((r) => r.pct === 120)!.m30).toBe(162);
+  });
+  it("default targets are unchanged for the test page", () => {
+    expect(masTargets(4.5).map((r) => r.pct)).toEqual([90, 100, 110, 120, 130]);
+  });
+});

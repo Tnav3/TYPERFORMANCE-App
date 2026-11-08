@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { requireState } from "@/lib/session";
 import { todayISO } from "@/lib/dates";
 import { getEntries, getTestDefs } from "@/lib/test-data";
-import { TEST_FIELDS, masFrom, masTargets, youtubeId } from "@/lib/testing";
+import { TEST_FIELDS, masOf, masTargets, youtubeId } from "@/lib/testing";
 import { BackLink, Card, Heading, Screen } from "@/components/ui";
 import { TestEntryForm } from "@/components/TestEntryForm";
 import { TestEntryList } from "@/components/TestEntryList";
@@ -64,8 +64,8 @@ export default async function TestPage({
         </Card>
       )}
 
-      {key === "mas_5min" && latest && (
-        <MasTargets distance={latest.values.distance_m} />
+      {latest && masOf(key, latest.values) && (
+        <MasTargets testKey={key} values={latest.values} />
       )}
 
       {isField ? (
@@ -101,16 +101,24 @@ export default async function TestPage({
   );
 }
 
-function MasTargets({ distance }: { distance: number | undefined }) {
-  if (!distance) return null;
-  const m = masFrom(distance);
+function MasTargets({
+  testKey,
+  values,
+}: {
+  testKey: string;
+  values: Record<string, number>;
+}) {
+  const m = masOf(testKey, values);
+  if (!m) return null;
+  const bike = testKey === "mas_bike_5min";
   return (
     <Card className="mb-4">
       <h2 className="mb-1 text-xs font-semibold uppercase tracking-widest text-muted">
         Your conditioning targets
       </h2>
       <p className="mb-3 text-sm">
-        MAS <b>{m.ms} m/s</b> ({m.kmh} km/h) from {distance} m
+        {bike ? "Bike MAS" : "MAS"} <b>{m.ms} m/s</b> ({m.kmh} km/h) from{" "}
+        {bike ? `${values.distance_km} km` : `${values.distance_m} m`}
       </p>
       <table className="w-full text-left text-sm">
         <thead className="text-xs text-muted">
@@ -125,13 +133,16 @@ function MasTargets({ distance }: { distance: number | undefined }) {
           {masTargets(m.ms).map((t) => (
             <tr key={t.pct} className="border-t border-line">
               <td className="py-1.5 font-bold">{t.pct}%</td>
-              <td className="py-1.5">{t.ms} m/s</td>
+              <td className="py-1.5">{bike ? `${t.kmh} km/h` : `${t.ms} m/s`}</td>
               <td className="py-1.5">{t.m15} m</td>
               <td className="py-1.5">{t.m30} m</td>
             </tr>
           ))}
         </tbody>
       </table>
+      <a href={`/mas?test=${bike ? "bike" : "run"}`} className="mt-3 inline-block text-sm font-bold underline underline-offset-4">
+        More targets in the MAS calculator →
+      </a>
     </Card>
   );
 }

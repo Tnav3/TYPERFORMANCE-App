@@ -91,6 +91,17 @@ export const TEST_FIELDS: Record<string, FieldSpec[]> = {
       required: true,
     },
   ],
+  mas_bike_5min: [
+    {
+      key: "distance_km",
+      label: "Console distance in 5 min",
+      unit: "km",
+      min: 0.5,
+      max: 5,
+      step: 0.01,
+      required: true,
+    },
+  ],
   broad_jump: [
     {
       key: "best_cm",
@@ -289,19 +300,34 @@ export function masFrom(distanceM: number) {
   return { ms: round(ms, 2), kmh: round(ms * 3.6, 1) };
 }
 
-export const MAS_TARGET_PCTS = [90, 100, 110, 120, 130];
+/** Assault Bike: console distance (km) in 5 min → bike MAS. Same maths as the run test. */
+export function bikeMasFrom(distanceKm: number) {
+  return masFrom(distanceKm * 1000);
+}
 
-/** Metres to cover for a given %MAS over 15 s and 30 s. */
-export function masTargets(masMs: number) {
-  return MAS_TARGET_PCTS.map((pct) => {
+export const MAS_TARGET_PCTS = [90, 100, 110, 120, 130];
+export const MAS_CALC_PCTS = [70, 80, 90, 100, 110, 120, 130];
+
+/** Speed and metres to cover for a given %MAS over 15, 30 and 60 s. */
+export function masTargets(masMs: number, pcts: number[] = MAS_TARGET_PCTS) {
+  return pcts.map((pct) => {
     const v = masMs * (pct / 100);
     return {
       pct,
       ms: round(v, 2),
+      kmh: round(v * 3.6, 1),
       m15: Math.round(v * 15),
       m30: Math.round(v * 30),
+      m60: Math.round(v * 60),
     };
   });
+}
+
+/** MAS (m/s) for either 5-minute test, from its stored values. */
+export function masOf(testKey: string, v: Record<string, number>) {
+  if (testKey === "mas_5min" && v.distance_m) return masFrom(v.distance_m);
+  if (testKey === "mas_bike_5min" && v.distance_km) return bikeMasFrom(v.distance_km);
+  return null;
 }
 
 export function asymmetry(left: number, right: number) {
@@ -351,9 +377,12 @@ export function derivedFor(
         value: `${round(e / bodyweight, 2)} × BW`,
       });
   }
-  if (testKey === "mas_5min" && v.distance_m) {
-    const m = masFrom(v.distance_m);
-    out.push({ label: "MAS", value: `${m.ms} m/s (${m.kmh} km/h)` });
+  const mas = masOf(testKey, v);
+  if (mas) {
+    out.push({
+      label: testKey === "mas_bike_5min" ? "Bike MAS" : "MAS",
+      value: `${mas.ms} m/s (${mas.kmh} km/h)`,
+    });
   }
   if (
     testKey === "triple_hop" ||
@@ -398,6 +427,10 @@ export function headlineValue(
     case "mas_5min":
       return v.distance_m != null
         ? { value: masFrom(v.distance_m).ms, unit: "m/s" }
+        : null;
+    case "mas_bike_5min":
+      return v.distance_km != null
+        ? { value: bikeMasFrom(v.distance_km).ms, unit: "m/s (bike)" }
         : null;
     case "broad_jump":
       return v.best_cm != null ? { value: v.best_cm, unit: "cm" } : null;
