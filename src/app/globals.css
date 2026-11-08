@@ -1,0 +1,40 @@
+@import "tailwindcss";
+@import "@fontsource/archivo/400.css";
+@import "@fontsource/archivo/600.css";
+@import "@fontsource/archivo/800.css";
+@import "@fontsource/archivo/900.css";
+
+/* TYPERFORMANCE brand — taken from TYPCOLOUR_REV logo (#D31820 on dark) */
+@theme {
+  --color-brand: #d31820;
+  --color-brand-dark: #a8131a;
+  --color-ink: #0b0b0c;
+  --color-surface: #151517;
+  --color-surface-2: #1d1d20;
+  --color-line: #2a2a2e;
+  --color-text: #f5f5f5;
+  --color-muted: #a1a1aa;
+  --color-ok: #22c55e;
+  --color-warn: #f59e0b;
+  --font-sans: "Archivo", ui-sans-serif, system-ui, sans-serif;
+}
+
+html,
+body {
+  background: var(--color-ink);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* iOS zooms into inputs under 16px — keep form text at 16px */
+input,
+select,
+textarea {
+  font-size: 16px;
+}
+
+/* Dark native date picker / select on iOS + Android */
+:root {
+  color-scheme: dark;
+}
