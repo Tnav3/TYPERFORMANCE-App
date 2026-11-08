@@ -171,3 +171,20 @@ describe("weekly check-ins", () => {
     await expect(checkin(pending, 0)).rejects.toThrow(/row-level security/);
   });
 });
+
+describe("migration 003 re-run safety", () => {
+  it("hides (not deletes) Plyometrics if it was already logged, and can run twice", async () => {
+    const fs = await import("node:fs");
+    const path = await import("node:path");
+    const sql = fs.readFileSync(path.join(__dirname, "../../supabase/migrations/003_discipline_updates.sql"), "utf8");
+    // Recreate Plyometrics and log a session with it, then re-run 003
+    const sc = (await q(`select id from disciplines where name = 'S&C'`)).rows[0].id as string;
+    const ply = (await q(`insert into session_types (discipline_id, name, sort_order) values ($1, 'Plyometrics', 9) returning id`, [sc])).rows[0].id;
+    await addSession(alice, 0, { d: sc, s: ply as string });
+    await db.exec(sql);
+    await db.exec(sql);
+    const r = await q(`select active from session_types where id = $1`, [ply]);
+    expect(r.rows[0].active).toBe(false);
+    expect((await q(`select count(*)::int n from training_sessions where session_type_id = $1`, [ply])).rows[0].n).toBe(1);
+  });
+});

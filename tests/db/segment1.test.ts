@@ -31,15 +31,24 @@ describe("signup", () => {
 });
 
 describe("seed data", () => {
-  it("has the 7 agreed disciplines and 23 session types", async () => {
+  it("has the 7 agreed disciplines and the agreed session types (after migration 003)", async () => {
     const d = await q(`select name from disciplines order by sort_order`);
     expect(d.rows.map((r) => r.name)).toEqual(["Muay Thai", "Boxing", "BJJ", "Wrestling", "MMA", "Kickboxing", "S&C"]);
-    const s = await q(`select count(*)::int as n from session_types`);
-    expect(s.rows[0].n).toBe(23);
-    const mt = await q(
-      `select s.name from session_types s join disciplines d on d.id = s.discipline_id where d.name = 'Muay Thai' order by s.sort_order`
-    );
-    expect(mt.rows.map((r) => r.name)).toEqual(["Bag work", "Pad work", "Sparring", "Clinch"]);
+    const types = async (disc: string) =>
+      (
+        await q(
+          `select s.name from session_types s join disciplines d on d.id = s.discipline_id
+           where d.name = $1 and s.active order by s.sort_order`,
+          [disc]
+        )
+      ).rows.map((r) => r.name);
+    expect(await types("Muay Thai")).toEqual(["Bag work", "Pad work", "Sparring", "Clinch", "Drilling"]);
+    expect(await types("Boxing")).toEqual(["Bag", "Pads", "Sparring"]);
+    expect(await types("BJJ")).toEqual(["Drilling", "Positional sparring", "Rolling"]);
+    expect(await types("Wrestling")).toEqual(["Drilling", "Live wrestling", "Conditioning"]);
+    expect(await types("MMA")).toEqual(["Striking", "Grappling", "Sparring", "Pad work", "Drilling"]);
+    expect(await types("Kickboxing")).toEqual(["Bag", "Pads", "Sparring", "Drilling"]);
+    expect(await types("S&C")).toEqual(["Strength", "Conditioning", "Running", "Sprints"]);
   });
 });
 
