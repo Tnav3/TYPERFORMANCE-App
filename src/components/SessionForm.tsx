@@ -110,8 +110,11 @@ export function SessionForm({
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   // Show active disciplines/types, plus whatever this session already uses
+  // Hide disciplines with no active session types (e.g. one the coach just added)
   const disciplines = catalog.filter(
-    (d) => d.active || d.id === existing?.discipline_id,
+    (d) =>
+      (d.active && d.types.some((t) => t.active)) ||
+      d.id === existing?.discipline_id,
   );
   const types = useMemo(
     () =>

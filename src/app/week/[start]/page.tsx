@@ -44,25 +44,34 @@ export default async function WeekPage({
   if (!isEditableWeek(start, today)) redirect(`/week/${mondayOf(today)}`);
 
   const days = weekDays(start);
-  const [catalog, { data: sessions }, { data: checkin }] = await Promise.all([
-    getCatalog(supabase),
-    // Always filter by the logged-in user: the coach can read everyone's rows
-    supabase
-      .from("training_sessions")
-      .select(
-        "id, session_date, start_time, duration_min, discipline_id, session_type_id, rpe, load_au, notes",
-      )
-      .eq("athlete_id", user!.id)
-      .eq("week_start", start)
-      .order("session_date")
-      .order("start_time"),
-    supabase
-      .from("weekly_checkins")
-      .select("wellness, bodyweight_kg, niggle, niggle_note, submitted_at")
-      .eq("athlete_id", user!.id)
-      .eq("week_start", start)
-      .maybeSingle(),
-  ]);
+  const [catalog, { data: sessions }, { data: checkin }, { data: coachNote }] =
+    await Promise.all([
+      getCatalog(supabase),
+      // Always filter by the logged-in user: the coach can read everyone's rows
+      supabase
+        .from("training_sessions")
+        .select(
+          "id, session_date, start_time, duration_min, discipline_id, session_type_id, rpe, load_au, notes",
+        )
+        .eq("athlete_id", user!.id)
+        .eq("week_start", start)
+        .order("session_date")
+        .order("start_time"),
+      supabase
+        .from("weekly_checkins")
+        .select("wellness, bodyweight_kg, niggle, niggle_note, submitted_at")
+        .eq("athlete_id", user!.id)
+        .eq("week_start", start)
+        .maybeSingle(),
+      // Only notes the coach chose to share are readable (enforced by the database)
+      supabase
+        .from("coach_notes")
+        .select("note, updated_at")
+        .eq("athlete_id", user!.id)
+        .eq("week_start", start)
+        .eq("visible_to_athlete", true)
+        .maybeSingle(),
+    ]);
   const names = catalogNames(catalog);
   const list = (sessions ?? []) as SessionRow[];
   const totalLoad = list.reduce((s, r) => s + r.load_au, 0);
@@ -113,6 +122,15 @@ export default async function WeekPage({
 
       {saved && <Alert tone="ok">Session saved.</Alert>}
       {deleted && <Alert tone="info">Session deleted.</Alert>}
+
+      {coachNote && (
+        <Card className="mb-4 border-brand/60">
+          <p className="text-xs font-semibold uppercase tracking-widest text-brand">
+            Note from your coach
+          </p>
+          <p className="mt-1 whitespace-pre-line">{coachNote.note}</p>
+        </Card>
+      )}
 
       <div className="mb-4 grid grid-cols-3 gap-2 text-center">
         {[

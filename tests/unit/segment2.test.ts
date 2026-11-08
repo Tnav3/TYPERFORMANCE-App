@@ -1,5 +1,14 @@
 import { describe, it, expect } from "vitest";
-import { mondayOf, weekDays, editableFrom, editableWeeks, isEditableWeek, isLoggableDate, weekLabel, formatTime } from "@/lib/week";
+import {
+  mondayOf,
+  weekDays,
+  editableFrom,
+  editableWeeks,
+  isEditableWeek,
+  isLoggableDate,
+  weekLabel,
+  formatTime,
+} from "@/lib/week";
 import { validateSession, validateCheckin } from "@/lib/logging-validation";
 import { RPE_LABELS, wellnessLabel, sessionLoad } from "@/lib/scales";
 
@@ -14,10 +23,23 @@ describe("weeks (Mon–Sun)", () => {
     expect(mondayOf("2026-03-01")).toBe("2026-02-23"); // across Feb
   });
   it("lists 7 days Mon→Sun", () => {
-    expect(weekDays("2026-11-02")).toEqual(["2026-11-02", "2026-11-03", "2026-11-04", "2026-11-05", "2026-11-06", "2026-11-07", "2026-11-08"]);
+    expect(weekDays("2026-11-02")).toEqual([
+      "2026-11-02",
+      "2026-11-03",
+      "2026-11-04",
+      "2026-11-05",
+      "2026-11-06",
+      "2026-11-07",
+      "2026-11-08",
+    ]);
   });
   it("edit window = this week + 3 previous", () => {
-    expect(editableWeeks(TODAY)).toEqual(["2026-11-02", "2026-10-26", "2026-10-19", "2026-10-12"]);
+    expect(editableWeeks(TODAY)).toEqual([
+      "2026-11-02",
+      "2026-10-26",
+      "2026-10-19",
+      "2026-10-12",
+    ]);
     expect(editableFrom(TODAY)).toBe("2026-10-12");
     expect(isEditableWeek("2026-10-12", TODAY)).toBe(true);
     expect(isEditableWeek("2026-10-05", TODAY)).toBe(false);
@@ -42,11 +64,18 @@ describe("weeks (Mon–Sun)", () => {
 
 describe("scales", () => {
   it("every RPE 1–10 has a plain-English label", () => {
-    for (let i = 1; i <= 10; i++) expect(RPE_LABELS[i].label.length).toBeGreaterThan(2);
+    for (let i = 1; i <= 10; i++)
+      expect(RPE_LABELS[i].label.length).toBeGreaterThan(2);
     expect(RPE_LABELS[10].label).toBe("Max effort");
   });
   it("wellness labels cover 1–10", () => {
-    expect([1, 3, 5, 7, 10].map(wellnessLabel)).toEqual(["Awful", "Poor", "OK", "Good", "Great"]);
+    expect([1, 3, 5, 7, 10].map(wellnessLabel)).toEqual([
+      "Awful",
+      "Poor",
+      "OK",
+      "Good",
+      "Great",
+    ]);
   });
   it("load = RPE × minutes", () => {
     expect(sessionLoad(7, 90)).toBe(630);
@@ -55,13 +84,34 @@ describe("scales", () => {
 
 const D = "11111111-1111-4111-8111-111111111111";
 const T = "22222222-2222-4222-8222-222222222222";
-const f = (o: Record<string, string>) => ({ get: (k: string) => (k in o ? o[k] : null) });
-const good = { session_date: "2026-11-07", start_time: "18:30", duration_min: "90", discipline_id: D, session_type_id: T, rpe: "7" };
+const f = (o: Record<string, string>) => ({
+  get: (k: string) => (k in o ? o[k] : null),
+});
+const good = {
+  session_date: "2026-11-07",
+  start_time: "18:30",
+  duration_min: "90",
+  discipline_id: D,
+  session_type_id: T,
+  rpe: "7",
+};
 
 describe("session validation", () => {
   it("accepts a valid session and trims seconds off time", () => {
-    const r = validateSession(f({ ...good, start_time: "18:30:00", notes: "  " }), TODAY);
-    expect(r).toEqual({ ok: true, data: { ...good, start_time: "18:30", duration_min: 90, rpe: 7, notes: null } });
+    const r = validateSession(
+      f({ ...good, start_time: "18:30:00", notes: "  " }),
+      TODAY,
+    );
+    expect(r).toEqual({
+      ok: true,
+      data: {
+        ...good,
+        start_time: "18:30",
+        duration_min: 90,
+        rpe: 7,
+        notes: null,
+      },
+    });
   });
   it("rejects future, locked, missing and out-of-range values", () => {
     const bad = (o: Record<string, string>) => {
@@ -85,16 +135,44 @@ describe("check-in validation", () => {
   const base = { week_start: "2026-11-02", wellness: "7" };
   it("bodyweight optional; niggle requires a note; note dropped when no niggle", () => {
     const r1 = validateCheckin(f(base), TODAY);
-    expect(r1.ok && r1.data).toEqual({ week_start: "2026-11-02", wellness: 7, bodyweight_kg: null, niggle: false, niggle_note: null });
-    const r2 = validateCheckin(f({ ...base, bodyweight_kg: "71,46", niggle: "no", niggle_note: "ignored" }), TODAY);
-    expect(r2.ok && r2.data).toMatchObject({ bodyweight_kg: 71.5, niggle: false, niggle_note: null });
+    expect(r1.ok && r1.data).toEqual({
+      week_start: "2026-11-02",
+      wellness: 7,
+      bodyweight_kg: null,
+      niggle: false,
+      niggle_note: null,
+    });
+    const r2 = validateCheckin(
+      f({
+        ...base,
+        bodyweight_kg: "71,46",
+        niggle: "no",
+        niggle_note: "ignored",
+      }),
+      TODAY,
+    );
+    expect(r2.ok && r2.data).toMatchObject({
+      bodyweight_kg: 71.5,
+      niggle: false,
+      niggle_note: null,
+    });
     const r3 = validateCheckin(f({ ...base, niggle: "yes" }), TODAY);
     expect(!r3.ok && r3.errors.niggle_note).toBeTruthy();
-    const r4 = validateCheckin(f({ ...base, niggle: "yes", niggle_note: "L shin" }), TODAY);
+    const r4 = validateCheckin(
+      f({ ...base, niggle: "yes", niggle_note: "L shin" }),
+      TODAY,
+    );
     expect(r4.ok && r4.data.niggle_note).toBe("L shin");
   });
   it("rejects bad week, wellness and bodyweight", () => {
-    const r = validateCheckin(f({ week_start: "2026-11-03", wellness: "0", bodyweight_kg: "250" }), TODAY);
-    expect(!r.ok && Object.keys(r.errors).sort()).toEqual(["bodyweight_kg", "week_start", "wellness"]);
+    const r = validateCheckin(
+      f({ week_start: "2026-11-03", wellness: "0", bodyweight_kg: "250" }),
+      TODAY,
+    );
+    expect(!r.ok && Object.keys(r.errors).sort()).toEqual([
+      "bodyweight_kg",
+      "week_start",
+      "wellness",
+    ]);
   });
 });

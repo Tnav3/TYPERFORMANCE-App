@@ -2,6 +2,8 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import type { AccountStatus } from "@/lib/types";
+import { isISODate } from "@/lib/dates";
+import { mondayOf } from "@/lib/week";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const ALLOWED: AccountStatus[] = ["active", "inactive"];
@@ -25,4 +27,43 @@ export async function setAthleteStatus(formData: FormData) {
     .eq("id", id)
     .eq("role", "athlete");
   revalidatePath("/coach");
+  revalidatePath(`/coach/athlete/${id}`);
+}
+
+export type NoteState = { saved?: boolean; message?: string };
+
+/** Create, update or (when emptied) delete the coach's note for one athlete-week. */
+export async function saveCoachNote(
+  _prev: NoteState,
+  formData: FormData,
+): Promise<NoteState> {
+  const athlete_id = String(formData.get("athlete_id") ?? "");
+  const week_start = String(formData.get("week_start") ?? "");
+  const note = String(formData.get("note") ?? "").trim();
+  const visible_to_athlete = formData.get("visible") === "on";
+  if (
+    !UUID.test(athlete_id) ||
+    !isISODate(week_start) ||
+    mondayOf(week_start) !== week_start
+  )
+    return { message: "Invalid week." };
+  if (note.length > 2000)
+    return { message: "Keep notes under 2000 characters." };
+
+  const supabase = await createClient();
+  const { error } = note
+    ? await supabase
+        .from("coach_notes")
+        .upsert(
+          { athlete_id, week_start, note, visible_to_athlete },
+          { onConflict: "athlete_id,week_start" },
+        )
+    : await supabase
+        .from("coach_notes")
+        .delete()
+        .eq("athlete_id", athlete_id)
+        .eq("week_start", week_start);
+  if (error) return { message: "Couldn't save the note." };
+  revalidatePath(`/coach/athlete/${athlete_id}`);
+  return { saved: true };
 }

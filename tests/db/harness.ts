@@ -32,7 +32,9 @@ export async function freshDb() {
   const db = new PGlite();
   await db.exec(SUPABASE_STUB);
   const dir = join(__dirname, "../../supabase/migrations");
-  for (const f of readdirSync(dir).filter((f) => f.endsWith(".sql")).sort()) {
+  for (const f of readdirSync(dir)
+    .filter((f) => f.endsWith(".sql"))
+    .sort()) {
     await db.exec(readFileSync(join(dir, f), "utf8"));
   }
   await db.exec(SUPABASE_DEFAULT_GRANTS);
@@ -43,23 +45,34 @@ export async function freshDb() {
 export async function signUp(db: PGlite, email: string, fullName?: string) {
   const r = await db.query<{ id: string }>(
     `insert into auth.users (email, raw_user_meta_data) values ($1, $2) returning id`,
-    [email, JSON.stringify(fullName ? { full_name: fullName } : {})]
+    [email, JSON.stringify(fullName ? { full_name: fullName } : {})],
   );
   return r.rows[0].id;
 }
 
 /** Run a callback as a logged-in app user (role "authenticated"). */
-export async function asUser<T>(db: PGlite, uid: string | null, fn: () => Promise<T>): Promise<T> {
-  await db.exec(`select set_config('request.jwt.claim.sub', '${uid ?? ""}', false)`);
+export async function asUser<T>(
+  db: PGlite,
+  uid: string | null,
+  fn: () => Promise<T>,
+): Promise<T> {
+  await db.exec(
+    `select set_config('request.jwt.claim.sub', '${uid ?? ""}', false)`,
+  );
   await db.exec(uid ? `set role authenticated` : `set role anon`);
   try {
     return await fn();
   } finally {
-    await db.exec(`reset role; select set_config('request.jwt.claim.sub', '', false)`);
+    await db.exec(
+      `reset role; select set_config('request.jwt.claim.sub', '', false)`,
+    );
   }
 }
 
 /** Make someone the coach — mirrors the one-off SQL in the setup guide. */
 export async function makeCoach(db: PGlite, email: string) {
-  await db.query(`update public.profiles set role = 'coach', status = 'active' where email = $1`, [email]);
+  await db.query(
+    `update public.profiles set role = 'coach', status = 'active' where email = $1`,
+    [email],
+  );
 }

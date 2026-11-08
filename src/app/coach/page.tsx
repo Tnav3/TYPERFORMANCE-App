@@ -2,25 +2,29 @@ import Link from "next/link";
 import { requireState } from "@/lib/session";
 import { formatDate, todayISO } from "@/lib/dates";
 import { fightCountdown } from "@/lib/fight";
+import { getDashboard, type DashboardRow } from "@/lib/dashboard";
+import { formatChange, LIGHT_ORDER } from "@/lib/load-metrics";
+import { dayMonth, addDays } from "@/lib/week";
 import type { AccountStatus, Profile } from "@/lib/types";
 import { Card, Logo, Screen, SignOutButton } from "@/components/ui";
+import { TrafficLight } from "@/components/TrafficLight";
 import { setAthleteStatus } from "./actions";
-
-type Row = Profile & { discipline: { name: string } | null };
 
 export default async function CoachHome() {
   const { supabase } = await requireState(["coach"]);
-  const { data } = await supabase
-    .from("profiles")
-    .select("*, discipline:disciplines(name)")
-    .eq("role", "athlete")
-    .order("full_name", { ascending: true, nullsFirst: false });
-
-  const rows = (data ?? []) as Row[];
   const today = todayISO();
-  const pending = rows.filter((r) => r.status === "pending");
-  const active = rows.filter((r) => r.status === "active");
-  const inactive = rows.filter((r) => r.status === "inactive");
+  const { rows, pending, inactive, weeks } = await getDashboard(
+    supabase,
+    today,
+  );
+  const sorted = [...rows].sort(
+    (a, b) =>
+      LIGHT_ORDER[a.light] - LIGHT_ORDER[b.light] ||
+      (a.profile.full_name ?? "").localeCompare(b.profile.full_name ?? ""),
+  );
+  const counts = { red: 0, amber: 0, green: 0, none: 0 };
+  rows.forEach((r) => counts[r.light]++);
+  const notSubmitted = rows.filter((r) => !r.lastCheckin).length;
 
   return (
     <Screen wide>
@@ -28,136 +32,247 @@ export default async function CoachHome() {
         <div className="flex items-center gap-3">
           <Logo size={40} />
           <h1 className="text-xl font-black uppercase tracking-tight">
-            Athletes
+            Dashboard
           </h1>
         </div>
         <SignOutButton />
       </header>
 
-      <Link
-        href="/week"
-        className="mb-8 flex min-h-12 items-center justify-center rounded-xl border border-line bg-surface-2 font-extrabold uppercase tracking-wide"
-      >
-        Log my own training →
-      </Link>
+      <div className="mb-6 grid grid-cols-2 gap-2">
+        <Link
+          href="/week"
+          className="flex min-h-12 items-center justify-center rounded-xl border border-line bg-surface-2 text-sm font-extrabold uppercase tracking-wide"
+        >
+          Log my training
+        </Link>
+        <Link
+          href="/coach/settings"
+          className="flex min-h-12 items-center justify-center rounded-xl border border-line bg-surface-2 text-sm font-extrabold uppercase tracking-wide"
+        >
+          Settings
+        </Link>
+      </div>
 
-      <Section
-        title="Waiting for approval"
-        count={pending.length}
-        empty="No one waiting."
-      >
-        {pending.map((r) => (
-          <AthleteRow
-            key={r.id}
-            r={r}
-            today={today}
-            actions={[
-              { label: "Approve", status: "active", primary: true },
-              { label: "Decline", status: "inactive" },
-            ]}
-          />
-        ))}
-      </Section>
+      {pending.length > 0 && (
+        <Section title={`Waiting for approval · ${pending.length}`}>
+          {pending.map((p) => (
+            <AccessRow
+              key={p.id}
+              p={p}
+              actions={[
+                { label: "Approve", status: "active", primary: true },
+                { label: "Decline", status: "inactive" },
+              ]}
+            />
+          ))}
+        </Section>
+      )}
 
-      <Section
-        title="Active"
-        count={active.length}
-        empty="No active athletes yet."
-      >
-        {active.map((r) => (
-          <AthleteRow
-            key={r.id}
-            r={r}
-            today={today}
-            actions={[{ label: "Deactivate", status: "inactive" }]}
-          />
-        ))}
-      </Section>
+      <section className="mb-8">
+        <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+          <h2 className="text-xs font-semibold uppercase tracking-widest text-muted">
+            Last week · {dayMonth(weeks.lastWeek)} –{" "}
+            {dayMonth(addDays(weeks.lastWeek, 6))}
+          </h2>
+          <p className="text-xs text-muted">
+            vs week of {dayMonth(weeks.prevWeek)} · {counts.red} red ·{" "}
+            {counts.amber} amber · {counts.green} green
+            {notSubmitted ? ` · ${notSubmitted} not submitted` : ""}
+          </p>
+        </div>
+        {sorted.length === 0 ? (
+          <p className="text-sm text-muted">No active athletes yet.</p>
+        ) : (
+          <div className="space-y-3">
+            {sorted.map((r) => (
+              <AthleteCard key={r.profile.id} r={r} today={today} />
+            ))}
+          </div>
+        )}
+      </section>
 
-      <Section title="Deactivated" count={inactive.length} empty="None.">
-        {inactive.map((r) => (
-          <AthleteRow
-            key={r.id}
-            r={r}
-            today={today}
-            actions={[{ label: "Reactivate", status: "active" }]}
-          />
-        ))}
-      </Section>
+      {inactive.length > 0 && (
+        <details className="mb-8">
+          <summary className="mb-3 cursor-pointer text-xs font-semibold uppercase tracking-widest text-muted">
+            Deactivated · {inactive.length}
+          </summary>
+          <div className="space-y-3">
+            {inactive.map((p) => (
+              <AccessRow
+                key={p.id}
+                p={p}
+                actions={[{ label: "Reactivate", status: "active" }]}
+              />
+            ))}
+          </div>
+        </details>
+      )}
     </Screen>
   );
 }
 
 function Section({
   title,
-  count,
-  empty,
   children,
 }: {
   title: string;
-  count: number;
-  empty: string;
   children: React.ReactNode;
 }) {
   return (
     <section className="mb-8">
       <h2 className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted">
-        {title} · {count}
+        {title}
       </h2>
-      {count === 0 ? (
-        <p className="text-sm text-muted">{empty}</p>
-      ) : (
-        <div className="space-y-3">{children}</div>
-      )}
+      <div className="space-y-3">{children}</div>
     </section>
   );
 }
 
-function AthleteRow({
-  r,
-  today,
-  actions,
+function Stat({
+  label,
+  value,
+  sub,
 }: {
-  r: Row;
-  today: string;
-  actions: { label: string; status: AccountStatus; primary?: boolean }[];
+  label: string;
+  value: React.ReactNode;
+  sub?: React.ReactNode;
 }) {
-  const fight = fightCountdown(r.next_fight_date, today);
-  const onboarding = !r.consent_accepted_at
-    ? "Hasn't accepted consent yet"
-    : !r.profile_completed_at
-      ? "Hasn't finished profile yet"
+  return (
+    <div>
+      <p className="text-[11px] uppercase tracking-widest text-muted">
+        {label}
+      </p>
+      <p className="text-lg font-black leading-tight">{value}</p>
+      {sub && <p className="text-xs text-muted">{sub}</p>}
+    </div>
+  );
+}
+
+function AthleteCard({ r, today }: { r: DashboardRow; today: string }) {
+  const p = r.profile;
+  const fight = fightCountdown(p.next_fight_date, today);
+  const limit =
+    p.weight_class_limit_kg != null ? Number(p.weight_class_limit_kg) : null;
+  const over =
+    r.latestBodyweight != null && limit != null
+      ? Math.round((r.latestBodyweight - limit) * 10) / 10
       : null;
 
   return (
-    <Card className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <Link href={`/coach/athlete/${p.id}`} className="block">
+      <Card className="!p-4 hover:border-muted">
+        <div className="mb-3 flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="truncate text-lg font-extrabold">
+              {p.full_name ?? p.email}
+            </p>
+            <p className="truncate text-sm text-muted">
+              {[p.discipline?.name, p.weight_class]
+                .filter(Boolean)
+                .join(" · ") || "—"}
+            </p>
+          </div>
+          <TrafficLight level={r.light} />
+        </div>
+
+        {(r.reasons.length > 0 || !r.lastCheckin) && (
+          <div className="mb-3 flex flex-wrap gap-1.5">
+            {r.reasons.map((x) => (
+              <span
+                key={x}
+                className="rounded-md bg-surface-2 px-2 py-0.5 text-xs font-semibold"
+              >
+                {x}
+              </span>
+            ))}
+            {!r.lastCheckin && (
+              <span className="rounded-md bg-surface-2 px-2 py-0.5 text-xs text-muted">
+                Last week not submitted
+              </span>
+            )}
+          </div>
+        )}
+        {r.latestCheckin?.niggle && r.latestCheckin.niggle_note && (
+          <p className="mb-3 text-sm">
+            <span className="text-muted">Niggle: </span>
+            {r.latestCheckin.niggle_note}
+          </p>
+        )}
+
+        <div className="grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-5">
+          <Stat
+            label="Last week"
+            value={r.lastWeek.load}
+            sub={`${formatChange(r.changePct)} vs prev (${r.prevWeek.load})`}
+          />
+          <Stat
+            label="This week"
+            value={r.thisWeek.load}
+            sub={`${r.thisWeek.count} session${r.thisWeek.count === 1 ? "" : "s"} so far`}
+          />
+          <Stat
+            label="Wellness"
+            value={r.lastCheckin ? `${r.lastCheckin.wellness}/10` : "–"}
+            sub="last week"
+          />
+          <Stat
+            label="Bodyweight"
+            value={
+              r.latestBodyweight != null ? `${r.latestBodyweight} kg` : "–"
+            }
+            sub={
+              over != null
+                ? over > 0
+                  ? `${over} kg over limit`
+                  : `${Math.abs(over)} kg under`
+                : limit
+                  ? `limit ${limit} kg`
+                  : undefined
+            }
+          />
+          <Stat
+            label="Fight"
+            value={
+              fight
+                ? fight.past
+                  ? "Passed"
+                  : fight.label.replace(" out", "")
+                : "–"
+            }
+            sub={p.next_fight_date ? formatDate(p.next_fight_date) : undefined}
+          />
+        </div>
+      </Card>
+    </Link>
+  );
+}
+
+function AccessRow({
+  p,
+  actions,
+}: {
+  p: Profile;
+  actions: { label: string; status: AccountStatus; primary?: boolean }[];
+}) {
+  return (
+    <Card className="flex flex-col gap-3 !p-4 sm:flex-row sm:items-center sm:justify-between">
       <div className="min-w-0">
-        <p className="truncate font-extrabold">{r.full_name ?? "(no name)"}</p>
-        <p className="truncate text-sm text-muted">{r.email}</p>
-        <p className="mt-1 text-sm">
-          {[
-            r.discipline?.name,
-            r.weight_class &&
-              `${r.weight_class} ${Number(r.weight_class_limit_kg)} kg`,
-            r.training_age_years != null &&
-              `${Number(r.training_age_years)} yrs training`,
-            fight &&
-              (fight.past ? "fight date passed" : `fight ${fight.label}`),
-          ]
-            .filter(Boolean)
-            .join(" · ") || (
-            <span className="text-muted">No profile details yet</span>
-          )}
-        </p>
-        {onboarding && <p className="mt-1 text-xs text-warn">{onboarding}</p>}
-        <p className="mt-1 text-xs text-muted">
-          Joined {formatDate(todayISO(new Date(r.created_at)))}
-        </p>
+        <p className="truncate font-extrabold">{p.full_name ?? "(no name)"}</p>
+        <p className="truncate text-sm text-muted">{p.email}</p>
+        {!p.consent_accepted_at ? (
+          <p className="mt-1 text-xs text-warn">
+            Hasn&apos;t accepted consent yet
+          </p>
+        ) : !p.profile_completed_at ? (
+          <p className="mt-1 text-xs text-warn">
+            Hasn&apos;t finished profile yet
+          </p>
+        ) : null}
       </div>
       <div className="flex shrink-0 gap-2">
         {actions.map((a) => (
           <form key={a.label} action={setAthleteStatus}>
-            <input type="hidden" name="id" value={r.id} />
+            <input type="hidden" name="id" value={p.id} />
             <input type="hidden" name="status" value={a.status} />
             <button
               className={`min-h-11 rounded-xl px-4 text-sm font-extrabold uppercase tracking-wide ${

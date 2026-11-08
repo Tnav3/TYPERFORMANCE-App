@@ -4,7 +4,9 @@ export interface CatalogDiscipline {
   id: string;
   name: string;
   active: boolean;
-  types: { id: string; name: string; active: boolean }[];
+  sort_order: number;
+  created_at: string;
+  types: { id: string; name: string; active: boolean; sort_order: number }[];
 }
 
 /** All disciplines with their session types, in display order (includes hidden ones for old logs). */
@@ -14,7 +16,7 @@ export async function getCatalog(
   const [{ data: ds }, { data: ts }] = await Promise.all([
     supabase
       .from("disciplines")
-      .select("id, name, active, sort_order")
+      .select("id, name, active, sort_order, created_at")
       .order("sort_order")
       .order("name"),
     supabase
@@ -27,9 +29,16 @@ export async function getCatalog(
     id: d.id,
     name: d.name,
     active: d.active,
+    sort_order: d.sort_order,
+    created_at: d.created_at,
     types: (ts ?? [])
       .filter((t) => t.discipline_id === d.id)
-      .map((t) => ({ id: t.id, name: t.name, active: t.active })),
+      .map((t) => ({
+        id: t.id,
+        name: t.name,
+        active: t.active,
+        sort_order: t.sort_order,
+      })),
   }));
 }
 

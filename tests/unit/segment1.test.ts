@@ -6,25 +6,66 @@ import { todayISO, daysBetween, isISODate } from "@/lib/dates";
 import { fightCountdown } from "@/lib/fight";
 import { safeNext } from "@/lib/safe-next";
 
-const base = { role: "athlete" as const, status: "pending" as const, consent_version: null, profile_completed_at: null };
+const base = {
+  role: "athlete" as const,
+  status: "pending" as const,
+  consent_version: null,
+  profile_completed_at: null,
+};
 
 describe("gate — who goes where", () => {
   it("routes every state correctly", () => {
     expect(gateState(null)).toBe("signed_out");
     expect(gateState(base)).toBe("needs_consent");
-    expect(gateState({ ...base, consent_version: "old-version" })).toBe("needs_consent"); // re-consent on wording change
-    expect(gateState({ ...base, consent_version: CONSENT_VERSION })).toBe("needs_profile");
-    expect(gateState({ ...base, consent_version: CONSENT_VERSION, profile_completed_at: "x" })).toBe("pending");
-    expect(gateState({ ...base, status: "active", consent_version: CONSENT_VERSION, profile_completed_at: "x" })).toBe("athlete");
+    expect(gateState({ ...base, consent_version: "old-version" })).toBe(
+      "needs_consent",
+    ); // re-consent on wording change
+    expect(gateState({ ...base, consent_version: CONSENT_VERSION })).toBe(
+      "needs_profile",
+    );
+    expect(
+      gateState({
+        ...base,
+        consent_version: CONSENT_VERSION,
+        profile_completed_at: "x",
+      }),
+    ).toBe("pending");
+    expect(
+      gateState({
+        ...base,
+        status: "active",
+        consent_version: CONSENT_VERSION,
+        profile_completed_at: "x",
+      }),
+    ).toBe("athlete");
     // approved before finishing onboarding → still has to finish onboarding
     expect(gateState({ ...base, status: "active" })).toBe("needs_consent");
     // inactive beats everything
-    expect(gateState({ ...base, status: "inactive", consent_version: CONSENT_VERSION, profile_completed_at: "x" })).toBe("inactive");
-    expect(gateState({ ...base, role: "coach", status: "active" })).toBe("coach");
-    expect(gateState({ ...base, role: "coach", status: "inactive" })).toBe("inactive");
+    expect(
+      gateState({
+        ...base,
+        status: "inactive",
+        consent_version: CONSENT_VERSION,
+        profile_completed_at: "x",
+      }),
+    ).toBe("inactive");
+    expect(gateState({ ...base, role: "coach", status: "active" })).toBe(
+      "coach",
+    );
+    expect(gateState({ ...base, role: "coach", status: "inactive" })).toBe(
+      "inactive",
+    );
   });
   it("every state has a home screen", () => {
-    for (const s of ["signed_out", "inactive", "needs_consent", "needs_profile", "pending", "athlete", "coach"] as const) {
+    for (const s of [
+      "signed_out",
+      "inactive",
+      "needs_consent",
+      "needs_profile",
+      "pending",
+      "athlete",
+      "coach",
+    ] as const) {
       expect(HOME_FOR[s]).toMatch(/^\//);
     }
   });
@@ -65,47 +106,120 @@ describe("fight countdown", () => {
 });
 
 const D = "11111111-1111-4111-8111-111111111111";
-const form = (o: Record<string, string>) => ({ get: (k: string) => (k in o ? o[k] : null) });
+const form = (o: Record<string, string>) => ({
+  get: (k: string) => (k in o ? o[k] : null),
+});
 const TODAY = "2026-11-08";
 
 describe("profile validation", () => {
   it("accepts a full competing profile", () => {
     const r = validateProfile(
-      form({ full_name: "  Alice   Fighter ", main_discipline_id: D, competing: "yes", weight_class: "Lightweight", weight_class_limit_kg: "70,3", next_fight_date: "2027-02-14", training_age_years: "2.4" }),
-      TODAY
+      form({
+        full_name: "  Alice   Fighter ",
+        main_discipline_id: D,
+        competing: "yes",
+        weight_class: "Lightweight",
+        weight_class_limit_kg: "70,3",
+        next_fight_date: "2027-02-14",
+        training_age_years: "2.4",
+      }),
+      TODAY,
     );
     expect(r).toEqual({
       ok: true,
-      data: { full_name: "Alice Fighter", main_discipline_id: D, competing: true, weight_class: "Lightweight", weight_class_limit_kg: 70.3, next_fight_date: "2027-02-14", training_age_years: 2.5 },
+      data: {
+        full_name: "Alice Fighter",
+        main_discipline_id: D,
+        competing: true,
+        weight_class: "Lightweight",
+        weight_class_limit_kg: 70.3,
+        next_fight_date: "2027-02-14",
+        training_age_years: 2.5,
+      },
     });
   });
   it("non-competing athlete: weight class and fight date are cleared even if sent", () => {
     const r = validateProfile(
-      form({ full_name: "Bob", main_discipline_id: D, competing: "no", weight_class: "Leftover", weight_class_limit_kg: "77", next_fight_date: "2027-01-01", training_age_years: "0" }),
-      TODAY
+      form({
+        full_name: "Bob",
+        main_discipline_id: D,
+        competing: "no",
+        weight_class: "Leftover",
+        weight_class_limit_kg: "77",
+        next_fight_date: "2027-01-01",
+        training_age_years: "0",
+      }),
+      TODAY,
     );
-    expect(r.ok && r.data).toMatchObject({ competing: false, weight_class: null, weight_class_limit_kg: null, next_fight_date: null, training_age_years: 0 });
+    expect(r.ok && r.data).toMatchObject({
+      competing: false,
+      weight_class: null,
+      weight_class_limit_kg: null,
+      next_fight_date: null,
+      training_age_years: 0,
+    });
   });
   it("competing: fight date is optional", () => {
-    const r = validateProfile(form({ full_name: "Bob", main_discipline_id: D, competing: "yes", weight_class: "Welter", weight_class_limit_kg: "77.1", training_age_years: "3" }), TODAY);
+    const r = validateProfile(
+      form({
+        full_name: "Bob",
+        main_discipline_id: D,
+        competing: "yes",
+        weight_class: "Welter",
+        weight_class_limit_kg: "77.1",
+        training_age_years: "3",
+      }),
+      TODAY,
+    );
     expect(r.ok && r.data.next_fight_date).toBeNull();
   });
   it("flags every bad field", () => {
     const r = validateProfile(
-      form({ full_name: "A", main_discipline_id: "not-a-uuid", competing: "yes", weight_class: "", weight_class_limit_kg: "700", next_fight_date: "2026-11-07", training_age_years: "abc" }),
-      TODAY
+      form({
+        full_name: "A",
+        main_discipline_id: "not-a-uuid",
+        competing: "yes",
+        weight_class: "",
+        weight_class_limit_kg: "700",
+        next_fight_date: "2026-11-07",
+        training_age_years: "abc",
+      }),
+      TODAY,
     );
     expect(r.ok).toBe(false);
-    if (!r.ok) expect(Object.keys(r.errors).sort()).toEqual(["full_name", "main_discipline_id", "next_fight_date", "training_age_years", "weight_class", "weight_class_limit_kg"]);
+    if (!r.ok)
+      expect(Object.keys(r.errors).sort()).toEqual([
+        "full_name",
+        "main_discipline_id",
+        "next_fight_date",
+        "training_age_years",
+        "weight_class",
+        "weight_class_limit_kg",
+      ]);
   });
   it("fight today is allowed; >2 years is not; impossible dates rejected", () => {
-    const ok = (fd: string) => validateProfile(form({ full_name: "Al", main_discipline_id: D, competing: "yes", weight_class: "X", weight_class_limit_kg: "60", next_fight_date: fd, training_age_years: "1" }), TODAY).ok;
+    const ok = (fd: string) =>
+      validateProfile(
+        form({
+          full_name: "Al",
+          main_discipline_id: D,
+          competing: "yes",
+          weight_class: "X",
+          weight_class_limit_kg: "60",
+          next_fight_date: fd,
+          training_age_years: "1",
+        }),
+        TODAY,
+      ).ok;
     expect(ok("2026-11-08")).toBe(true);
     expect(ok("2028-11-09")).toBe(false);
     expect(ok("2027-02-30")).toBe(false);
   });
   it("missing training age is an error, not zero", () => {
-    const r = validateProfile(form({ full_name: "Al", main_discipline_id: D, competing: "no" }), TODAY);
+    const r = validateProfile(
+      form({ full_name: "Al", main_discipline_id: D, competing: "no" }),
+      TODAY,
+    );
     expect(!r.ok && r.errors.training_age_years).toBeTruthy();
   });
 });
