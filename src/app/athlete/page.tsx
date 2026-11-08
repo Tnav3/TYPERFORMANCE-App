@@ -129,6 +129,22 @@ export default async function AthleteHome() {
         </Card>
       </Link>
 
+      <Link href="/calculator" className="mb-4 block">
+        <Card className="flex items-center justify-between hover:border-muted">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-widest text-muted">
+              1RM calculator
+            </p>
+            <p className="mt-1 font-extrabold">
+              Your e1RM and loads for every %
+            </p>
+          </div>
+          <span className="text-xl text-muted" aria-hidden>
+            →
+          </span>
+        </Card>
+      </Link>
+
       <Link
         href="/profile"
         className="text-sm text-muted underline underline-offset-4"

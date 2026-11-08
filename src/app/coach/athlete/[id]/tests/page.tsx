@@ -19,6 +19,9 @@ import { BackLink, Card, Screen } from "@/components/ui";
 import { ForceDecksDayForm } from "@/components/ForceDecksDayForm";
 import { CoachFieldTestForm } from "@/components/CoachFieldTestForm";
 import { TestEntryList } from "@/components/TestEntryList";
+import { getLifts, getMaxes } from "@/lib/lift-data";
+import { latestMaxes } from "@/lib/calculator";
+import { deleteLiftMax } from "@/app/calculator/actions";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -72,6 +75,11 @@ export default async function CoachAthleteTests({
       .maybeSingle(),
   ]);
   if (!p) notFound();
+  const [lifts, maxes] = await Promise.all([getLifts(supabase), getMaxes(supabase, id)]);
+  const liftNames = Object.fromEntries(lifts.map((l) => [l.key, l.name]));
+  const currentMaxes = Object.values(latestMaxes(maxes)).sort((a, b) =>
+    (liftNames[a.lift_key] ?? "").localeCompare(liftNames[b.lift_key] ?? ""),
+  );
   const today = todayISO();
   const summaries = summarize(defs, entries);
   const dsiHistory = latestDsi(entries);
@@ -285,6 +293,45 @@ export default async function CoachAthleteTests({
           />
         </Card>
       </div>
+
+      <h2 className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted">
+        Saved e1RMs (from the calculator)
+      </h2>
+      <Card className="mb-8 !p-0">
+        {currentMaxes.length === 0 ? (
+          <p className="p-4 text-sm text-muted">None saved yet.</p>
+        ) : (
+          <ul className="divide-y divide-line">
+            {currentMaxes.map((m) => (
+              <li key={m.id} className="flex items-center justify-between gap-3 px-4 py-3">
+                <div className="min-w-0">
+                  <p className="font-extrabold">{liftNames[m.lift_key] ?? m.lift_key}</p>
+                  <p className="text-xs text-muted">
+                    {m.load_kg} kg × {m.reps}
+                    {m.bodyweight_kg != null ? ` at ${m.bodyweight_kg} kg BW` : ""} ·{" "}
+                    {formatDate(m.saved_on)}
+                  </p>
+                </div>
+                <div className="flex shrink-0 items-center gap-2">
+                  <span className="text-lg font-black">{+m.e1rm_kg.toFixed(2)} kg</span>
+                  <details className="relative">
+                    <summary className="flex min-h-11 min-w-11 cursor-pointer list-none items-center justify-center text-muted" aria-label="Delete">
+                      ✕
+                    </summary>
+                    <form action={deleteLiftMax} className="absolute right-0 z-10 mt-1">
+                      <input type="hidden" name="id" value={m.id} />
+                      <input type="hidden" name="next" value={back} />
+                      <button className="min-h-11 whitespace-nowrap rounded-xl border border-brand/60 bg-surface px-3 text-sm font-bold text-brand">
+                        Delete
+                      </button>
+                    </form>
+                  </details>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
 
       <h2 className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted">
         History by test

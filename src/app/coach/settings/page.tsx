@@ -44,6 +44,12 @@ export default async function SettingsPage({
       >
         Field test videos & instructions <span aria-hidden>→</span>
       </Link>
+      <Link
+        href="/coach/settings/lifts"
+        className="-mt-4 mb-6 flex min-h-12 items-center justify-between rounded-xl border border-line bg-surface-2 px-4 font-extrabold"
+      >
+        Calculator lifts <span aria-hidden>→</span>
+      </Link>
 
       <div className="space-y-4">
         {catalog.map((d, di) => (
