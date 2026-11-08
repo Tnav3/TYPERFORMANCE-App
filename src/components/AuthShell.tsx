@@ -25,5 +25,6 @@ export function friendlyAuthError(message: string): string {
   if (m.includes("rate limit") || m.includes("too many")) return "Too many attempts. Wait a few minutes and try again.";
   if (m.includes("password")) return message;
   if (m.includes("fetch") || m.includes("network")) return "Can't reach the server. Check your connection.";
-  return "Something went wrong. Please try again.";
+  // Show the real reason in small print so problems can be diagnosed
+  return `Something went wrong. Please try again. (Details: ${message})`;
 }

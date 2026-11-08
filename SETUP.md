@@ -21,8 +21,10 @@ About 30 to 40 minutes, one time. Both services are free to start.
 - Site URL: `https://YOUR-APP.vercel.app`
 - Redirect URLs: add `https://YOUR-APP.vercel.app/**`
 
-## 4. Password reset email
-**Authentication → Emails → Reset Password**, and replace the link in the template with:
+## 4. Password reset email (SKIP FOR NOW, do before athletes launch)
+New free Supabase projects can't edit email templates until you connect your own email sender (custom SMTP). Supabase's built-in sender also only emails your own team's addresses, at 2 per hour. So athletes won't get reset emails until custom SMTP is set up. Nothing else in Segment 1 needs email, so carry on to step 5.
+
+Once custom SMTP is on (Authentication → Emails → SMTP Settings), go to **Authentication → Emails → Reset Password** and replace the link with:
 ```
 <a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery&next=/reset-password">Reset your password</a>
 ```
@@ -57,6 +59,9 @@ update public.profiles set role = 'coach', status = 'active' where email = 'tyre
 2. Go through consent and profile. You'll see "You're in the queue".
 3. On your coach screen, approve them. They now land on their home screen.
 4. Then Safari: Share → **Add to Home Screen**. Android Chrome: ⋮ → **Add to Home screen**.
+
+## Segment 2 (weekly logging)
+Run `supabase/migrations/002_segment2_weekly_logging.sql` in the SQL Editor once (already done for the live project on 8 Nov 2026).
 
 ## Changing the consent wording later
 Edit `src/lib/consent.ts` and change `CONSENT_VERSION`. Every athlete will be asked to accept the new wording the next time they open the app.

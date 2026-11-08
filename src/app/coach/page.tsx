@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { requireState } from "@/lib/session";
 import { formatDate, todayISO } from "@/lib/dates";
 import { fightCountdown } from "@/lib/fight";
@@ -30,6 +31,13 @@ export default async function CoachHome() {
         </div>
         <SignOutButton />
       </header>
+
+      <Link
+        href="/week"
+        className="mb-8 flex min-h-12 items-center justify-center rounded-xl border border-line bg-surface-2 font-extrabold uppercase tracking-wide"
+      >
+        Log my own training →
+      </Link>
 
       <Section title="Waiting for approval" count={pending.length} empty="No one waiting.">
         {pending.map((r) => (
