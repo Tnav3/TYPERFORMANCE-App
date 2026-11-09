@@ -22,7 +22,8 @@ import { type LoadChartWeek } from "@/components/LoadChart";
 import { CoachLoadCharts } from "@/components/CoachLoadCharts";
 import { WeightChart } from "@/components/WeightChart";
 import { CoachNoteForm } from "@/components/CoachNoteForm";
-import { setAthleteStatus } from "../../actions";
+import { setAthleteFeature, setAthleteStatus } from "../../actions";
+import { FEATURES } from "@/lib/features";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const WEEKS = 12;
@@ -174,6 +175,55 @@ export default async function AthleteDetail({
       >
         Testing: results, DSI, MAS, clips <span aria-hidden>→</span>
       </Link>
+
+      <details
+        className="mb-6 rounded-xl border border-line bg-surface"
+        open={FEATURES.some((f) => p[f.column] === false)}
+      >
+        <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between px-4 font-extrabold">
+          <span>
+            Features{" "}
+            <span className="text-sm font-normal text-muted">
+              · {FEATURES.filter((f) => p[f.column] !== false).length} of{" "}
+              {FEATURES.length} on
+            </span>
+          </span>
+          <span className="text-sm text-muted" aria-hidden>
+            ▾
+          </span>
+        </summary>
+        <ul className="divide-y divide-line border-t border-line">
+          {FEATURES.map((f) => {
+            const on = p[f.column] !== false;
+            return (
+              <li key={f.key}>
+                <form
+                  action={setAthleteFeature}
+                  className="flex items-center justify-between gap-3 px-4 py-3"
+                >
+                  <input type="hidden" name="id" value={id} />
+                  <input type="hidden" name="column" value={f.column} />
+                  <input type="hidden" name="on" value={String(!on)} />
+                  <div className="min-w-0">
+                    <p className="font-bold">{f.label}</p>
+                    <p className="text-xs text-muted">{f.hint}</p>
+                  </div>
+                  <button
+                    role="switch"
+                    aria-checked={on}
+                    aria-label={`${f.label}: ${on ? "on" : "off"}`}
+                    className={`relative h-8 w-14 shrink-0 rounded-full transition-colors ${on ? "bg-ok" : "bg-surface-2 ring-1 ring-line"}`}
+                  >
+                    <span
+                      className={`absolute top-1 h-6 w-6 rounded-full bg-white transition-all ${on ? "left-7" : "left-1"}`}
+                    />
+                  </button>
+                </form>
+              </li>
+            );
+          })}
+        </ul>
+      </details>
 
       <div className="mb-6 grid grid-cols-2 gap-2 sm:grid-cols-4">
         <Tile

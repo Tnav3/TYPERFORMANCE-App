@@ -67,3 +67,29 @@ export async function saveCoachNote(
   revalidatePath(`/coach/athlete/${athlete_id}`);
   return { saved: true };
 }
+
+const FEATURE_COLUMNS = [
+  "feat_checkin",
+  "feat_testing",
+  "feat_1rm",
+  "feat_mas",
+] as const;
+
+/** Switch one feature on/off for one athlete. The database only lets the coach do this. */
+export async function setAthleteFeature(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  const column = String(
+    formData.get("column") ?? "",
+  ) as (typeof FEATURE_COLUMNS)[number];
+  const on = formData.get("on") === "true";
+  if (!UUID.test(id) || !FEATURE_COLUMNS.includes(column)) return;
+
+  const supabase = await createClient();
+  await supabase
+    .from("profiles")
+    .update({ [column]: on })
+    .eq("id", id)
+    .eq("role", "athlete");
+  revalidatePath("/coach");
+  revalidatePath(`/coach/athlete/${id}`);
+}

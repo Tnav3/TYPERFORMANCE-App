@@ -27,3 +27,14 @@ export async function requireState(allowed: GateState[]) {
   if (!allowed.includes(state)) redirect(HOME_FOR[state]);
   return { ...ctx, profile: ctx.profile as Profile, state };
 }
+
+/** Like requireState, but also sends athletes home if the coach has switched this feature off. */
+export async function requireFeature(
+  allowed: GateState[],
+  feature: import("./features").Feature,
+) {
+  const ctx = await requireState(allowed);
+  const { hasFeature } = await import("./features");
+  if (!hasFeature(ctx.profile, feature)) redirect("/athlete");
+  return ctx;
+}

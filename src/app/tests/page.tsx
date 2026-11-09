@@ -1,12 +1,12 @@
 import Link from "next/link";
-import { requireState } from "@/lib/session";
+import { requireFeature } from "@/lib/session";
 import { formatDate } from "@/lib/dates";
 import { formatPct, getEntries, getTestDefs, summarize } from "@/lib/test-data";
 import { groupByCategory, headlineValue } from "@/lib/testing";
 import { BackLink, Card, Heading, Screen } from "@/components/ui";
 
 export default async function TestsHome() {
-  const { supabase, user } = await requireState(["athlete", "coach"]);
+  const { supabase, user } = await requireFeature(["athlete", "coach"], "testing");
   const [defs, entries] = await Promise.all([
     getTestDefs(supabase),
     getEntries(supabase, user!.id),

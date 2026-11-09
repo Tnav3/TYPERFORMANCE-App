@@ -1,5 +1,5 @@
 import { notFound, redirect } from "next/navigation";
-import { requireState } from "@/lib/session";
+import { requireFeature } from "@/lib/session";
 import { todayISO } from "@/lib/dates";
 import { isEditableWeek, mondayOf, weekDays } from "@/lib/week";
 import { getCatalog } from "@/lib/catalog";
@@ -13,7 +13,7 @@ export default async function EditSessionPage({
 }: {
   params: Promise<{ start: string; id: string }>;
 }) {
-  const { supabase, user } = await requireState(["athlete", "coach"]);
+  const { supabase, user } = await requireFeature(["athlete", "coach"], "checkin");
   const { start, id } = await params;
   const today = todayISO();
   if (!isEditableWeek(start, today)) redirect(`/week/${mondayOf(today)}`);

@@ -1,4 +1,4 @@
-import { requireState } from "@/lib/session";
+import { requireFeature } from "@/lib/session";
 import { MasCalculator } from "@/components/MasCalculator";
 import { MAS_MODES, MAS_MODE_ORDER, masModeOf, type MasMode } from "@/lib/testing";
 import { BackLink, Heading, Screen } from "@/components/ui";
@@ -10,7 +10,7 @@ export default async function MasPage({
 }: {
   searchParams: Promise<{ test?: string }>;
 }) {
-  const { supabase, user, state } = await requireState(["athlete", "coach"]);
+  const { supabase, user, state } = await requireFeature(["athlete", "coach"], "mas");
   const { test } = await searchParams;
   const isAthlete = state === "athlete";
 

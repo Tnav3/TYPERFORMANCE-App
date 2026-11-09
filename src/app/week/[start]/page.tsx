@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { requireState } from "@/lib/session";
+import { requireFeature } from "@/lib/session";
 import { todayISO } from "@/lib/dates";
 import {
   addDays,
@@ -40,7 +40,7 @@ export default async function WeekPage({
   params: Promise<{ start: string }>;
   searchParams: Promise<{ saved?: string; deleted?: string }>;
 }) {
-  const { supabase, user, profile } = await requireState(["athlete", "coach"]);
+  const { supabase, user, profile } = await requireFeature(["athlete", "coach"], "checkin");
   const { start } = await params;
   const { saved, deleted } = await searchParams;
   const today = todayISO();

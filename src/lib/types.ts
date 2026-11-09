@@ -15,6 +15,10 @@ export interface Profile {
   profile_completed_at: string | null;
   consent_version: string | null;
   consent_accepted_at: string | null;
+  feat_checkin: boolean;
+  feat_testing: boolean;
+  feat_1rm: boolean;
+  feat_mas: boolean;
   created_at: string;
   updated_at: string;
 }

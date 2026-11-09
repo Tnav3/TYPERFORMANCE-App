@@ -1,4 +1,4 @@
-import { requireState } from "@/lib/session";
+import { requireFeature } from "@/lib/session";
 import { getLifts, getMaxes, latestBodyweight } from "@/lib/lift-data";
 import { latestMaxes } from "@/lib/calculator";
 import { formatDate } from "@/lib/dates";
@@ -13,7 +13,7 @@ export default async function CalculatorPage({
 }: {
   searchParams: Promise<{ lift?: string }>;
 }) {
-  const { supabase, user, state } = await requireState(["athlete", "coach"]);
+  const { supabase, user, state } = await requireFeature(["athlete", "coach"], "1rm");
   const { lift } = await searchParams;
   const isAthlete = state === "athlete";
   const [lifts, maxes, bw] = await Promise.all([

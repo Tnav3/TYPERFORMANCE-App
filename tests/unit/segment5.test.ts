@@ -272,3 +272,14 @@ import { USES_BODYWEIGHT } from "@/lib/testing";
 describe("Wingate asks for bodyweight", () => {
   it("so W/kg can be shown", () => expect(USES_BODYWEIGHT.has("wingate_30s")).toBe(true));
 });
+
+import { hasFeature } from "@/lib/features";
+describe("hasFeature", () => {
+  it("coach always has everything; athletes follow their switches; missing = on", () => {
+    expect(hasFeature({ role: "coach", feat_testing: false }, "testing")).toBe(true);
+    expect(hasFeature({ role: "athlete", feat_testing: false }, "testing")).toBe(false);
+    expect(hasFeature({ role: "athlete", feat_mas: true }, "mas")).toBe(true);
+    expect(hasFeature({ role: "athlete" }, "1rm")).toBe(true);
+    expect(hasFeature(null, "checkin")).toBe(false);
+  });
+});

@@ -13,7 +13,7 @@ import { setAthleteStatus } from "./actions";
 export default async function CoachHome() {
   const { supabase } = await requireState(["coach"]);
   const today = todayISO();
-  const { rows, pending, inactive, weeks } = await getDashboard(
+  const { rows, noCheckin, pending, inactive, weeks } = await getDashboard(
     supabase,
     today,
   );
@@ -93,7 +93,11 @@ export default async function CoachHome() {
           </p>
         </div>
         {sorted.length === 0 ? (
-          <p className="text-sm text-muted">No active athletes yet.</p>
+          <p className="text-sm text-muted">
+            {noCheckin.length
+              ? "No athletes with the weekly check-in switched on."
+              : "No active athletes yet."}
+          </p>
         ) : (
           <div className="space-y-3">
             {sorted.map((r) => (
@@ -102,6 +106,23 @@ export default async function CoachHome() {
           </div>
         )}
       </section>
+
+      {noCheckin.length > 0 && (
+        <Section title={`Check-in switched off · ${noCheckin.length}`}>
+          {noCheckin.map((p) => (
+            <Link key={p.id} href={`/coach/athlete/${p.id}`} className="block">
+              <Card className="flex items-center justify-between !p-4 hover:border-muted">
+                <p className="truncate font-extrabold">
+                  {p.full_name ?? p.email}
+                </p>
+                <span className="text-xl text-muted" aria-hidden>
+                  →
+                </span>
+              </Card>
+            </Link>
+          ))}
+        </Section>
+      )}
 
       {inactive.length > 0 && (
         <details className="mb-8">

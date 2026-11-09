@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { requireState } from "@/lib/session";
+import { requireFeature } from "@/lib/session";
 import { todayISO } from "@/lib/dates";
 import { getEntries, getTestDefs } from "@/lib/test-data";
 import { MAS_MODES, TEST_FIELDS, masModeOf, masOf, masTargets, pace500, youtubeId } from "@/lib/testing";
@@ -12,7 +12,7 @@ export default async function TestPage({
 }: {
   params: Promise<{ key: string }>;
 }) {
-  const { supabase, user } = await requireState(["athlete", "coach"]);
+  const { supabase, user } = await requireFeature(["athlete", "coach"], "testing");
   const { key } = await params;
   if (!TEST_FIELDS[key]) notFound();
   const [defs, entries, { data: lastBw }] = await Promise.all([

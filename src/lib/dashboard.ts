@@ -106,7 +106,11 @@ export async function getDashboard(supabase: SupabaseClient, todayISO: string) {
     });
 
   return {
-    rows,
+    // Athletes with the weekly check-in switched off aren't on the traffic-light board
+    rows: rows.filter((r) => r.profile.feat_checkin !== false),
+    noCheckin: rows
+      .filter((r) => r.profile.feat_checkin === false)
+      .map((r) => r.profile),
     pending: all.filter((p) => p.status === "pending"),
     inactive: all.filter((p) => p.status === "inactive"),
     weeks: { thisWeek, lastWeek, prevWeek },

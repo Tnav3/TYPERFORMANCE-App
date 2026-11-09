@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { requireState } from "@/lib/session";
+import { hasFeature } from "@/lib/features";
 import { formatDate, todayISO } from "@/lib/dates";
 import { fightCountdown } from "@/lib/fight";
 import { addDays, mondayOf } from "@/lib/week";
@@ -44,6 +45,12 @@ export default async function AthleteHome() {
   const prev = stats(lastWeek);
   const fight = fightCountdown(profile.next_fight_date, today);
   const first = profile.full_name?.split(" ")[0] ?? "there";
+  const on = {
+    checkin: hasFeature(profile, "checkin"),
+    testing: hasFeature(profile, "testing"),
+    rm: hasFeature(profile, "1rm"),
+    mas: hasFeature(profile, "mas"),
+  };
 
   return (
     <Screen>
@@ -63,41 +70,45 @@ export default async function AthleteHome() {
       </p>
 
       {/* Only nag about last week if they had an account before it ended */}
-      {!prev.submitted && todayISO(new Date(profile.created_at)) < thisWeek && (
-        <Link href={`/week/${lastWeek}`} className="mb-4 block">
-          <Card className="border-warn/60 hover:border-warn">
-            <p className="text-xs font-semibold uppercase tracking-widest text-warn">
-              Last week not submitted
-            </p>
-            <p className="mt-1 font-extrabold">
-              {prev.count} session{prev.count === 1 ? "" : "s"} logged · tap to
-              finish your check-in →
-            </p>
+      {on.checkin &&
+        !prev.submitted &&
+        todayISO(new Date(profile.created_at)) < thisWeek && (
+          <Link href={`/week/${lastWeek}`} className="mb-4 block">
+            <Card className="border-warn/60 hover:border-warn">
+              <p className="text-xs font-semibold uppercase tracking-widest text-warn">
+                Last week not submitted
+              </p>
+              <p className="mt-1 font-extrabold">
+                {prev.count} session{prev.count === 1 ? "" : "s"} logged · tap
+                to finish your check-in →
+              </p>
+            </Card>
+          </Link>
+        )}
+
+      {on.checkin && (
+        <Link href={`/week/${thisWeek}`} className="mb-4 block">
+          <Card className="hover:border-muted">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-widest text-muted">
+                  This week
+                </p>
+                <p className="mt-1 text-3xl font-black">{cur.load}</p>
+                <p className="text-sm text-muted">
+                  load · {cur.count} session{cur.count === 1 ? "" : "s"}
+                </p>
+              </div>
+              <span
+                className={`rounded-full px-3 py-1 text-xs font-bold ${cur.submitted ? "bg-ok/15 text-ok" : "bg-surface-2 text-muted"}`}
+              >
+                {cur.submitted ? "Submitted" : "Open"}
+              </span>
+            </div>
+            <p className="mt-4 font-extrabold text-brand">Log training →</p>
           </Card>
         </Link>
       )}
-
-      <Link href={`/week/${thisWeek}`} className="mb-4 block">
-        <Card className="hover:border-muted">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-widest text-muted">
-                This week
-              </p>
-              <p className="mt-1 text-3xl font-black">{cur.load}</p>
-              <p className="text-sm text-muted">
-                load · {cur.count} session{cur.count === 1 ? "" : "s"}
-              </p>
-            </div>
-            <span
-              className={`rounded-full px-3 py-1 text-xs font-bold ${cur.submitted ? "bg-ok/15 text-ok" : "bg-surface-2 text-muted"}`}
-            >
-              {cur.submitted ? "Submitted" : "Open"}
-            </span>
-          </div>
-          <p className="mt-4 font-extrabold text-brand">Log training →</p>
-        </Card>
-      </Link>
 
       {fight && profile.next_fight_date && (
         <Card
@@ -113,53 +124,67 @@ export default async function AthleteHome() {
         </Card>
       )}
 
-      <Link href="/tests" className="mb-4 block">
-        <Card className="flex items-center justify-between hover:border-muted">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-widest text-muted">
-              Testing
-            </p>
-            <p className="mt-1 font-extrabold">
-              Videos, instructions & your results
-            </p>
-          </div>
-          <span className="text-xl text-muted" aria-hidden>
-            →
-          </span>
-        </Card>
-      </Link>
+      {on.testing && (
+        <Link href="/tests" className="mb-4 block">
+          <Card className="flex items-center justify-between hover:border-muted">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-widest text-muted">
+                Testing
+              </p>
+              <p className="mt-1 font-extrabold">
+                Videos, instructions & your results
+              </p>
+            </div>
+            <span className="text-xl text-muted" aria-hidden>
+              →
+            </span>
+          </Card>
+        </Link>
+      )}
 
-      <Link href="/calculator" className="mb-4 block">
-        <Card className="flex items-center justify-between hover:border-muted">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-widest text-muted">
-              1RM Calculator
-            </p>
-            <p className="mt-1 font-extrabold">
-              Your e1RM and loads for every %
-            </p>
-          </div>
-          <span className="text-xl text-muted" aria-hidden>
-            →
-          </span>
-        </Card>
-      </Link>
+      {on.rm && (
+        <Link href="/calculator" className="mb-4 block">
+          <Card className="flex items-center justify-between hover:border-muted">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-widest text-muted">
+                1RM Calculator
+              </p>
+              <p className="mt-1 font-extrabold">
+                Your e1RM and loads for every %
+              </p>
+            </div>
+            <span className="text-xl text-muted" aria-hidden>
+              →
+            </span>
+          </Card>
+        </Link>
+      )}
 
-      <Link href="/mas" className="mb-4 block">
-        <Card className="flex items-center justify-between hover:border-muted">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-widest text-muted">
-              MAS Calculator
-            </p>
-            <p className="mt-1 font-extrabold">
-              Interval targets: run, bike, row, SkiErg
-            </p>
-          </div>
-          <span className="text-xl text-muted" aria-hidden>
-            →
-          </span>
+      {on.mas && (
+        <Link href="/mas" className="mb-4 block">
+          <Card className="flex items-center justify-between hover:border-muted">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-widest text-muted">
+                MAS Calculator
+              </p>
+              <p className="mt-1 font-extrabold">
+                Interval targets: run, bike, row, SkiErg
+              </p>
+            </div>
+            <span className="text-xl text-muted" aria-hidden>
+              →
+            </span>
+          </Card>
+        </Link>
+      )}
+
+      {!on.checkin && !on.testing && !on.rm && !on.mas && (
+        <Card className="mb-4">
+          <p className="text-muted">
+            Your coach hasn&apos;t switched on any features for you yet.
+          </p>
         </Card>
-      </Link>
+      )}
 
       <Link
         href="/profile"
