@@ -37,11 +37,19 @@ describe("feature switches", () => {
   it("everyone starts with every feature on", async () => {
     const r = await q(`select feat_checkin, feat_testing, feat_1rm, feat_mas from profiles where id = $1`, [alice]);
     expect(r.rows[0]).toEqual({ feat_checkin: true, feat_testing: true, feat_1rm: true, feat_mas: true });
+    const r2 = await q(`select feat_rpe, feat_hr from profiles where id = $1`, [alice]);
+    expect(r2.rows[0]).toEqual({ feat_rpe: true, feat_hr: true });
   });
 
   it("only the coach can change them", async () => {
     await expect(
       asUser(db, alice, () => q(`update profiles set feat_testing = false where id = $1`, [alice])),
+    ).rejects.toThrow(/Only the coach/);
+    await expect(
+      asUser(db, alice, () => q(`update profiles set feat_hr = false where id = $1`, [alice])),
+    ).rejects.toThrow(/Only the coach/);
+    await expect(
+      asUser(db, alice, () => q(`update profiles set feat_rpe = false where id = $1`, [alice])),
     ).rejects.toThrow(/Only the coach/);
     await asUser(db, coach, () => q(`update profiles set feat_testing = false where id = $1`, [alice]));
     const r = await q(`select feat_testing from profiles where id = $1`, [alice]);

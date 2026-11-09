@@ -19,6 +19,8 @@ export interface Profile {
   feat_testing: boolean;
   feat_1rm: boolean;
   feat_mas: boolean;
+  feat_rpe: boolean;
+  feat_hr: boolean;
   created_at: string;
   updated_at: string;
 }

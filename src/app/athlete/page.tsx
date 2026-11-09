@@ -50,6 +50,8 @@ export default async function AthleteHome() {
     testing: hasFeature(profile, "testing"),
     rm: hasFeature(profile, "1rm"),
     mas: hasFeature(profile, "mas"),
+    rpe: hasFeature(profile, "rpe"),
+    hr: hasFeature(profile, "hr"),
   };
 
   return (
@@ -178,7 +180,43 @@ export default async function AthleteHome() {
         </Link>
       )}
 
-      {!on.checkin && !on.testing && !on.rm && !on.mas && (
+      {on.rpe && (
+        <Link href="/rpe" className="mb-4 block">
+          <Card className="flex items-center justify-between hover:border-muted">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-widest text-muted">
+                RPE &amp; RIR Chart
+              </p>
+              <p className="mt-1 font-extrabold">
+                Reps in reserve and %1RM by RPE
+              </p>
+            </div>
+            <span className="text-xl text-muted" aria-hidden>
+              →
+            </span>
+          </Card>
+        </Link>
+      )}
+
+      {on.hr && (
+        <Link href="/hr" className="mb-4 block">
+          <Card className="flex items-center justify-between hover:border-muted">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-widest text-muted">
+                HR Zones
+              </p>
+              <p className="mt-1 font-extrabold">
+                Heart-rate zones with matching RPE
+              </p>
+            </div>
+            <span className="text-xl text-muted" aria-hidden>
+              →
+            </span>
+          </Card>
+        </Link>
+      )}
+
+      {!on.checkin && !on.testing && !on.rm && !on.mas && !on.rpe && !on.hr && (
         <Card className="mb-4">
           <p className="text-muted">
             Your coach hasn&apos;t switched on any features for you yet.

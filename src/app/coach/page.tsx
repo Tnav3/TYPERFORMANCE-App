@@ -63,6 +63,18 @@ export default async function CoachHome() {
         >
           MAS Calculator
         </Link>
+        <Link
+          href="/rpe"
+          className="flex min-h-12 items-center justify-center rounded-xl border border-line bg-surface-2 text-sm font-extrabold uppercase tracking-wide"
+        >
+          RPE &amp; RIR Chart
+        </Link>
+        <Link
+          href="/hr"
+          className="flex min-h-12 items-center justify-center rounded-xl border border-line bg-surface-2 text-sm font-extrabold uppercase tracking-wide"
+        >
+          HR Zones
+        </Link>
       </div>
 
       {pending.length > 0 && (
