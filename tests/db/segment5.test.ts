@@ -123,7 +123,7 @@ describe("bike MAS test definition (migration 009)", () => {
     const keys = r.rows.map((x) => x.key);
     expect(keys.indexOf("mas_bike_5min")).toBe(keys.indexOf("mas_5min") + 1);
     expect(new Set(r.rows.map((x) => x.sort_order)).size).toBe(r.rows.length);
-    expect(r.rows.find((x) => x.key === "mas_5min")!.name).toBe("5-minute MAS test (run)");
+    expect(r.rows.find((x) => x.key === "mas_5min")!.name).toBe("5-Minute MAS Test (Run)");
   });
 });
 
@@ -149,5 +149,17 @@ describe("test categories + Wingate (migration 011)", () => {
   });
   it("categories are limited to the three groups", async () => {
     await expect(q(`update test_definitions set category = 'speed' where key = 'chin_ups'`)).rejects.toThrow(/check/);
+  });
+});
+
+describe("test names (migration 012)", () => {
+  it("every word starts with a capital (short forms and units excepted)", async () => {
+    const r = await q(`select name from test_definitions`);
+    for (const { name } of r.rows as { name: string }[]) {
+      for (const word of name.replace(/[()\-,]/g, " ").split(/\s+/).filter(Boolean)) {
+        if (/^\d/.test(word) || word === "s") continue; // 3RM, 5, 30 s
+        expect(word[0], `${name}: "${word}"`).toBe(word[0].toUpperCase());
+      }
+    }
   });
 });
