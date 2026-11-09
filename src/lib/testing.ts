@@ -124,6 +124,35 @@ export const TEST_FIELDS: Record<string, FieldSpec[]> = {
       required: true,
     },
   ],
+  wingate_30s: [
+    {
+      key: "peak_w",
+      label: "Peak watts",
+      unit: "W",
+      min: 100,
+      max: 3500,
+      step: 1,
+      required: true,
+    },
+    {
+      key: "avg_w",
+      label: "Average watts",
+      unit: "W",
+      min: 50,
+      max: 2500,
+      step: 1,
+      required: true,
+    },
+    {
+      key: "distance_km",
+      label: "Distance",
+      unit: "km",
+      min: 0.05,
+      max: 1.5,
+      step: 0.01,
+      required: true,
+    },
+  ],
   broad_jump: [
     {
       key: "best_cm",
@@ -302,6 +331,7 @@ export const TEST_FIELDS: Record<string, FieldSpec[]> = {
 
 /** Tests where bodyweight on the day is used (relative strength / force). */
 export const USES_BODYWEIGHT = new Set([
+  "wingate_30s",
   "trap_bar_3rm",
   "box_squat_3rm",
   "bench_3rm",
@@ -500,6 +530,13 @@ export function derivedFor(
         value: a.weaker ? `${a.pct}% (${a.weaker} weaker)` : "0%",
       });
   }
+  if (testKey === "wingate_30s" && v.peak_w && v.avg_w) {
+    if (bodyweight) {
+      out.push({ label: "Peak", value: `${round(v.peak_w / bodyweight, 1)} W/kg` });
+      out.push({ label: "Average", value: `${round(v.avg_w / bodyweight, 1)} W/kg` });
+    }
+    out.push({ label: "Avg ÷ peak", value: `${Math.round((v.avg_w / v.peak_w) * 100)}%` });
+  }
   if (testKey === "imtp" && v.peak_force_n && bodyweight) {
     out.push({
       label: "Relative",
@@ -566,6 +603,8 @@ export function headlineValue(
         : v.height_cm != null
           ? { value: v.height_cm, unit: "cm" }
           : null;
+    case "wingate_30s":
+      return v.peak_w != null ? { value: v.peak_w, unit: "W peak" } : null;
     case "rj_10_5":
       return v.rsi != null ? { value: v.rsi, unit: "RSI" } : null;
   }
@@ -610,6 +649,8 @@ export function validateTestValues(
   }
   if (Object.keys(values).length === 0 && !Object.keys(errors).length)
     errors._ = "Enter at least one result";
+  if (testKey === "wingate_30s" && values.avg_w != null && values.peak_w != null && values.avg_w > values.peak_w)
+    errors.avg_w = "Average can't be higher than peak";
   return Object.keys(errors).length
     ? { ok: false, errors }
     : { ok: true, values };
@@ -635,4 +676,31 @@ export function youtubeId(url: string | null | undefined): string | null {
     }
   }
   return id && /^[A-Za-z0-9_-]{11}$/.test(id) ? id : null;
+}
+
+// ---------- Field-test categories ----------
+export type TestCategory = "power" | "strength" | "conditioning";
+export const TEST_CATEGORY_ORDER: TestCategory[] = ["power", "strength", "conditioning"];
+export const TEST_CATEGORY_LABEL: Record<TestCategory, string> = {
+  power: "Power",
+  strength: "Strength",
+  conditioning: "Conditioning",
+};
+
+/** Groups field tests by category in Power → Strength → Conditioning order; uncategorised go last. */
+export function groupByCategory<T extends { category?: string | null }>(
+  items: T[],
+): { category: TestCategory | null; label: string; items: T[] }[] {
+  const groups: { category: TestCategory | null; label: string; items: T[] }[] =
+    TEST_CATEGORY_ORDER.map((c) => ({
+      category: c,
+      label: TEST_CATEGORY_LABEL[c],
+      items: items.filter((i) => i.category === c),
+    }));
+  groups.push({
+    category: null,
+    label: "Other",
+    items: items.filter((i) => !TEST_CATEGORY_ORDER.includes(i.category as TestCategory)),
+  });
+  return groups.filter((g) => g.items.length > 0);
 }

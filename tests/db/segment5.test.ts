@@ -136,3 +136,18 @@ describe("rower + SkiErg MAS tests (migration 010)", () => {
     ]);
   });
 });
+
+describe("test categories + Wingate (migration 011)", () => {
+  it("every field test has a category; ForceDecks has none", async () => {
+    const r = await q(`select mode, category, count(*)::int as n from test_definitions group by 1, 2 order by 1, 2`);
+    expect(r.rows).toEqual([
+      { mode: "field", category: "conditioning", n: 5 },
+      { mode: "field", category: "power", n: 4 },
+      { mode: "field", category: "strength", n: 4 },
+      { mode: "forcedecks", category: null, n: 6 },
+    ]);
+  });
+  it("categories are limited to the three groups", async () => {
+    await expect(q(`update test_definitions set category = 'speed' where key = 'chin_ups'`)).rejects.toThrow(/check/);
+  });
+});

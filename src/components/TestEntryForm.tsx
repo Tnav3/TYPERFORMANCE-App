@@ -158,7 +158,7 @@ export function TestEntryForm({
           <span className="mb-1.5 block text-sm font-semibold">
             Bodyweight on the day{" "}
             <span className="font-normal text-muted">
-              (kg · for relative strength)
+              (kg · for relative scores)
             </span>
           </span>
           <input

@@ -9,6 +9,7 @@ export interface TestDef {
   instructions: string | null;
   sort_order: number;
   active: boolean;
+  category: "power" | "strength" | "conditioning" | null;
 }
 
 export interface TestEntry {

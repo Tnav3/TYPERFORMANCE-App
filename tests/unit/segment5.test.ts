@@ -232,3 +232,43 @@ describe("custom %MAS", () => {
     expect(parsePercent("")).toHaveProperty("error");
   });
 });
+
+import { groupByCategory } from "@/lib/testing";
+
+describe("adapted Wingate", () => {
+  const fd = (o: Record<string, string>) => ({ get: (k: string) => o[k] ?? null });
+  it("needs peak, average and distance; average can't beat peak", () => {
+    expect(validateTestValues("wingate_30s", fd({ peak_w: "1450", avg_w: "820", distance_km: "0.42" }))).toEqual({
+      ok: true, values: { peak_w: 1450, avg_w: 820, distance_km: 0.42 },
+    });
+    const bad = validateTestValues("wingate_30s", fd({ peak_w: "800", avg_w: "900", distance_km: "0.4" }));
+    expect(bad.ok).toBe(false);
+    expect(validateTestValues("wingate_30s", fd({ peak_w: "1450", avg_w: "820" })).ok).toBe(false);
+  });
+  it("derives W/kg and avg ÷ peak; headline is peak watts", () => {
+    expect(derivedFor("wingate_30s", { peak_w: 1450, avg_w: 820, distance_km: 0.42 }, 80)).toEqual([
+      { label: "Peak", value: "18.1 W/kg" },
+      { label: "Average", value: "10.3 W/kg" },
+      { label: "Avg ÷ peak", value: "57%" },
+    ]);
+    expect(derivedFor("wingate_30s", { peak_w: 1450, avg_w: 820, distance_km: 0.42 }, null)).toEqual([
+      { label: "Avg ÷ peak", value: "57%" },
+    ]);
+    expect(headlineValue("wingate_30s", { peak_w: 1450, avg_w: 820 })).toEqual({ value: 1450, unit: "W peak" });
+  });
+});
+
+describe("test grouping", () => {
+  it("orders Power → Strength → Conditioning and keeps uncategorised last", () => {
+    const g = groupByCategory([
+      { k: "mas", category: "conditioning" }, { k: "fd", category: null },
+      { k: "bench", category: "strength" }, { k: "mb", category: "power" },
+    ]);
+    expect(g.map((x) => x.label)).toEqual(["Power", "Strength", "Conditioning", "Other"]);
+  });
+});
+
+import { USES_BODYWEIGHT } from "@/lib/testing";
+describe("Wingate asks for bodyweight", () => {
+  it("so W/kg can be shown", () => expect(USES_BODYWEIGHT.has("wingate_30s")).toBe(true));
+});

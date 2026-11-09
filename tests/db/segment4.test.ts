@@ -35,12 +35,15 @@ const entry = (
   );
 
 describe("test definitions", () => {
-  it("has 12 field tests (incl. bike, row, ski MAS) and the 6 ForceDecks tests in your battery order", async () => {
+  it("has 13 field tests grouped Power → Strength → Conditioning, and the 6 ForceDecks tests in your battery order", async () => {
     const f = await q(
       `select key from test_definitions where mode = 'field' order by sort_order`,
     );
     expect(f.rows.map((r) => r.key)).toEqual([
       "med_ball_throw",
+      "broad_jump",
+      "triple_hop",
+      "lateral_bound",
       "trap_bar_3rm",
       "box_squat_3rm",
       "bench_3rm",
@@ -49,9 +52,7 @@ describe("test definitions", () => {
       "mas_bike_5min",
       "mas_row_5min",
       "mas_ski_5min",
-      "broad_jump",
-      "triple_hop",
-      "lateral_bound",
+      "wingate_30s",
     ]);
     const fd = await q(
       `select key from test_definitions where mode = 'forcedecks' order by sort_order`,
