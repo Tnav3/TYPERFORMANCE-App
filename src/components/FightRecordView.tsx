@@ -44,7 +44,6 @@ export function FightRecordView({
           <p className="text-3xl font-black">{recordString(all)}</p>
           <p className="text-xs text-muted">
             W-L-D · {all.rounds} round{all.rounds === 1 ? "" : "s"}
-            {all.winPct != null ? ` · ${all.winPct}% wins` : ""}
           </p>
         </Card>
         <Card className="!p-4">
@@ -72,7 +71,6 @@ export function FightRecordView({
                 <th className="py-1">W-L-D</th>
                 <th className="py-1">Fights</th>
                 <th className="py-1">Rounds</th>
-                <th className="py-1">Win %</th>
               </tr>
             </thead>
             <tbody>
@@ -82,7 +80,6 @@ export function FightRecordView({
                   <td className="py-1.5 font-black">{recordString(y)}</td>
                   <td className="py-1.5">{y.fights}</td>
                   <td className="py-1.5">{y.rounds}</td>
-                  <td className="py-1.5">{y.winPct}%</td>
                 </tr>
               ))}
             </tbody>

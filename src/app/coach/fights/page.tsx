@@ -80,10 +80,10 @@ export default async function CoachFights({
             </Card>
             <Card className="!p-4">
               <p className="text-xs font-semibold uppercase tracking-widest text-muted">
-                Win rate
+                Fights
               </p>
-              <p className="text-3xl font-black">{yearRecord.winPct ?? 0}%</p>
-              <p className="text-xs text-muted">{yearRecord.fights} fights</p>
+              <p className="text-3xl font-black">{yearRecord.fights}</p>
+              <p className="text-xs text-muted">in {year}</p>
             </Card>
             <Card className="!p-4">
               <p className="text-xs font-semibold uppercase tracking-widest text-muted">
@@ -122,7 +122,7 @@ export default async function CoachFights({
                         {recordString(a)}
                       </span>
                       <span className="ml-2 text-xs text-muted">
-                        {a.rounds} rd{a.rounds === 1 ? "" : "s"} · {a.winPct}%
+                        {a.rounds} rd{a.rounds === 1 ? "" : "s"}
                       </span>
                     </span>
                   </Link>
@@ -143,7 +143,6 @@ export default async function CoachFights({
                     <th className="py-1">W-L-D</th>
                     <th className="py-1">Fights</th>
                     <th className="py-1">Rounds</th>
-                    <th className="py-1">Win %</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -153,7 +152,6 @@ export default async function CoachFights({
                       <td className="py-1.5 font-black">{recordString(r)}</td>
                       <td className="py-1.5">{r.fights}</td>
                       <td className="py-1.5">{r.rounds}</td>
-                      <td className="py-1.5">{r.winPct}%</td>
                     </tr>
                   ))}
                 </tbody>
