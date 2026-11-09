@@ -38,11 +38,14 @@ interface SessionRow extends SessionLite {
 
 export default async function AthleteDetail({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ error?: string }>;
 }) {
   const { supabase } = await requireState(["coach"]);
   const { id } = await params;
+  const { error: pageError } = await searchParams;
   if (!UUID.test(id)) notFound();
   const today = todayISO();
   const thisWeek = mondayOf(today);
@@ -182,9 +185,16 @@ export default async function AthleteDetail({
         Fight record <span aria-hidden>→</span>
       </Link>
 
+      {pageError === "feature" && (
+        <p className="mb-3 rounded-xl border border-brand/60 bg-brand/10 px-4 py-3 text-sm font-bold text-brand">
+          That switch didn&apos;t save. Please try again.
+        </p>
+      )}
       <details
         className="mb-6 rounded-xl border border-line bg-surface"
-        open={FEATURES.some((f) => p[f.column] === false)}
+        open={
+          pageError === "feature" || FEATURES.some((f) => p[f.column] === false)
+        }
       >
         <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between px-4 font-extrabold">
           <span>

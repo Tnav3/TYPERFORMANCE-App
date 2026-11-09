@@ -23,3 +23,6 @@ export function hasFeature(
   const col = FEATURES.find((x) => x.key === f)!.column as "feat_checkin";
   return p[col] !== false;
 }
+
+/** Every switchable column. The coach action accepts exactly these, so a new feature can't be missed. */
+export const FEATURE_COLUMNS = FEATURES.map((f) => f.column as string);

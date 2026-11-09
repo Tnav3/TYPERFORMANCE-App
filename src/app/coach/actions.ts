@@ -1,10 +1,12 @@
 "use server";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import type { AccountStatus } from "@/lib/types";
 import { isISODate } from "@/lib/dates";
 import { mondayOf } from "@/lib/week";
 import { sendGhlEvent } from "@/lib/ghl";
+import { FEATURE_COLUMNS } from "@/lib/features";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const ALLOWED: AccountStatus[] = ["active", "inactive"];
@@ -86,28 +88,22 @@ export async function saveCoachNote(
   return { saved: true };
 }
 
-const FEATURE_COLUMNS = [
-  "feat_checkin",
-  "feat_testing",
-  "feat_1rm",
-  "feat_mas",
-] as const;
-
 /** Switch one feature on/off for one athlete. The database only lets the coach do this. */
 export async function setAthleteFeature(formData: FormData) {
   const id = String(formData.get("id") ?? "");
-  const column = String(
-    formData.get("column") ?? "",
-  ) as (typeof FEATURE_COLUMNS)[number];
+  const column = String(formData.get("column") ?? "");
   const on = formData.get("on") === "true";
   if (!UUID.test(id) || !FEATURE_COLUMNS.includes(column)) return;
 
   const supabase = await createClient();
-  await supabase
+  const { data, error } = await supabase
     .from("profiles")
     .update({ [column]: on })
     .eq("id", id)
-    .eq("role", "athlete");
+    .eq("role", "athlete")
+    .select("id");
   revalidatePath("/coach");
   revalidatePath(`/coach/athlete/${id}`);
+  // Never fail silently: tell the coach the switch didn't save
+  if (error || !data?.length) redirect(`/coach/athlete/${id}?error=feature`);
 }
