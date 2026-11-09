@@ -114,7 +114,7 @@ export function HrZones() {
                   {method === "hrr" ? "%HRR" : "%HRmax"}
                 </th>
                 <th className="py-2 font-semibold">
-                  RPE <span className="normal-case">(6–20)</span>
+                  RPE <span className="normal-case">(0–10)</span>
                 </th>
               </tr>
             </thead>
@@ -122,8 +122,8 @@ export function HrZones() {
               {zones.map((z) => (
                 <tr key={z.zone} className="border-b border-line/60">
                   <td className="py-2.5 pr-2">
-                    <span className="font-black">{z.zone}</span>{" "}
-                    <span className="text-sm text-muted">{z.name}</span>
+                    <span className="block text-lg font-black leading-tight">{z.zone}</span>
+                    <span className="block text-xs text-muted">{z.name}</span>
                   </td>
                   <td className="whitespace-nowrap py-2.5 pr-2 text-lg font-black">
                     {z.bpm[0] == null
@@ -135,14 +135,19 @@ export function HrZones() {
                       ? `< ${z.pct[1] + 1}%`
                       : `${z.pct[0]}–${z.pct[1]}%`}
                   </td>
-                  <td className="py-2.5 text-sm font-bold">{z.borg}</td>
+                  <td className="py-2.5">
+                    <span className="text-lg font-black">{z.rpe}</span>
+                    <span className="block text-xs text-muted">{z.feel}</span>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
           <p className="mt-3 text-xs text-muted">
-            Intensity bands and RPE from the American College of Sports Medicine
-            (Garber et al. 2011). RPE here is Borg&apos;s 6–20 scale.{" "}
+            Heart-rate bands: American College of Sports Medicine (Garber et al.
+            2011). RPE is the modified Borg 0–10 scale, the same one you use to
+            log sessions. Zones 3–4 use ACSM&apos;s published RPE ranges; zones
+            1, 2 and 5 follow the scale&apos;s word labels.{" "}
             {method === "hrmax" &&
               "Add your resting HR for zones based on heart-rate reserve, which ACSM prefers."}
           </p>

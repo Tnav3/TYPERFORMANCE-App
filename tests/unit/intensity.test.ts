@@ -61,3 +61,10 @@ describe("heart-rate zones", () => {
     expect(validateHr({ age: 30, rest: 20 })).toHaveProperty("rest");
   });
 });
+
+import { HR_BANDS } from "@/lib/intensity";
+describe("HR zones use the modified Borg 0–10 scale", () => {
+  it("matches ACSM for moderate (3–4) and vigorous (5–7), rising through the zones", () => {
+    expect(HR_BANDS.map((b) => b.rpe)).toEqual(["1", "2", "3–4", "5–7", "8–10"]);
+  });
+});
