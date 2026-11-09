@@ -22,9 +22,16 @@ export default function ForgotPasswordPage() {
       redirectTo: `${window.location.origin}/auth/callback?next=/reset-password`,
     });
     setBusy(false);
-    // Don't reveal whether an account exists — only surface rate limits / network issues
-    if (error && /rate|too many|fetch|network/i.test(error.message))
+    // Supabase returns success for unknown emails (so this never reveals who has
+    // an account). Any error here is real: rate limits, network, or the email
+    // service failing to send. Show it instead of pretending the link is on its way.
+    if (error) {
+      if (/sending|smtp|mail/i.test(error.message))
+        return setError(
+          "We couldn't send the reset email right now. Please try again shortly, or contact your coach.",
+        );
       return setError(friendlyAuthError(error.message));
+    }
     setSent(true);
   }
 
