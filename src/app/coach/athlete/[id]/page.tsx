@@ -260,7 +260,11 @@ export default async function AthleteDetail({
                 : fight.label.replace(" out", "")
               : "–"
           }
-          sub={p.next_fight_date ? formatDate(p.next_fight_date) : "not booked"}
+          sub={
+            p.next_fight_date
+              ? `${formatDate(p.next_fight_date)}${p.second_fight_date ? ` · then ${formatDate(p.second_fight_date)}` : ""}`
+              : "not booked"
+          }
         />
       </div>
 

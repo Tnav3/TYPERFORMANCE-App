@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { todayISO } from "@/lib/dates";
 import { validateFight } from "@/lib/fights";
+import { afterLogged } from "@/lib/planned-fights";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -43,12 +44,20 @@ export async function saveFight(
           : "Couldn't save. Please try again.",
     };
 
-  // The fight they'd planned has happened: clear it so they can enter the next one
-  await supabase
+  // The fight they'd planned has happened: clear it and move the next one up
+  const { data: plan } = await supabase
     .from("profiles")
-    .update({ next_fight_date: null })
+    .select("next_fight_date, second_fight_date")
     .eq("id", athleteId)
-    .lte("next_fight_date", date);
+    .maybeSingle();
+  if (plan) {
+    const next = afterLogged(plan, date);
+    if (
+      next.next_fight_date !== plan.next_fight_date ||
+      next.second_fight_date !== plan.second_fight_date
+    )
+      await supabase.from("profiles").update(next).eq("id", athleteId);
+  }
 
   revalidatePath("/fights");
   revalidatePath("/athlete");

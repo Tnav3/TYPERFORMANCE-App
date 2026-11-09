@@ -1,4 +1,5 @@
 "use server";
+import { toColumns } from "@/lib/planned-fights";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
@@ -48,7 +49,7 @@ export async function saveProfile(
   const d = result.data;
   const { data: before } = await supabase
     .from("profiles")
-    .select("profile_completed_at, main_discipline_id")
+    .select("profile_completed_at, main_discipline_id, second_fight_date")
     .eq("id", user.id)
     .single();
 
@@ -70,7 +71,8 @@ export async function saveProfile(
       main_discipline_id: d.main_discipline_id,
       weight_class: d.weight_class,
       weight_class_limit_kg: d.weight_class_limit_kg,
-      next_fight_date: d.next_fight_date,
+      // Editing "next fight" here replaces the first planned fight; keep the second in order
+      ...toColumns([d.next_fight_date, before?.second_fight_date]),
       training_age_years: d.training_age_years,
       profile_completed_at:
         before?.profile_completed_at ?? new Date().toISOString(),

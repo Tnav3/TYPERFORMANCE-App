@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { requireState } from "@/lib/session";
 import { hasFeature } from "@/lib/features";
+import { planned } from "@/lib/planned-fights";
+import { NextFightCard } from "@/components/NextFightCard";
 import {
   Activity,
   ClipboardList,
@@ -57,7 +59,15 @@ export default async function AthleteHome() {
   };
   const cur = stats(thisWeek);
   const prev = stats(lastWeek);
-  const fight = fightCountdown(profile.next_fight_date, today);
+  const plannedFights = planned(profile).map((date) => {
+    const c = fightCountdown(date, today)!;
+    return {
+      date,
+      label: c.past ? "Fight done: log the result" : c.label,
+      dateLabel: formatDate(date),
+      past: c.past,
+    };
+  });
   const first = profile.full_name?.split(" ")[0] ?? "there";
   const on = {
     checkin: hasFeature(profile, "checkin"),
@@ -143,18 +153,8 @@ export default async function AthleteHome() {
         </Link>
       )}
 
-      {fight && profile.next_fight_date && (
-        <Card
-          className={`mb-4 ${fight.past ? "border-warn/60" : "border-brand/60"}`}
-        >
-          <p className="text-lg font-black uppercase leading-tight tracking-tight">
-            Next fight
-          </p>
-          <p className="mt-1 text-3xl font-black">{fight.label}</p>
-          <p className="text-sm text-muted">
-            {formatDate(profile.next_fight_date)}
-          </p>
-        </Card>
+      {(on.fights || plannedFights.length > 0) && (
+        <NextFightCard fights={plannedFights} today={today} />
       )}
 
       {on.testing && (

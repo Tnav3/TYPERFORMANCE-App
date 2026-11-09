@@ -69,3 +69,16 @@ describe("fights", () => {
     expect(d.rows).toHaveLength(0);
   });
 });
+
+describe("two planned fights (migration 017)", () => {
+  it("second fight must come after the next fight", async () => {
+    await asUser(db, alice, () =>
+      q(`update profiles set next_fight_date = sydney_today() + 30, second_fight_date = sydney_today() + 60 where id = $1`, [alice]));
+    await expect(
+      asUser(db, alice, () => q(`update profiles set second_fight_date = sydney_today() + 10 where id = $1`, [alice])),
+    ).rejects.toThrow(/second_fight_after_next/);
+    await expect(
+      asUser(db, alice, () => q(`update profiles set next_fight_date = null where id = $1`, [alice])),
+    ).rejects.toThrow(/second_fight_after_next/);
+  });
+});
