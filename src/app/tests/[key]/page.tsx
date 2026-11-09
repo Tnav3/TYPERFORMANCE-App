@@ -142,7 +142,7 @@ function MasTargets({
         </tbody>
       </table>
       <a href={`/mas?test=${mode}`} className="mt-3 inline-block text-sm font-bold underline underline-offset-4">
-        Rep lengths up to 4 min in the MAS Calculator →
+        Any rep length in the MAS Calculator →
       </a>
     </Card>
   );

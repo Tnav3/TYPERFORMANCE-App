@@ -40,7 +40,7 @@ export default async function MasPage({
   return (
     <Screen>
       <BackLink href="/" label="Home" />
-      <Heading sub="Enter your 5-minute test distance to get your MAS and the distance for every rep, up to 4 minutes.">
+      <Heading sub="Enter your 5-minute test distance to get your MAS and the distance for any rep up to 5 minutes.">
         MAS Calculator
       </Heading>
       <MasCalculator initialMode={mode} saved={saved} canSave={isAthlete} />

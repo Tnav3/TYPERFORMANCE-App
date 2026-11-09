@@ -6,6 +6,7 @@ import {
   MAS_MODES,
   MAS_MODE_ORDER,
   durationLabel,
+  parseDuration,
   masForMode,
   pace500,
   repMetres,
@@ -41,6 +42,10 @@ export function MasCalculator({
     Object.fromEntries(MAS_MODE_ORDER.map((m) => [m, saved[m] != null ? String(saved[m]) : ""])) as Record<MasMode, string>,
   );
   const [durations, setDurations] = useState<number[]>(DEFAULT_DURATIONS);
+  const [custom, setCustom] = useState<number[]>([]);
+  const [customText, setCustomText] = useState("");
+  const [customErr, setCustomErr] = useState<string | null>(null);
+  const chips = [...new Set([...MAS_DURATIONS, ...custom])].sort((a, b) => a - b);
 
   const spec = MAS_MODES[mode];
   const raw = input[mode].trim().replace(",", ".");
@@ -50,12 +55,27 @@ export function MasCalculator({
   const fromSaved = saved[mode] != null && Number(raw) === saved[mode];
   const cols = [...durations].sort((a, b) => a - b);
 
-  function toggle(d: number) {
+  function select(d: number) {
     setDurations((cur) => {
-      if (cur.includes(d)) return cur.length > 1 ? cur.filter((x) => x !== d) : cur;
+      if (cur.includes(d)) return cur;
       const next = [...cur, d];
       return next.length > MAX_COLS ? next.slice(next.length - MAX_COLS) : next;
     });
+  }
+
+  function toggle(d: number) {
+    if (durations.includes(d)) {
+      if (durations.length > 1) setDurations(durations.filter((x) => x !== d));
+    } else select(d);
+  }
+
+  function addCustom() {
+    const r = parseDuration(customText);
+    if ("error" in r) return setCustomErr(r.error);
+    setCustomErr(null);
+    setCustomText("");
+    if (!MAS_DURATIONS.includes(r.seconds)) setCustom((c) => (c.includes(r.seconds) ? c : [...c, r.seconds]));
+    select(r.seconds);
   }
 
   return (
@@ -119,7 +139,7 @@ export function MasCalculator({
             Rep length <span className="normal-case tracking-normal">(pick up to {MAX_COLS})</span>
           </h2>
           <div className="mb-4 flex flex-wrap gap-2">
-            {MAS_DURATIONS.map((d) => {
+            {chips.map((d) => {
               const on = durations.includes(d);
               return (
                 <button
@@ -135,6 +155,36 @@ export function MasCalculator({
                 </button>
               );
             })}
+          </div>
+
+          <div className="mb-4">
+            <div className="flex gap-2">
+              <input
+                value={customText}
+                onChange={(e) => {
+                  setCustomText(e.target.value);
+                  setCustomErr(null);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    addCustom();
+                  }
+                }}
+                inputMode="text"
+                placeholder="Other: 2:30 or 150"
+                aria-label="Other rep length, in seconds or minutes:seconds"
+                className={`${inputCls} min-h-11`}
+              />
+              <button
+                type="button"
+                onClick={addCustom}
+                className="min-h-11 shrink-0 rounded-xl border border-line bg-surface-2 px-4 text-sm font-extrabold uppercase"
+              >
+                Add
+              </button>
+            </div>
+            {customErr && <p className="mt-1 text-sm text-brand">{customErr}</p>}
           </div>
 
           <table className="w-full text-left">

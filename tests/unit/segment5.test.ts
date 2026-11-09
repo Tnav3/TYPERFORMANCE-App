@@ -192,3 +192,25 @@ describe("rep lengths up to 4 minutes", () => {
     expect(durationLabel(45)).toBe("45 s");
   });
 });
+
+import { parseDuration } from "@/lib/testing";
+
+describe("custom rep length", () => {
+  it("reads seconds or m:ss", () => {
+    expect(parseDuration("2:30")).toEqual({ seconds: 150 });
+    expect(parseDuration("150")).toEqual({ seconds: 150 });
+    expect(parseDuration(" 40s ")).toEqual({ seconds: 40 });
+    expect(parseDuration("0:45")).toEqual({ seconds: 45 });
+    expect(parseDuration("5:00")).toEqual({ seconds: 300 });
+  });
+  it("rejects ambiguous or out-of-range values", () => {
+    expect(parseDuration("2.5")).toHaveProperty("error");
+    expect(parseDuration("2:75")).toHaveProperty("error");
+    expect(parseDuration("4")).toHaveProperty("error");
+    expect(parseDuration("5:01")).toHaveProperty("error");
+    expect(parseDuration("")).toHaveProperty("error");
+  });
+  it("labels 2:30 nicely", () => {
+    expect(durationLabel(150)).toBe("2:30 min");
+  });
+});

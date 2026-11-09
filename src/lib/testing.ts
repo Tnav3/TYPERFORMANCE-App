@@ -397,7 +397,22 @@ export function pace500(ms: number): string {
 }
 
 /** Rep lengths the calculator offers (seconds), up to 4 minutes. */
-export const MAS_DURATIONS = [15, 20, 30, 45, 60, 90, 120, 180, 240];
+export const MAS_DURATIONS = [15, 20, 30, 45, 60, 90, 120, 150, 180, 240];
+export const MIN_REP_S = 5;
+export const MAX_REP_S = 300;
+
+/** "150", "150s", "2:30" → seconds. Returns an error message for anything else. */
+export function parseDuration(input: string): { seconds: number } | { error: string } {
+  const t = input.trim().toLowerCase().replace(/\s+/g, "");
+  if (!t) return { error: "Enter a rep length" };
+  let sec: number;
+  const mmss = t.match(/^(\d{1,2}):([0-5]\d)$/);
+  if (mmss) sec = Number(mmss[1]) * 60 + Number(mmss[2]);
+  else if (/^\d{1,3}s?$/.test(t)) sec = Number(t.replace("s", ""));
+  else return { error: "Use seconds (150) or m:ss (2:30)" };
+  if (sec < MIN_REP_S || sec > MAX_REP_S) return { error: "Between 0:05 and 5:00" };
+  return { seconds: sec };
+}
 export const durationLabel = (s: number) =>
   s < 60 ? `${s} s` : s % 60 === 0 ? `${s / 60} min` : `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")} min`;
 
