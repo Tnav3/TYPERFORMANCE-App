@@ -151,7 +151,7 @@ export function RpeChart() {
                     <td className="py-2.5 pr-2 text-muted">{RIR_OF[rpe]}</td>
                     <td className="py-2.5 pr-2 text-lg font-black">
                       {p != null ? (
-                        `${p}%`
+                        `${p.toFixed(1)}%`
                       ) : (
                         <span className="text-base font-normal text-muted">
                           —
