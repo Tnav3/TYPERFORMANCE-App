@@ -197,3 +197,34 @@ export function BackLink({
     </Link>
   );
 }
+
+/** Home-screen tile for one app function: big white title, accent bar, grey description. */
+export function FeatureLink({
+  href,
+  title,
+  description,
+}: {
+  href: string;
+  title: string;
+  description: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className="group mb-3 flex items-center gap-4 rounded-2xl border border-line border-l-4 border-l-brand bg-surface-2 px-5 py-4 transition-colors hover:border-muted hover:border-l-brand"
+    >
+      <div className="min-w-0 flex-1">
+        <p className="text-lg font-black uppercase leading-tight tracking-tight text-text">
+          {title}
+        </p>
+        <p className="mt-0.5 text-sm text-muted">{description}</p>
+      </div>
+      <span
+        className="text-2xl font-black text-brand transition-transform group-hover:translate-x-0.5"
+        aria-hidden
+      >
+        →
+      </span>
+    </Link>
+  );
+}

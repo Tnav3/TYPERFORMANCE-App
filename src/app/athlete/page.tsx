@@ -4,7 +4,13 @@ import { hasFeature } from "@/lib/features";
 import { formatDate, todayISO } from "@/lib/dates";
 import { fightCountdown } from "@/lib/fight";
 import { addDays, mondayOf } from "@/lib/week";
-import { Card, Logo, Screen, SignOutButton } from "@/components/ui";
+import {
+  Card,
+  FeatureLink,
+  Logo,
+  Screen,
+  SignOutButton,
+} from "@/components/ui";
 
 export default async function AthleteHome() {
   const { supabase, user, profile } = await requireState(["athlete"]);
@@ -93,7 +99,7 @@ export default async function AthleteHome() {
           <Card className="hover:border-muted">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-widest text-muted">
+                <p className="text-lg font-black uppercase leading-tight tracking-tight">
                   This week
                 </p>
                 <p className="mt-1 text-3xl font-black">{cur.load}</p>
@@ -116,7 +122,7 @@ export default async function AthleteHome() {
         <Card
           className={`mb-4 ${fight.past ? "border-warn/60" : "border-brand/60"}`}
         >
-          <p className="text-xs font-semibold uppercase tracking-widest text-muted">
+          <p className="text-lg font-black uppercase leading-tight tracking-tight">
             Next fight
           </p>
           <p className="mt-1 text-3xl font-black">{fight.label}</p>
@@ -127,93 +133,43 @@ export default async function AthleteHome() {
       )}
 
       {on.testing && (
-        <Link href="/tests" className="mb-4 block">
-          <Card className="flex items-center justify-between hover:border-muted">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-widest text-muted">
-                Testing
-              </p>
-              <p className="mt-1 font-extrabold">
-                Videos, instructions & your results
-              </p>
-            </div>
-            <span className="text-xl text-muted" aria-hidden>
-              →
-            </span>
-          </Card>
-        </Link>
+        <FeatureLink
+          href="/tests"
+          title="Testing"
+          description="Videos, instructions & your results"
+        />
       )}
 
       {on.rm && (
-        <Link href="/calculator" className="mb-4 block">
-          <Card className="flex items-center justify-between hover:border-muted">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-widest text-muted">
-                1RM Calculator
-              </p>
-              <p className="mt-1 font-extrabold">
-                Your e1RM and loads for every %
-              </p>
-            </div>
-            <span className="text-xl text-muted" aria-hidden>
-              →
-            </span>
-          </Card>
-        </Link>
+        <FeatureLink
+          href="/calculator"
+          title="1RM Calculator"
+          description="Your e1RM and loads for every %"
+        />
       )}
 
       {on.mas && (
-        <Link href="/mas" className="mb-4 block">
-          <Card className="flex items-center justify-between hover:border-muted">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-widest text-muted">
-                MAS Calculator
-              </p>
-              <p className="mt-1 font-extrabold">
-                Interval targets: run, bike, row, SkiErg
-              </p>
-            </div>
-            <span className="text-xl text-muted" aria-hidden>
-              →
-            </span>
-          </Card>
-        </Link>
+        <FeatureLink
+          href="/mas"
+          title="MAS Calculator"
+          description="Interval targets: run, bike, row, SkiErg"
+        />
       )}
 
       {on.rpe && (
-        <Link href="/rpe" className="mb-4 block">
-          <Card className="flex items-center justify-between hover:border-muted">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-widest text-muted">
-                RPE &amp; RIR Chart
-              </p>
-              <p className="mt-1 font-extrabold">
-                Reps in reserve and %1RM by RPE
-              </p>
-            </div>
-            <span className="text-xl text-muted" aria-hidden>
-              →
-            </span>
-          </Card>
-        </Link>
+        <FeatureLink
+          href="/rpe"
+          title="RPE & RIR Chart"
+          description="Reps in reserve and %1RM by RPE"
+        />
       )}
 
       {on.hr && (
-        <Link href="/hr" className="mb-4 block">
-          <Card className="flex items-center justify-between hover:border-muted">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-widest text-muted">
-                HR Zones
-              </p>
-              <p className="mt-1 font-extrabold">
-                Heart-rate zones with matching RPE
-              </p>
-            </div>
-            <span className="text-xl text-muted" aria-hidden>
-              →
-            </span>
-          </Card>
-        </Link>
+        <FeatureLink
+          href="/hr"
+          title="HR Zones"
+          description="Heart-rate zones with matching RPE"
+        />
       )}
 
       {!on.checkin && !on.testing && !on.rm && !on.mas && !on.rpe && !on.hr && (
