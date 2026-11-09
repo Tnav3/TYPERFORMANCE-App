@@ -24,7 +24,7 @@ export default async function TestsHome() {
   return (
     <Screen>
       <BackLink href="/" label="Home" />
-      <Heading sub="Watch the video, follow the steps, then enter your best result. Retest every 12 weeks.">
+      <Heading sub="Watch the video, follow the steps, then enter your best result.">
         Testing
       </Heading>
 
