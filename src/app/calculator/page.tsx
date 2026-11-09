@@ -31,7 +31,7 @@ export default async function CalculatorPage({
     <Screen>
       <BackLink href="/" label="Home" />
       <Heading sub="Enter a set you did, get your estimated 1RM and the load for each %.">
-        1RM calculator
+        1RM Calculator
       </Heading>
 
       <Calculator

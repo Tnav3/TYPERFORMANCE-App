@@ -133,7 +133,7 @@ export default async function AthleteHome() {
         <Card className="flex items-center justify-between hover:border-muted">
           <div>
             <p className="text-xs font-semibold uppercase tracking-widest text-muted">
-              1RM calculator
+              1RM Calculator
             </p>
             <p className="mt-1 font-extrabold">
               Your e1RM and loads for every %
@@ -149,10 +149,10 @@ export default async function AthleteHome() {
         <Card className="flex items-center justify-between hover:border-muted">
           <div>
             <p className="text-xs font-semibold uppercase tracking-widest text-muted">
-              MAS calculator
+              MAS Calculator
             </p>
             <p className="mt-1 font-extrabold">
-              Run and Assault Bike interval targets
+              Interval targets: run, bike, row, SkiErg
             </p>
           </div>
           <span className="text-xl text-muted" aria-hidden>

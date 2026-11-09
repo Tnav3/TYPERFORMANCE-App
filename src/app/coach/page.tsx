@@ -55,13 +55,13 @@ export default async function CoachHome() {
           href="/calculator"
           className="flex min-h-12 items-center justify-center rounded-xl border border-line bg-surface-2 text-sm font-extrabold uppercase tracking-wide"
         >
-          1RM calculator
+          1RM Calculator
         </Link>
         <Link
           href="/mas"
           className="flex min-h-12 items-center justify-center rounded-xl border border-line bg-surface-2 text-sm font-extrabold uppercase tracking-wide"
         >
-          MAS calculator
+          MAS Calculator
         </Link>
       </div>
 

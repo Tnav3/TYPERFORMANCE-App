@@ -14,7 +14,9 @@ import {
   dsiFrom,
   headlineValue,
   masFrom,
-  bikeMasFrom,
+  masOf,
+  pace500,
+  MAS_MODES,
 } from "@/lib/testing";
 import { BackLink, Card, Screen } from "@/components/ui";
 import { ForceDecksDayForm } from "@/components/ForceDecksDayForm";
@@ -86,7 +88,9 @@ export default async function CoachAthleteTests({
   const dsiHistory = latestDsi(entries);
   const dsiNow = dsiHistory.at(-1);
   const mas = summaries.find((s) => s.def.key === "mas_5min")?.latest;
-  const bikeMas = summaries.find((s) => s.def.key === "mas_bike_5min")?.latest;
+  const machineMas = (["bike", "row", "ski"] as const)
+    .map((m) => ({ m, e: summaries.find((s) => s.def.key === MAS_MODES[m].testKey)?.latest }))
+    .filter((x) => x.e);
 
   // Signed links (1 hour) so the coach can watch private clips
   const paths = entries
@@ -156,15 +160,19 @@ export default async function CoachAthleteTests({
           ) : (
             <p className="mt-1 text-sm text-muted">No 5-minute run test yet.</p>
           )}
-          {bikeMas && (
-            <p className="mt-3 border-t border-line pt-2 text-sm">
-              <span className="font-bold">Assault Bike: </span>
-              {bikeMasFrom(bikeMas.values.distance_km).kmh} km/h
-              <span className="block text-xs text-muted">
-                {bikeMas.values.distance_km} km in 5 min · {formatDate(bikeMas.tested_on)}
-              </span>
-            </p>
-          )}
+          {machineMas.map(({ m, e }) => {
+            const spec = MAS_MODES[m];
+            const v = masOf(spec.testKey, e!.values)!;
+            return (
+              <p key={m} className="mt-3 border-t border-line pt-2 text-sm">
+                <span className="font-bold">{spec.label}: </span>
+                {spec.pace500 ? `${pace500(v.ms)} /500 m` : `${v.kmh} km/h`}
+                <span className="block text-xs text-muted">
+                  {e!.values[spec.field]} {spec.unit} in 5 min · {formatDate(e!.tested_on)}
+                </span>
+              </p>
+            );
+          })}
         </Card>
       </div>
 

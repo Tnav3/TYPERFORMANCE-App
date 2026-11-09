@@ -145,7 +145,7 @@ describe("Assault Bike MAS", () => {
   });
   it("headline and derived values are labelled as bike", () => {
     expect(headlineValue("mas_bike_5min", { distance_km: 2.4 })).toEqual({ value: 8, unit: "m/s (bike)" });
-    expect(derivedFor("mas_bike_5min", { distance_km: 2.4 }, null)[0].label).toBe("Bike MAS");
+    expect(derivedFor("mas_bike_5min", { distance_km: 2.4 }, null)[0].label).toBe("Assault Bike MAS");
   });
 });
 
@@ -159,5 +159,36 @@ describe("MAS calculator targets", () => {
   });
   it("default targets are unchanged for the test page", () => {
     expect(masTargets(4.5).map((r) => r.pct)).toEqual([90, 100, 110, 120, 130]);
+  });
+});
+
+import { masForMode, pace500, repMetres, MAS_DURATIONS, durationLabel, masModeOf } from "@/lib/testing";
+
+describe("Rower / SkiErg MAS", () => {
+  it("metres ÷ 300 s, with Concept2 pace per 500 m", () => {
+    expect(masForMode("row", 1500)).toEqual({ ms: 5, kmh: 18 });
+    expect(pace500(5)).toBe("1:40.0");
+    expect(pace500(5 * 0.9)).toBe("1:51.1");
+    expect(pace500(4.47)).toBe("1:51.9");
+    expect(pace500(0)).toBe("—");
+  });
+  it("tests map to their modes and validate metres", () => {
+    expect(masModeOf("mas_ski_5min")).toBe("ski");
+    expect(masModeOf("bench_3rm")).toBeNull();
+    expect(derivedFor("mas_row_5min", { distance_m: 1500 }, null)[0]).toEqual({ label: "Rower MAS", value: "5 m/s (18 km/h)" });
+    expect(headlineValue("mas_ski_5min", { distance_m: 1350 })).toEqual({ value: 4.5, unit: "m/s (skierg)" });
+    expect(validateTestValues("mas_row_5min", { get: () => "1500.5" }).ok).toBe(false);
+  });
+});
+
+describe("rep lengths up to 4 minutes", () => {
+  it("offers 15 s to 4 min and computes distances", () => {
+    expect(MAS_DURATIONS[0]).toBe(15);
+    expect(MAS_DURATIONS.at(-1)).toBe(240);
+    expect(repMetres(4.5, 240)).toBe(1080);
+    expect(repMetres(4.5 * 0.9, 180)).toBe(729);
+    expect(durationLabel(90)).toBe("1:30 min");
+    expect(durationLabel(240)).toBe("4 min");
+    expect(durationLabel(45)).toBe("45 s");
   });
 });

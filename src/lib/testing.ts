@@ -102,6 +102,28 @@ export const TEST_FIELDS: Record<string, FieldSpec[]> = {
       required: true,
     },
   ],
+  mas_row_5min: [
+    {
+      key: "distance_m",
+      label: "Monitor distance in 5 min",
+      unit: "m",
+      min: 300,
+      max: 2500,
+      step: 1,
+      required: true,
+    },
+  ],
+  mas_ski_5min: [
+    {
+      key: "distance_m",
+      label: "Monitor distance in 5 min",
+      unit: "m",
+      min: 300,
+      max: 2500,
+      step: 1,
+      required: true,
+    },
+  ],
   broad_jump: [
     {
       key: "best_cm",
@@ -323,12 +345,64 @@ export function masTargets(masMs: number, pcts: number[] = MAS_TARGET_PCTS) {
   });
 }
 
-/** MAS (m/s) for either 5-minute test, from its stored values. */
-export function masOf(testKey: string, v: Record<string, number>) {
-  if (testKey === "mas_5min" && v.distance_m) return masFrom(v.distance_m);
-  if (testKey === "mas_bike_5min" && v.distance_km) return bikeMasFrom(v.distance_km);
-  return null;
+// ---------- 5-minute MAS tests by modality ----------
+export type MasMode = "run" | "bike" | "row" | "ski";
+
+export const MAS_MODES: Record<
+  MasMode,
+  {
+    label: string;
+    tab: string;
+    testKey: string;
+    field: "distance_m" | "distance_km";
+    unit: "m" | "km";
+    min: number;
+    max: number;
+    hint: string;
+    /** show pace per 500 m (what the Concept2 monitor displays) */
+    pace500: boolean;
+  }
+> = {
+  run: { label: "Run", tab: "Run", testKey: "mas_5min", field: "distance_m", unit: "m", min: 300, max: 3000, hint: "Metres covered in 5 minutes", pace500: false },
+  bike: { label: "Assault Bike", tab: "Bike", testKey: "mas_bike_5min", field: "distance_km", unit: "km", min: 0.5, max: 5, hint: "Console distance at 5:00", pace500: false },
+  row: { label: "Rower", tab: "Row", testKey: "mas_row_5min", field: "distance_m", unit: "m", min: 300, max: 2500, hint: "Monitor distance at 5:00", pace500: true },
+  ski: { label: "SkiErg", tab: "SkiErg", testKey: "mas_ski_5min", field: "distance_m", unit: "m", min: 300, max: 2500, hint: "Monitor distance at 5:00", pace500: true },
+};
+export const MAS_MODE_ORDER: MasMode[] = ["run", "bike", "row", "ski"];
+
+export function masModeOf(testKey: string): MasMode | null {
+  return MAS_MODE_ORDER.find((m) => MAS_MODES[m].testKey === testKey) ?? null;
 }
+
+/** Distance entered for a mode → MAS (distance ÷ 300 s). */
+export function masForMode(mode: MasMode, distance: number) {
+  return masFrom(MAS_MODES[mode].unit === "km" ? distance * 1000 : distance);
+}
+
+/** MAS (m/s) for any 5-minute test, from its stored values. */
+export function masOf(testKey: string, v: Record<string, number>) {
+  const mode = masModeOf(testKey);
+  if (!mode) return null;
+  const d = v[MAS_MODES[mode].field];
+  return d ? masForMode(mode, d) : null;
+}
+
+/** Concept2-style pace per 500 m, e.g. "1:52.3". */
+export function pace500(ms: number): string {
+  if (!(ms > 0)) return "—";
+  const t = Math.round((500 / ms) * 10) / 10;
+  const min = Math.floor(t / 60);
+  const sec = t - min * 60;
+  return `${min}:${sec.toFixed(1).padStart(4, "0")}`;
+}
+
+/** Rep lengths the calculator offers (seconds), up to 4 minutes. */
+export const MAS_DURATIONS = [15, 20, 30, 45, 60, 90, 120, 180, 240];
+export const durationLabel = (s: number) =>
+  s < 60 ? `${s} s` : s % 60 === 0 ? `${s / 60} min` : `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")} min`;
+
+/** Metres to cover at a speed for a rep length. */
+export const repMetres = (ms: number, seconds: number) => Math.round(ms * seconds);
 
 export function asymmetry(left: number, right: number) {
   const hi = Math.max(left, right);
@@ -380,7 +454,8 @@ export function derivedFor(
   const mas = masOf(testKey, v);
   if (mas) {
     out.push({
-      label: testKey === "mas_bike_5min" ? "Bike MAS" : "MAS",
+      label:
+        testKey === "mas_5min" ? "MAS" : `${MAS_MODES[masModeOf(testKey)!].label} MAS`,
       value: `${mas.ms} m/s (${mas.kmh} km/h)`,
     });
   }
@@ -429,9 +504,13 @@ export function headlineValue(
         ? { value: masFrom(v.distance_m).ms, unit: "m/s" }
         : null;
     case "mas_bike_5min":
-      return v.distance_km != null
-        ? { value: bikeMasFrom(v.distance_km).ms, unit: "m/s (bike)" }
+    case "mas_row_5min":
+    case "mas_ski_5min": {
+      const m = masOf(testKey, v);
+      return m
+        ? { value: m.ms, unit: `m/s (${MAS_MODES[masModeOf(testKey)!].tab.toLowerCase()})` }
         : null;
+    }
     case "broad_jump":
       return v.best_cm != null ? { value: v.best_cm, unit: "cm" } : null;
     case "triple_hop":

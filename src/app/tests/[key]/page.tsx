@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { requireState } from "@/lib/session";
 import { todayISO } from "@/lib/dates";
 import { getEntries, getTestDefs } from "@/lib/test-data";
-import { TEST_FIELDS, masOf, masTargets, youtubeId } from "@/lib/testing";
+import { MAS_MODES, TEST_FIELDS, masModeOf, masOf, masTargets, pace500, youtubeId } from "@/lib/testing";
 import { BackLink, Card, Heading, Screen } from "@/components/ui";
 import { TestEntryForm } from "@/components/TestEntryForm";
 import { TestEntryList } from "@/components/TestEntryList";
@@ -110,15 +110,16 @@ function MasTargets({
 }) {
   const m = masOf(testKey, values);
   if (!m) return null;
-  const bike = testKey === "mas_bike_5min";
+  const mode = masModeOf(testKey)!;
+  const spec = MAS_MODES[mode];
   return (
     <Card className="mb-4">
       <h2 className="mb-1 text-xs font-semibold uppercase tracking-widest text-muted">
         Your conditioning targets
       </h2>
       <p className="mb-3 text-sm">
-        {bike ? "Bike MAS" : "MAS"} <b>{m.ms} m/s</b> ({m.kmh} km/h) from{" "}
-        {bike ? `${values.distance_km} km` : `${values.distance_m} m`}
+        {mode === "run" ? "MAS" : `${spec.label} MAS`} <b>{m.ms} m/s</b> (
+        {spec.pace500 ? `${pace500(m.ms)} /500 m` : `${m.kmh} km/h`}) from {values[spec.field]} {spec.unit}
       </p>
       <table className="w-full text-left text-sm">
         <thead className="text-xs text-muted">
@@ -133,15 +134,15 @@ function MasTargets({
           {masTargets(m.ms).map((t) => (
             <tr key={t.pct} className="border-t border-line">
               <td className="py-1.5 font-bold">{t.pct}%</td>
-              <td className="py-1.5">{bike ? `${t.kmh} km/h` : `${t.ms} m/s`}</td>
+              <td className="py-1.5">{spec.pace500 ? `${pace500(t.ms)} /500 m` : mode === "run" ? `${t.ms} m/s` : `${t.kmh} km/h`}</td>
               <td className="py-1.5">{t.m15} m</td>
               <td className="py-1.5">{t.m30} m</td>
             </tr>
           ))}
         </tbody>
       </table>
-      <a href={`/mas?test=${bike ? "bike" : "run"}`} className="mt-3 inline-block text-sm font-bold underline underline-offset-4">
-        More targets in the MAS calculator →
+      <a href={`/mas?test=${mode}`} className="mt-3 inline-block text-sm font-bold underline underline-offset-4">
+        Rep lengths up to 4 min in the MAS Calculator →
       </a>
     </Card>
   );

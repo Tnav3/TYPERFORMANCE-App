@@ -35,7 +35,7 @@ const entry = (
   );
 
 describe("test definitions", () => {
-  it("has 10 field tests (incl. bike MAS) and the 6 ForceDecks tests in your battery order", async () => {
+  it("has 12 field tests (incl. bike, row, ski MAS) and the 6 ForceDecks tests in your battery order", async () => {
     const f = await q(
       `select key from test_definitions where mode = 'field' order by sort_order`,
     );
@@ -47,6 +47,8 @@ describe("test definitions", () => {
       "chin_ups",
       "mas_5min",
       "mas_bike_5min",
+      "mas_row_5min",
+      "mas_ski_5min",
       "broad_jump",
       "triple_hop",
       "lateral_bound",

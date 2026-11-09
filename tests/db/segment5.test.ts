@@ -126,3 +126,13 @@ describe("bike MAS test definition (migration 009)", () => {
     expect(r.rows.find((x) => x.key === "mas_5min")!.name).toBe("5-minute MAS test (run)");
   });
 });
+
+describe("rower + SkiErg MAS tests (migration 010)", () => {
+  it("follow the bike test in order", async () => {
+    const r = await q(`select key from test_definitions where mode = 'field' order by sort_order`);
+    const k = r.rows.map((x) => x.key);
+    expect(k.slice(k.indexOf("mas_5min"), k.indexOf("mas_5min") + 4)).toEqual([
+      "mas_5min", "mas_bike_5min", "mas_row_5min", "mas_ski_5min",
+    ]);
+  });
+});
