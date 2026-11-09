@@ -29,7 +29,7 @@ const num = (s: string) => {
 };
 
 export function RpeChart() {
-  const [tab, setTab] = useState<"scale" | "pct" | "est">("pct");
+  const [tab, setTab] = useState<"scale" | "pct" | "est">("scale");
   const [reps, setReps] = useState(5);
   const [oneRm, setOneRm] = useState("");
   const [set, setSet] = useState({ load: "", reps: "", rpe: "8" });
@@ -46,9 +46,9 @@ export function RpeChart() {
       >
         {(
           [
-            ["pct", "% by RPE"],
-            ["scale", "RPE ↔ RIR"],
-            ["est", "Find my 1RM"],
+            ["scale", "1. RPE ↔ RIR"],
+            ["pct", "2. Set my weight"],
+            ["est", "3. Find my 1RM"],
           ] as const
         ).map(([k, label]) => (
           <button
@@ -68,6 +68,23 @@ export function RpeChart() {
 
       {tab === "scale" && (
         <>
+          <div className="mb-5 rounded-2xl border border-line bg-surface p-4 text-sm">
+            <p className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-muted">
+              How to use
+            </p>
+            <p>
+              RPE is how hard a set was. RIR is how many more good reps you had
+              left (Reps In Reserve).
+            </p>
+            <p className="mt-1.5">
+              Straight after your last rep, ask:{" "}
+              <b>
+                &ldquo;How many more could I have done with good form?&rdquo;
+              </b>{" "}
+              2 more = <b>RPE 8</b>. 1 more = <b>RPE 9</b>. None = <b>RPE 10</b>
+              .
+            </p>
+          </div>
           <table className="w-full text-left">
             <thead className="text-xs uppercase tracking-wide text-muted">
               <tr className="border-b border-line">
@@ -96,6 +113,19 @@ export function RpeChart() {
 
       {tab === "pct" && (
         <>
+          <div className="mb-5 rounded-2xl border border-line bg-surface p-4 text-sm">
+            <p className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-muted">
+              How to use
+            </p>
+            <ol className="list-decimal space-y-1 pl-5">
+              <li>Enter your 1RM (optional) to see kilos.</li>
+              <li>Tap the number of reps in your set.</li>
+              <li>Find the RPE your coach set. That row is your weight.</li>
+            </ol>
+            <p className="mt-1.5 text-muted">
+              Example: 5 reps @ RPE 8 = 81.1% of your 1RM.
+            </p>
+          </div>
           <label className="mb-4 block">
             <span className="mb-1.5 block text-sm font-semibold">
               Your 1RM{" "}
@@ -199,7 +229,11 @@ export function RpeChart() {
                         const p = pctFor(r, c);
                         return (
                           <td key={c} className="py-1.5 pr-2">
-                            {p != null ? p.toFixed(1) : <span className="text-muted">—</span>}
+                            {p != null ? (
+                              p.toFixed(1)
+                            ) : (
+                              <span className="text-muted">—</span>
+                            )}
                           </td>
                         );
                       })}
@@ -219,9 +253,18 @@ export function RpeChart() {
 
       {tab === "est" && (
         <>
-          <p className="mb-4 text-sm text-muted">
-            Enter a set you did and how hard it was to estimate your 1RM.
-          </p>
+          <div className="mb-5 rounded-2xl border border-line bg-surface p-4 text-sm">
+            <p className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-muted">
+              How to use
+            </p>
+            <p>
+              Enter a set you did today: weight, reps and its RPE. The app works
+              out the 1RM that set points to.
+            </p>
+            <p className="mt-1.5 text-muted">
+              Most accurate with heavy sets (1–5 reps, RPE 8 or above).
+            </p>
+          </div>
           <div className="grid grid-cols-3 gap-3">
             <label className="block">
               <span className="mb-1.5 block text-sm font-semibold">Weight</span>

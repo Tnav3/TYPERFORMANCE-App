@@ -2,7 +2,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { CATEGORY_ORDER, slugify, validateCalc, type Lift } from "@/lib/calculator";
+import { CATEGORY_ORDER, slugify, titleCase, validateCalc, type Lift } from "@/lib/calculator";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const KEY = /^[a-z0-9_]{2,40}$/;
@@ -102,7 +102,7 @@ function done(error?: string, anchor?: string): never {
 }
 
 function cleanName(v: FormDataEntryValue | null): string | null {
-  const s = String(v ?? "").trim().replace(/\s+/g, " ");
+  const s = titleCase(String(v ?? "").trim().replace(/\s+/g, " "));
   return s.length >= 2 && s.length <= 60 ? s : null;
 }
 

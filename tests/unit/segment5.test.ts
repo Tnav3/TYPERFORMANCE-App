@@ -283,3 +283,13 @@ describe("hasFeature", () => {
     expect(hasFeature(null, "checkin")).toBe(false);
   });
 });
+
+import { titleCase } from "@/lib/calculator";
+describe("lift names", () => {
+  it("capitalises each word without lowering acronyms", () => {
+    expect(titleCase("paused box squat")).toBe("Paused Box Squat");
+    expect(titleCase("barbell RDL")).toBe("Barbell RDL");
+    expect(titleCase("bent-over row (pendlay)")).toBe("Bent-Over Row (Pendlay)");
+    expect(titleCase("3-second pause squat")).toBe("3-Second Pause Squat");
+  });
+});

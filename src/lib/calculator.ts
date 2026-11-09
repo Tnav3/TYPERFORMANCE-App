@@ -212,3 +212,8 @@ export function slugify(name: string) {
     .replace(/^_+|_+$/g, "")
     .slice(0, 34);
 }
+
+/** Capitalise the first letter of every word (incl. after "-" or "("), leave the rest as typed: "paused box squat" → "Paused Box Squat", "RDL" stays "RDL". */
+export function titleCase(name: string): string {
+  return name.replace(/(^|[\s\-(/])([a-z])/g, (_, sep: string, c: string) => sep + c.toUpperCase());
+}

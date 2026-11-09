@@ -163,3 +163,14 @@ describe("test names (migration 012)", () => {
     }
   });
 });
+
+describe("lift names (migration 016)", () => {
+  it("every word starts with a capital", async () => {
+    const r = await q(`select name from lifts`);
+    for (const { name } of r.rows as { name: string }[]) {
+      for (const w of name.replace(/[()\-]/g, " ").split(/\s+/).filter(Boolean)) {
+        expect(w[0], `${name}: "${w}"`).toBe(w[0].toUpperCase());
+      }
+    }
+  });
+});

@@ -1,6 +1,14 @@
 import Link from "next/link";
 import { requireState } from "@/lib/session";
 import { hasFeature } from "@/lib/features";
+import {
+  Activity,
+  ClipboardList,
+  Dumbbell,
+  Gauge,
+  HeartPulse,
+  Trophy,
+} from "lucide-react";
 import { formatDate, todayISO } from "@/lib/dates";
 import { fightCountdown } from "@/lib/fight";
 import { addDays, mondayOf } from "@/lib/week";
@@ -154,6 +162,7 @@ export default async function AthleteHome() {
           href="/tests"
           title="Testing"
           description="Videos, instructions & your results"
+          icon={<ClipboardList size={22} strokeWidth={2.25} />}
         />
       )}
 
@@ -162,6 +171,7 @@ export default async function AthleteHome() {
           href="/calculator"
           title="1RM Calculator"
           description="Your e1RM and loads for every %"
+          icon={<Dumbbell size={22} strokeWidth={2.25} />}
         />
       )}
 
@@ -170,6 +180,7 @@ export default async function AthleteHome() {
           href="/mas"
           title="MAS Calculator"
           description="Interval targets: run, bike, row, SkiErg"
+          icon={<Activity size={22} strokeWidth={2.25} />}
         />
       )}
 
@@ -178,6 +189,7 @@ export default async function AthleteHome() {
           href="/rpe"
           title="RPE & RIR Chart"
           description="Reps in reserve and %1RM by RPE"
+          icon={<Gauge size={22} strokeWidth={2.25} />}
         />
       )}
 
@@ -186,6 +198,7 @@ export default async function AthleteHome() {
           href="/hr"
           title="HR Zones"
           description="Heart-rate zones with matching RPE"
+          icon={<HeartPulse size={22} strokeWidth={2.25} />}
         />
       )}
 
@@ -194,6 +207,7 @@ export default async function AthleteHome() {
           href="/fights"
           title="Fight Record"
           description="Your wins, losses, draws and rounds"
+          icon={<Trophy size={22} strokeWidth={2.25} />}
         />
       )}
 
