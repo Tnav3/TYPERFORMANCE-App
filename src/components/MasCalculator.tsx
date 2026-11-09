@@ -7,6 +7,7 @@ import {
   MAS_MODE_ORDER,
   durationLabel,
   parseDuration,
+  parsePercent,
   masForMode,
   pace500,
   repMetres,
@@ -45,6 +46,10 @@ export function MasCalculator({
   const [custom, setCustom] = useState<number[]>([]);
   const [customText, setCustomText] = useState("");
   const [customErr, setCustomErr] = useState<string | null>(null);
+  const [extraPcts, setExtraPcts] = useState<number[]>([]);
+  const [pctText, setPctText] = useState("");
+  const [pctErr, setPctErr] = useState<string | null>(null);
+  const pcts = [...new Set([...MAS_CALC_PCTS, ...extraPcts])].sort((a, b) => a - b);
   const chips = [...new Set([...MAS_DURATIONS, ...custom])].sort((a, b) => a - b);
 
   const spec = MAS_MODES[mode];
@@ -67,6 +72,14 @@ export function MasCalculator({
     if (durations.includes(d)) {
       if (durations.length > 1) setDurations(durations.filter((x) => x !== d));
     } else select(d);
+  }
+
+  function addPct() {
+    const r = parsePercent(pctText);
+    if ("error" in r) return setPctErr(r.error);
+    setPctErr(null);
+    setPctText("");
+    if (!MAS_CALC_PCTS.includes(r.pct)) setExtraPcts((c) => (c.includes(r.pct) ? c : [...c, r.pct]));
   }
 
   function addCustom() {
@@ -200,11 +213,28 @@ export function MasCalculator({
               </tr>
             </thead>
             <tbody>
-              {MAS_CALC_PCTS.map((pct) => {
+              {pcts.map((pct) => {
+                const extra = extraPcts.includes(pct);
                 const v = mas.ms * (pct / 100);
                 return (
-                  <tr key={pct} className={`border-b border-line/60 ${pct === 100 ? "bg-surface-2" : ""}`}>
-                    <td className="py-2.5 pr-2 font-bold">{pct}%</td>
+                  <tr
+                    key={pct}
+                    className={`border-b border-line/60 ${extra ? "bg-brand/15" : pct === 100 ? "bg-surface-2" : ""}`}
+                  >
+                    <td className="py-2.5 pr-2 font-bold">
+                      {extra ? (
+                        <button
+                          type="button"
+                          onClick={() => setExtraPcts((c) => c.filter((x) => x !== pct))}
+                          aria-label={`Remove ${pct}% row`}
+                          className="-my-2 inline-flex min-h-11 items-center gap-1 text-left"
+                        >
+                          {pct}% <span className="text-xs font-normal text-muted" aria-hidden>✕</span>
+                        </button>
+                      ) : (
+                        `${pct}%`
+                      )}
+                    </td>
                     <td className="py-2.5 pr-2 text-muted">
                       {spec.pace500 ? pace500(v) : Math.round(v * 36) / 10}
                     </td>
@@ -224,6 +254,36 @@ export function MasCalculator({
               })}
             </tbody>
           </table>
+          <div className="mt-3">
+            <div className="flex gap-2">
+              <input
+                value={pctText}
+                onChange={(e) => {
+                  setPctText(e.target.value);
+                  setPctErr(null);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    addPct();
+                  }
+                }}
+                inputMode="decimal"
+                placeholder="Add a %: e.g. 93"
+                aria-label="Add a %MAS row"
+                className={`${inputCls} min-h-11`}
+              />
+              <button
+                type="button"
+                onClick={addPct}
+                className="min-h-11 shrink-0 rounded-xl border border-line bg-surface-2 px-4 text-sm font-extrabold uppercase"
+              >
+                Add
+              </button>
+            </div>
+            {pctErr && <p className="mt-1 text-sm text-brand">{pctErr}</p>}
+          </div>
+
           {cols.some((d) => d >= LONG_REP) && (
             <p className="mt-3 text-xs text-muted">
               Greyed out: reps of 2 min or longer above 100% MAS. MAS is roughly the pace you can hold for 4–8 minutes,

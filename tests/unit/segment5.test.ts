@@ -214,3 +214,21 @@ describe("custom rep length", () => {
     expect(durationLabel(150)).toBe("2:30 min");
   });
 });
+
+import { parsePercent } from "@/lib/testing";
+
+describe("custom %MAS", () => {
+  it("accepts whole numbers and .5", () => {
+    expect(parsePercent("93")).toEqual({ pct: 93 });
+    expect(parsePercent("95%")).toEqual({ pct: 95 });
+    expect(parsePercent("92,5")).toEqual({ pct: 92.5 });
+    expect(parsePercent("150")).toEqual({ pct: 150 });
+  });
+  it("rejects out of range and odd decimals", () => {
+    expect(parsePercent("92.3")).toHaveProperty("error");
+    expect(parsePercent("49")).toHaveProperty("error");
+    expect(parsePercent("151")).toHaveProperty("error");
+    expect(parsePercent("abc")).toHaveProperty("error");
+    expect(parsePercent("")).toHaveProperty("error");
+  });
+});

@@ -401,6 +401,17 @@ export const MAS_DURATIONS = [15, 20, 30, 45, 60, 90, 120, 150, 180, 240];
 export const MIN_REP_S = 5;
 export const MAX_REP_S = 300;
 
+/** "93", "93%", "92.5" → a %MAS row (50–150, whole or .5). */
+export function parsePercent(input: string): { pct: number } | { error: string } {
+  const t = input.trim().replace("%", "").replace(",", ".");
+  if (!t) return { error: "Enter a %" };
+  if (!/^\d{2,3}(\.\d)?$/.test(t)) return { error: "Use a number like 93 or 92.5" };
+  const n = Number(t);
+  if (n < 50 || n > 150) return { error: "Between 50% and 150%" };
+  if ((n * 2) % 1 !== 0) return { error: "Whole numbers or .5 only" };
+  return { pct: n };
+}
+
 /** "150", "150s", "2:30" → seconds. Returns an error message for anything else. */
 export function parseDuration(input: string): { seconds: number } | { error: string } {
   const t = input.trim().toLowerCase().replace(/\s+/g, "");
