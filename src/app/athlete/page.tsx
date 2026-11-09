@@ -58,7 +58,11 @@ export default async function AthleteHome() {
     mas: hasFeature(profile, "mas"),
     rpe: hasFeature(profile, "rpe"),
     hr: hasFeature(profile, "hr"),
+    fights: hasFeature(profile, "fights"),
   };
+  // Their planned fight date has passed: ask how it went
+  const fightToLog =
+    on.fights && profile.next_fight_date && profile.next_fight_date < today;
 
   return (
     <Screen>
@@ -93,6 +97,19 @@ export default async function AthleteHome() {
             </Card>
           </Link>
         )}
+
+      {fightToLog && (
+        <Link href="/fights#log" className="mb-4 block">
+          <Card className="border-brand/60 hover:border-brand">
+            <p className="text-lg font-black uppercase leading-tight tracking-tight">
+              How did your fight go?
+            </p>
+            <p className="mt-1 text-sm text-muted">
+              {formatDate(profile.next_fight_date!)} · tap to log the result →
+            </p>
+          </Card>
+        </Link>
+      )}
 
       {on.checkin && (
         <Link href={`/week/${thisWeek}`} className="mb-4 block">
@@ -172,13 +189,27 @@ export default async function AthleteHome() {
         />
       )}
 
-      {!on.checkin && !on.testing && !on.rm && !on.mas && !on.rpe && !on.hr && (
-        <Card className="mb-4">
-          <p className="text-muted">
-            Your coach hasn&apos;t switched on any features for you yet.
-          </p>
-        </Card>
+      {on.fights && (
+        <FeatureLink
+          href="/fights"
+          title="Fight Record"
+          description="Your wins, losses, draws and rounds"
+        />
       )}
+
+      {!on.checkin &&
+        !on.testing &&
+        !on.rm &&
+        !on.mas &&
+        !on.rpe &&
+        !on.hr &&
+        !on.fights && (
+          <Card className="mb-4">
+            <p className="text-muted">
+              Your coach hasn&apos;t switched on any features for you yet.
+            </p>
+          </Card>
+        )}
 
       <Link
         href="/profile"

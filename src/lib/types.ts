@@ -21,6 +21,7 @@ export interface Profile {
   feat_mas: boolean;
   feat_rpe: boolean;
   feat_hr: boolean;
+  feat_fights: boolean;
   created_at: string;
   updated_at: string;
 }
