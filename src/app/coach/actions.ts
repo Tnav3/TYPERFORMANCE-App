@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import type { AccountStatus } from "@/lib/types";
 import { isISODate } from "@/lib/dates";
 import { mondayOf } from "@/lib/week";
+import { sendGhlEvent } from "@/lib/ghl";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const ALLOWED: AccountStatus[] = ["active", "inactive"];
@@ -21,11 +22,28 @@ export async function setAthleteStatus(formData: FormData) {
   } = await supabase.auth.getUser();
   if (!user || user.id === id) return; // never change your own account here
 
-  await supabase
+  const { data: before } = await supabase
+    .from("profiles")
+    .select("status, email, full_name")
+    .eq("id", id)
+    .eq("role", "athlete")
+    .maybeSingle();
+  if (!before) return;
+
+  const { error } = await supabase
     .from("profiles")
     .update({ status })
     .eq("id", id)
     .eq("role", "athlete");
+
+  // First approval only (pending → active), not reactivations
+  if (!error && before.status === "pending" && status === "active") {
+    await sendGhlEvent("account_approved", {
+      email: before.email,
+      full_name: before.full_name,
+      first_name: before.full_name?.trim().split(/\s+/)[0] ?? null,
+    });
+  }
   revalidatePath("/coach");
   revalidatePath(`/coach/athlete/${id}`);
 }
