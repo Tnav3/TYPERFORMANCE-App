@@ -76,6 +76,14 @@ export function ProfileForm({
         />
       </Field>
 
+      <Field label="Sex" hint="Optional. Only used to show you the right testing standards.">
+        <Select name="sex" defaultValue={profile.sex ?? ""}>
+          <option value="">Prefer not to say</option>
+          <option value="male">Male</option>
+          <option value="female">Female</option>
+        </Select>
+      </Field>
+
       <fieldset className="mb-4">
         <legend className="mb-1.5 text-sm font-semibold">
           Do you compete?

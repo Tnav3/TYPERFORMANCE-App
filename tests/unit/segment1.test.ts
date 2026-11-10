@@ -112,6 +112,17 @@ const form = (o: Record<string, string>) => ({
 const TODAY = "2026-11-08";
 
 describe("profile validation", () => {
+  it("sex is optional: male, female or not given", () => {
+    const base = { full_name: "Al", main_discipline_id: D, competing: "no", training_age_years: "1" };
+    const ok = (sex: string) => {
+      const r = validateProfile(form({ ...base, sex }), TODAY);
+      return r.ok ? r.data.sex : "invalid";
+    };
+    expect(ok("female")).toBe("female");
+    expect(ok("male")).toBe("male");
+    expect(ok("")).toBeNull();
+    expect(ok("other")).toBeNull();
+  });
   it("accepts a full competing profile", () => {
     const r = validateProfile(
       form({
@@ -135,6 +146,7 @@ describe("profile validation", () => {
         weight_class_limit_kg: 70.3,
         next_fight_date: "2027-02-14",
         training_age_years: 2.5,
+        sex: null,
       },
     });
   });

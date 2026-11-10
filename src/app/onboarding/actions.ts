@@ -74,6 +74,7 @@ export async function saveProfile(
       // Editing "next fight" here replaces the first planned fight; keep the second in order
       ...toColumns([d.next_fight_date, before?.second_fight_date]),
       training_age_years: d.training_age_years,
+      sex: d.sex,
       profile_completed_at:
         before?.profile_completed_at ?? new Date().toISOString(),
     })

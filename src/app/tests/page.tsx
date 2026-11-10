@@ -4,13 +4,28 @@ import { formatDate } from "@/lib/dates";
 import { formatPct, getEntries, getTestDefs, summarize } from "@/lib/test-data";
 import { groupByCategory, headlineValue } from "@/lib/testing";
 import { BackLink, Card, Heading, Screen } from "@/components/ui";
+import { LevelBadge } from "@/components/Standards";
+import { getStandards, standardFor } from "@/lib/standards-data";
+import { entryMetric, levelOf } from "@/lib/standards";
 
 export default async function TestsHome() {
-  const { supabase, user } = await requireFeature(["athlete", "coach"], "testing");
-  const [defs, entries] = await Promise.all([
+  const { supabase, user, profile } = await requireFeature(
+    ["athlete", "coach"],
+    "testing",
+  );
+  const [defs, entries, standards] = await Promise.all([
     getTestDefs(supabase),
     getEntries(supabase, user!.id),
+    getStandards(supabase),
   ]);
+  const levelFor = (
+    key: string,
+    e: Parameters<typeof entryMetric>[1] | null,
+  ) => {
+    const st = standardFor(standards, key, profile?.sex);
+    const v = e ? entryMetric(key, e) : null;
+    return st && v != null ? levelOf(v, st) : null;
+  };
   const summaries = summarize(
     defs.filter((d) => d.active),
     entries,
@@ -47,6 +62,14 @@ export default async function TestsHome() {
                   <Card className="flex items-center justify-between gap-3 !p-4 hover:border-muted">
                     <div className="min-w-0">
                       <p className="font-extrabold">{s.def.name}</p>
+                      {(() => {
+                        const lv = levelFor(s.def.key, s.latest);
+                        return lv && lv !== "below" ? (
+                          <span className="mt-1 inline-block">
+                            <LevelBadge level={lv} />
+                          </span>
+                        ) : null;
+                      })()}
                       <p className="text-sm text-muted">
                         {s.latest
                           ? `Last: ${formatDate(s.latest.tested_on)}`

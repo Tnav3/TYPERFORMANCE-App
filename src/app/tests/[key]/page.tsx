@@ -2,20 +2,34 @@ import { notFound } from "next/navigation";
 import { requireFeature } from "@/lib/session";
 import { todayISO } from "@/lib/dates";
 import { getEntries, getTestDefs } from "@/lib/test-data";
-import { MAS_MODES, TEST_FIELDS, masModeOf, masOf, masTargets, pace500, youtubeId } from "@/lib/testing";
+import {
+  MAS_MODES,
+  TEST_FIELDS,
+  masModeOf,
+  masOf,
+  masTargets,
+  pace500,
+  youtubeId,
+} from "@/lib/testing";
 import { BackLink, Card, Heading, Screen } from "@/components/ui";
 import { TestEntryForm } from "@/components/TestEntryForm";
 import { TestEntryList } from "@/components/TestEntryList";
+import { StandardsCard } from "@/components/Standards";
+import { getStandards, standardFor } from "@/lib/standards-data";
+import { STANDARD_METRICS, entryMetric } from "@/lib/standards";
 
 export default async function TestPage({
   params,
 }: {
   params: Promise<{ key: string }>;
 }) {
-  const { supabase, user } = await requireFeature(["athlete", "coach"], "testing");
+  const { supabase, user, profile } = await requireFeature(
+    ["athlete", "coach"],
+    "testing",
+  );
   const { key } = await params;
   if (!TEST_FIELDS[key]) notFound();
-  const [defs, entries, { data: lastBw }] = await Promise.all([
+  const [defs, entries, { data: lastBw }, standards] = await Promise.all([
     getTestDefs(supabase),
     getEntries(supabase, user!.id, key),
     supabase
@@ -26,12 +40,19 @@ export default async function TestPage({
       .order("week_start", { ascending: false })
       .limit(1)
       .maybeSingle(),
+    getStandards(supabase),
   ]);
   const def = defs.find((d) => d.key === key);
   if (!def) notFound();
   const vid = youtubeId(def.youtube_url);
   const isField = def.mode === "field";
   const latest = entries[entries.length - 1];
+  const sex = profile?.sex ?? null;
+  const standard = standardFor(standards, key, sex);
+  const anyStandard = !!(
+    standards[`${key}:male`] || standards[`${key}:female`]
+  );
+  const metric = latest ? entryMetric(key, latest) : null;
 
   return (
     <Screen>
@@ -63,6 +84,17 @@ export default async function TestPage({
           )}
         </Card>
       )}
+
+      {STANDARD_METRICS[key] &&
+        profile?.role === "athlete" &&
+        (standard || (!sex && anyStandard)) && (
+          <StandardsCard
+            testKey={key}
+            standard={standard}
+            value={metric}
+            needsSex={!sex}
+          />
+        )}
 
       {latest && masOf(key, latest.values) && (
         <MasTargets testKey={key} values={latest.values} />
@@ -119,7 +151,8 @@ function MasTargets({
       </h2>
       <p className="mb-3 text-sm">
         {mode === "run" ? "MAS" : `${spec.label} MAS`} <b>{m.ms} m/s</b> (
-        {spec.pace500 ? `${pace500(m.ms)} /500 m` : `${m.kmh} km/h`}) from {values[spec.field]} {spec.unit}
+        {spec.pace500 ? `${pace500(m.ms)} /500 m` : `${m.kmh} km/h`}) from{" "}
+        {values[spec.field]} {spec.unit}
       </p>
       <table className="w-full text-left text-sm">
         <thead className="text-xs text-muted">
@@ -134,14 +167,23 @@ function MasTargets({
           {masTargets(m.ms).map((t) => (
             <tr key={t.pct} className="border-t border-line">
               <td className="py-1.5 font-bold">{t.pct}%</td>
-              <td className="py-1.5">{spec.pace500 ? `${pace500(t.ms)} /500 m` : mode === "run" ? `${t.ms} m/s` : `${t.kmh} km/h`}</td>
+              <td className="py-1.5">
+                {spec.pace500
+                  ? `${pace500(t.ms)} /500 m`
+                  : mode === "run"
+                    ? `${t.ms} m/s`
+                    : `${t.kmh} km/h`}
+              </td>
               <td className="py-1.5">{t.m15} m</td>
               <td className="py-1.5">{t.m30} m</td>
             </tr>
           ))}
         </tbody>
       </table>
-      <a href={`/mas?test=${mode}`} className="mt-3 inline-block text-sm font-bold underline underline-offset-4">
+      <a
+        href={`/mas?test=${mode}`}
+        className="mt-3 inline-block text-sm font-bold underline underline-offset-4"
+      >
         Any rep length in the MAS Calculator →
       </a>
     </Card>

@@ -9,6 +9,8 @@ export interface ProfileInput {
   weight_class_limit_kg: number | null;
   next_fight_date: string | null;
   training_age_years: number;
+  /** optional: only used to pick male/female testing standards */
+  sex: "male" | "female" | null;
 }
 
 export type ProfileErrors = Partial<Record<keyof ProfileInput, string>>;
@@ -42,6 +44,8 @@ export function validateProfile(
     errors.main_discipline_id = "Choose your main discipline";
 
   const competing = str(form.get("competing")) === "yes";
+  const sexRaw = str(form.get("sex"));
+  const sex = sexRaw === "male" || sexRaw === "female" ? sexRaw : null;
 
   let weight_class: string | null = null;
   let weight_class_limit_kg: number | null = null;
@@ -91,6 +95,7 @@ export function validateProfile(
       weight_class_limit_kg,
       next_fight_date,
       training_age_years,
+      sex,
     },
   };
 }

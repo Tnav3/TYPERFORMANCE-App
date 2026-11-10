@@ -50,6 +50,12 @@ export default async function SettingsPage({
       >
         Calculator lifts <span aria-hidden>→</span>
       </Link>
+      <Link
+        href="/coach/settings/standards"
+        className="-mt-4 mb-6 flex min-h-12 items-center justify-between rounded-xl border border-line bg-surface-2 px-4 font-extrabold"
+      >
+        Testing standards <span aria-hidden>→</span>
+      </Link>
 
       <div className="space-y-4">
         {catalog.map((d, di) => (
