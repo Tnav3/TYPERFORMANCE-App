@@ -1,4 +1,5 @@
 import { requireFeature } from "@/lib/session";
+import { Tip } from "@/components/Tip";
 import { todayISO } from "@/lib/dates";
 import { getRomEntries, getRomMeasures } from "@/lib/mobility-data";
 import { RomForm } from "@/components/RomForm";
@@ -9,7 +10,7 @@ import { BackLink, Card, Heading, Screen } from "@/components/ui";
 const SELF_TESTS_ON = false;
 
 export default async function MobilityPage() {
-  const { supabase, user, state } = await requireFeature(
+  const { supabase, user, state, profile } = await requireFeature(
     ["athlete", "coach"],
     "mobility",
   );
@@ -23,6 +24,7 @@ export default async function MobilityPage() {
     <Screen>
       <BackLink href="/" label="Home" />
       <Heading>Mobility</Heading>
+      <Tip profile={profile} tipKey="mobility" />
       <Card className="mb-6">
         <p className="text-[15px] leading-relaxed">
           How well your joints move compared with healthy, athletic norms.

@@ -34,3 +34,18 @@ describe("coach edits an athlete's profile", () => {
     ).rejects.toThrow(/cannot be changed/);
   });
 });
+
+describe("tutorial columns (migration 026)", () => {
+  it("existing accounts start done; athletes can reset and record their own tips", async () => {
+    // accounts created after the migration have no done-time
+    const r = await q(`select tutorial_done_at, tips_seen from profiles where id = $1`, [alice]);
+    expect(r.rows[0].tutorial_done_at).toBeNull();
+    expect(r.rows[0].tips_seen).toEqual([]);
+    const u = await asUser(db, alice, () =>
+      q(`update profiles set tutorial_done_at = now(), tips_seen = '{mas,testing}' where id = $1 returning cardinality(tips_seen) n`, [alice]),
+    );
+    expect(u.rows[0].n).toBe(2);
+    const other = await asUser(db, bob, () => q(`update profiles set tips_seen = '{x}' where id = $1 returning id`, [alice]));
+    expect(other.rows).toHaveLength(0);
+  });
+});

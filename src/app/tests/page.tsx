@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Tip } from "@/components/Tip";
 import { requireFeature } from "@/lib/session";
 import { formatDate } from "@/lib/dates";
 import { formatPct, getEntries, getTestDefs, summarize } from "@/lib/test-data";
@@ -47,6 +48,7 @@ export default async function TestsHome() {
       <Heading sub="Watch the video, follow the steps, then enter your best result.">
         Testing
       </Heading>
+      <Tip profile={profile} tipKey="testing" />
 
       <Link
         href="/standards"

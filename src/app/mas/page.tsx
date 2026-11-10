@@ -1,4 +1,5 @@
 import { requireFeature } from "@/lib/session";
+import { Tip } from "@/components/Tip";
 import { MasCalculator } from "@/components/MasCalculator";
 import {
   MAS_MODES,
@@ -15,7 +16,7 @@ export default async function MasPage({
 }: {
   searchParams: Promise<{ test?: string }>;
 }) {
-  const { supabase, user, state } = await requireFeature(
+  const { supabase, user, state, profile } = await requireFeature(
     ["athlete", "coach"],
     "mas",
   );
@@ -61,6 +62,7 @@ export default async function MasPage({
       <Heading sub="Enter your 5-minute test distance to get your MAS and the distance for any rep up to 5 minutes.">
         MAS Calculator
       </Heading>
+      <Tip profile={profile} tipKey="mas" />
       <MasCalculator initialMode={mode} saved={saved} canSave={isAthlete} />
     </Screen>
   );

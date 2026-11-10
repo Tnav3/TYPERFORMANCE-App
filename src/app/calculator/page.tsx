@@ -1,4 +1,5 @@
 import { requireFeature } from "@/lib/session";
+import { Tip } from "@/components/Tip";
 import { getLifts, getMaxes, latestBodyweight } from "@/lib/lift-data";
 import { latestMaxes } from "@/lib/calculator";
 import { formatDate } from "@/lib/dates";
@@ -13,7 +14,7 @@ export default async function CalculatorPage({
 }: {
   searchParams: Promise<{ lift?: string }>;
 }) {
-  const { supabase, user, state } = await requireFeature(
+  const { supabase, user, state, profile } = await requireFeature(
     ["athlete", "coach"],
     "1rm",
   );
@@ -39,6 +40,7 @@ export default async function CalculatorPage({
       <Heading sub="Enter a set you did, get your estimated 1RM and the load for each %.">
         1RM Calculator
       </Heading>
+      <Tip profile={profile} tipKey="calculator" />
 
       <Calculator
         key={lift ?? ""}

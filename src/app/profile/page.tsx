@@ -4,6 +4,7 @@ import { todayISO } from "@/lib/dates";
 import type { Discipline } from "@/lib/types";
 import { Heading, Screen, BackLink } from "@/components/ui";
 import { ProfileForm } from "@/components/ProfileForm";
+import { replayTutorial } from "@/app/tutorial/actions";
 
 // Athletes update fight date, weight class etc. as things change.
 export default async function EditProfilePage() {
@@ -33,6 +34,13 @@ export default async function EditProfilePage() {
         submitLabel="Save changes"
         today={todayISO()}
       />
+      {state === "athlete" && (
+        <form action={replayTutorial} className="mt-6">
+          <button className="text-sm font-bold text-muted underline underline-offset-4">
+            Replay the app tour
+          </button>
+        </form>
+      )}
       {/* Second way out, where the thumb already is */}
       <Link
         href={home}

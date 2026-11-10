@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { Tip } from "@/components/Tip";
 import { requireState } from "@/lib/session";
 import { hasFeature } from "@/lib/features";
 import { formatDate } from "@/lib/dates";
@@ -67,6 +68,7 @@ export default async function StandardsPage() {
         label={state === "coach" ? "Home" : "Training Tools"}
       />
       <Heading>Strength Standards</Heading>
+      <Tip profile={profile} tipKey="standards" />
       <Card className="mb-6">
         <p className="text-[15px] leading-relaxed">
           Targets to work towards, based on research in combat and other trained

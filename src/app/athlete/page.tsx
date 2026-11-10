@@ -11,6 +11,8 @@ import {
   Wrench,
 } from "lucide-react";
 import { toolsFor, toolsSummary } from "@/lib/tools";
+import { welcomeSteps } from "@/lib/tutorial";
+import { WelcomeTour } from "@/components/WelcomeTour";
 import { formatDate, todayISO } from "@/lib/dates";
 import { fightCountdown } from "@/lib/fight";
 import { addDays, mondayOf } from "@/lib/week";
@@ -86,6 +88,9 @@ export default async function AthleteHome() {
 
   return (
     <Screen>
+      {!profile.tutorial_done_at && (
+        <WelcomeTour steps={welcomeSteps(profile)} />
+      )}
       <header className="mb-6 flex items-center justify-between">
         <Logo size={40} />
         <SignOutButton />

@@ -24,6 +24,8 @@ export interface Profile {
   feat_fights: boolean;
   feat_mobility: boolean;
   feat_nutrition: boolean;
+  tutorial_done_at: string | null;
+  tips_seen: string[] | null;
   second_fight_date: string | null;
   sex: "male" | "female" | null;
   created_at: string;

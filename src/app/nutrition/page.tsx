@@ -1,9 +1,10 @@
 import { requireFeature } from "@/lib/session";
+import { Tip } from "@/components/Tip";
 import { NutritionGuide } from "@/components/NutritionGuide";
 import { BackLink, Heading, Screen } from "@/components/ui";
 
 export default async function NutritionPage() {
-  const { supabase, user, state } = await requireFeature(
+  const { supabase, user, state, profile } = await requireFeature(
     ["athlete", "coach"],
     "nutrition",
   );
@@ -22,9 +23,10 @@ export default async function NutritionPage() {
         href={state === "coach" ? "/" : "/tools"}
         label={state === "coach" ? "Home" : "Training Tools"}
       />
-      <Heading sub="How much carbohydrate and protein to aim for, depending on how hard you're training today.">
+      <Heading sub="How much carbohydrate, protein and fat to aim for, depending on how hard you're training today.">
         Nutrition Guide
       </Heading>
+      <Tip profile={profile} tipKey="nutrition" />
       <NutritionGuide
         defaultBodyweight={
           lastBw?.bodyweight_kg != null ? Number(lastBw.bodyweight_kg) : null

@@ -1,4 +1,5 @@
 import { requireFeature } from "@/lib/session";
+import { Tip } from "@/components/Tip";
 import { todayISO } from "@/lib/dates";
 import type { Fight } from "@/lib/fights";
 import { FightForm } from "@/components/FightForm";
@@ -26,6 +27,7 @@ export default async function FightsPage() {
       <Heading sub="Log each fight's result and how many rounds it went.">
         Competition Tracker
       </Heading>
+      <Tip profile={profile} tipKey="fights" />
       <FightRecordView
         fights={(data ?? []) as Fight[]}
         back="/fights"
