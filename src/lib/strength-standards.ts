@@ -3,7 +3,7 @@
 import { entryMetric } from "./standards";
 
 /** Movements on the overview, in display order. */
-export type OverviewGroup = "strength" | "power";
+export type OverviewGroup = "strength" | "power" | "conditioning";
 
 export const GROUPS: { key: OverviewGroup; title: string; intro: string }[] = [
   {
@@ -17,6 +17,12 @@ export const GROUPS: { key: OverviewGroup; title: string; intro: string }[] = [
     title: "Power",
     intro:
       "How explosively you can jump. Broad jump and hops are in metres; the countermovement jump is in centimetres. Single-leg jumps count your weaker leg, so closing the gap between legs lifts your score.",
+  },
+  {
+    key: "conditioning",
+    title: "Conditioning",
+    intro:
+      "Your aerobic engine: maximal aerobic speed (MAS) from the 5-minute test, in metres per second. Only compare a machine with itself; a bike MAS and a run MAS aren't on the same scale.",
   },
 ];
 
@@ -49,6 +55,22 @@ export const OVERVIEW: {
   { testKey: "single_hop", name: "Single-Leg Hop", group: "power" },
   { testKey: "triple_hop", name: "Triple Hop", group: "power" },
   { testKey: "cmj", name: "Countermovement Jump", group: "power" },
+  { testKey: "mas_5min", name: "5-Minute MAS (Run)", group: "conditioning" },
+  {
+    testKey: "mas_bike_5min",
+    name: "5-Minute MAS (Assault Bike)",
+    group: "conditioning",
+  },
+  {
+    testKey: "mas_row_5min",
+    name: "5-Minute MAS (Rower)",
+    group: "conditioning",
+  },
+  {
+    testKey: "mas_ski_5min",
+    name: "5-Minute MAS (SkiErg)",
+    group: "conditioning",
+  },
 ];
 
 export interface EntryLike {

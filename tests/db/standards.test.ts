@@ -25,6 +25,7 @@ describe("testing standards", () => {
       { test_key: "chin_ups", sex: "male", b: 10, s: 16, g: 24 },
       { test_key: "cmj", sex: "female", b: 41.45, s: 43.85, g: 47.05 },
       { test_key: "cmj", sex: "male", b: 51.4, s: 55.55, g: 60.1 },
+      { test_key: "mas_5min", sex: "male", b: 4.4, s: 4.6, g: 4.8 },
       { test_key: "single_hop", sex: "female", b: 1.33, s: 1.49, g: 1.73 },
       { test_key: "single_hop", sex: "male", b: 1.71, s: 1.92, g: 2.18 },
       { test_key: "trap_bar_3rm", sex: "female", b: null, s: null, g: 2.19 },
@@ -37,7 +38,7 @@ describe("testing standards", () => {
   });
   it("everyone can read; only the coach can change", async () => {
     const a = await asUser(db, alice, () => q(`select count(*)::int n from test_standards`));
-    expect(a.rows[0].n).toBe(13);
+    expect(a.rows[0].n).toBe(14);
     const u = await asUser(db, alice, () => q(`update test_standards set gold = 99 returning 1`));
     expect(u.rows).toHaveLength(0);
     await expect(

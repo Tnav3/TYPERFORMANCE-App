@@ -164,5 +164,6 @@ describe("overview groups", () => {
     for (const r of OVERVIEW) expect(keys).toContain(r.group);
     for (const r of OVERVIEW.filter((x) => x.lifts)) expect(r.group).toBe("strength");
     expect(OVERVIEW.filter((r) => r.group === "power").map((r) => r.testKey)).toEqual(["broad_jump", "single_hop", "triple_hop", "cmj"]);
+    expect(OVERVIEW.filter((r) => r.group === "conditioning").map((r) => r.testKey)).toEqual(["mas_5min", "mas_bike_5min", "mas_row_5min", "mas_ski_5min"]);
   });
 });
