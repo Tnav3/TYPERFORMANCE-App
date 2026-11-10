@@ -123,6 +123,37 @@ function mas(key: string) {
 export const hasStandards = (s: Standard | null | undefined) =>
   !!s && (s.bronze != null || s.silver != null || s.gold != null);
 
+/**
+ * Tests where Bronze can be earned another way when the coach leaves the
+ * Bronze box blank: e.g. women's chin-ups, Bronze = 5+ reps with a light band.
+ */
+export const ALT_BRONZE: Record<
+  string,
+  { field: string; min: number; text: string }
+> = {
+  chin_ups: { field: "band_reps", min: 5, text: "5+ reps with a light band" },
+};
+
+/** Level for one entry: the metric's level, or the alternative Bronze. */
+export function entryLevel(
+  testKey: string,
+  values: Record<string, number>,
+  metric: number | null,
+  s: Standard,
+): Level | null {
+  if (metric == null) return null;
+  const lv = levelOf(metric, s);
+  const alt = ALT_BRONZE[testKey];
+  if (
+    lv === "below" &&
+    alt &&
+    s.bronze == null &&
+    (values[alt.field] ?? 0) >= alt.min
+  )
+    return "bronze";
+  return lv;
+}
+
 export function levelOf(value: number, s: Standard): Level {
   if (s.gold != null && value >= s.gold) return "gold";
   if (s.silver != null && value >= s.silver) return "silver";
@@ -145,7 +176,8 @@ export function nextTarget(
 export function formatMetric(n: number, testKey: string) {
   const m = STANDARD_METRICS[testKey];
   const s = m ? n.toFixed(m.dp) : String(n);
-  return m?.unit ? `${s} ${m.unit}` : s;
+  if (!m?.unit) return s;
+  return `${s} ${m.unit === "reps" && s === "1" ? "rep" : m.unit}`;
 }
 
 /** Parse and check one row of the coach's settings form. */

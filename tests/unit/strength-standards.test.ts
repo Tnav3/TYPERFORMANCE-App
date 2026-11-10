@@ -63,7 +63,7 @@ describe("Strength Standards overview", () => {
   it("uses the newer of test and saved 1RM", () => {
     // 3RM 150 @ 75 kg: e1RM 162 → 2.16
     expect(currentFor(trap, [e("2026-10-01", 150, 75)], [m("trap_bar_dl", "2026-09-01", 200, 80)], null))
-      .toEqual({ value: 2.16, on: "2026-10-01", from: "test" });
+      .toEqual({ value: 2.16, values: { load_kg: 150 }, on: "2026-10-01", from: "test" });
     expect(currentFor(trap, [e("2026-10-01", 150, 75)], [m("trap_bar_dl", "2026-11-01", 200, 80)], null))
       .toEqual({ value: 2.5, on: "2026-11-01", from: "1rm" });
   });
@@ -127,5 +127,32 @@ describe("CMJ standards from UFC PI", () => {
   });
   it("deadlift row covers trap bar and barbell", () => {
     expect(OVERVIEW[0].lifts).toEqual(["trap_bar_dl", "deadlift"]);
+  });
+});
+
+describe("Bronze with a light band (chin-ups)", () => {
+  const women = { test_key: "chin_ups", sex: "female" as const, bronze: null, silver: 1, gold: 5, source: null };
+  const men = { ...women, sex: "male" as const, bronze: 10, silver: 16, gold: 24 };
+  it("0 clean reps + 5 band reps = Bronze when Bronze is blank", async () => {
+    const { entryLevel } = await import("@/lib/standards");
+    expect(entryLevel("chin_ups", { reps: 0, band_reps: 5 }, 0, women)).toBe("bronze");
+    expect(entryLevel("chin_ups", { reps: 0, band_reps: 4 }, 0, women)).toBe("below");
+    expect(entryLevel("chin_ups", { reps: 0 }, 0, women)).toBe("below");
+    expect(entryLevel("chin_ups", { reps: 2, band_reps: 9 }, 2, women)).toBe("silver");
+    expect(entryLevel("chin_ups", { reps: 6 }, 6, women)).toBe("gold");
+  });
+  it("doesn't apply when the coach set a Bronze number (men: 10 strict)", async () => {
+    const { entryLevel } = await import("@/lib/standards");
+    expect(entryLevel("chin_ups", { reps: 0, band_reps: 20 }, 0, men)).toBe("below");
+    expect(entryLevel("bench_3rm", { band_reps: 20 }, 0.5, { ...women, test_key: "bench_3rm" })).toBe("below");
+  });
+  it("band reps are optional, and headline shows them when there are no clean reps", async () => {
+    const { validateTestValues, headlineValue } = await import("@/lib/testing");
+    const f = (o: Record<string, string>) => ({ get: (k: string) => o[k] ?? null });
+    expect(validateTestValues("chin_ups", f({ reps: "0" }))).toEqual({ ok: true, values: { reps: 0 } });
+    expect(validateTestValues("chin_ups", f({ reps: "0", band_reps: "7" }))).toEqual({ ok: true, values: { reps: 0, band_reps: 7 } });
+    expect(validateTestValues("chin_ups", f({ reps: "0", band_reps: "0" })).ok).toBe(false);
+    expect(headlineValue("chin_ups", { reps: 0, band_reps: 7 })).toEqual({ value: 7, unit: "reps (light band)" });
+    expect(headlineValue("chin_ups", { reps: 3, band_reps: 7 })).toEqual({ value: 3, unit: "reps" });
   });
 });

@@ -79,6 +79,14 @@ export const TEST_FIELDS: Record<string, FieldSpec[]> = {
       step: 1,
       required: true,
     },
+    {
+      key: "band_reps",
+      label: "Reps with a light band (if under 1 clean rep)",
+      unit: "reps",
+      min: 1,
+      max: 100,
+      step: 1,
+    },
   ],
   mas_5min: [
     {
@@ -393,10 +401,50 @@ export const MAS_MODES: Record<
     pace500: boolean;
   }
 > = {
-  run: { label: "Run", tab: "Run", testKey: "mas_5min", field: "distance_m", unit: "m", min: 300, max: 3000, hint: "Metres covered in 5 minutes", pace500: false },
-  bike: { label: "Assault Bike", tab: "Bike", testKey: "mas_bike_5min", field: "distance_km", unit: "km", min: 0.5, max: 5, hint: "Console distance at 5:00", pace500: false },
-  row: { label: "Rower", tab: "Row", testKey: "mas_row_5min", field: "distance_m", unit: "m", min: 300, max: 2500, hint: "Monitor distance at 5:00", pace500: true },
-  ski: { label: "SkiErg", tab: "SkiErg", testKey: "mas_ski_5min", field: "distance_m", unit: "m", min: 300, max: 2500, hint: "Monitor distance at 5:00", pace500: true },
+  run: {
+    label: "Run",
+    tab: "Run",
+    testKey: "mas_5min",
+    field: "distance_m",
+    unit: "m",
+    min: 300,
+    max: 3000,
+    hint: "Metres covered in 5 minutes",
+    pace500: false,
+  },
+  bike: {
+    label: "Assault Bike",
+    tab: "Bike",
+    testKey: "mas_bike_5min",
+    field: "distance_km",
+    unit: "km",
+    min: 0.5,
+    max: 5,
+    hint: "Console distance at 5:00",
+    pace500: false,
+  },
+  row: {
+    label: "Rower",
+    tab: "Row",
+    testKey: "mas_row_5min",
+    field: "distance_m",
+    unit: "m",
+    min: 300,
+    max: 2500,
+    hint: "Monitor distance at 5:00",
+    pace500: true,
+  },
+  ski: {
+    label: "SkiErg",
+    tab: "SkiErg",
+    testKey: "mas_ski_5min",
+    field: "distance_m",
+    unit: "m",
+    min: 300,
+    max: 2500,
+    hint: "Monitor distance at 5:00",
+    pace500: true,
+  },
 };
 export const MAS_MODE_ORDER: MasMode[] = ["run", "bike", "row", "ski"];
 
@@ -432,10 +480,13 @@ export const MIN_REP_S = 5;
 export const MAX_REP_S = 300;
 
 /** "93", "93%", "92.5" → a %MAS row (50–150, whole or .5). */
-export function parsePercent(input: string): { pct: number } | { error: string } {
+export function parsePercent(
+  input: string,
+): { pct: number } | { error: string } {
   const t = input.trim().replace("%", "").replace(",", ".");
   if (!t) return { error: "Enter a %" };
-  if (!/^\d{2,3}(\.\d)?$/.test(t)) return { error: "Use a number like 93 or 92.5" };
+  if (!/^\d{2,3}(\.\d)?$/.test(t))
+    return { error: "Use a number like 93 or 92.5" };
   const n = Number(t);
   if (n < 50 || n > 150) return { error: "Between 50% and 150%" };
   if ((n * 2) % 1 !== 0) return { error: "Whole numbers or .5 only" };
@@ -443,7 +494,9 @@ export function parsePercent(input: string): { pct: number } | { error: string }
 }
 
 /** "150", "150s", "2:30" → seconds. Returns an error message for anything else. */
-export function parseDuration(input: string): { seconds: number } | { error: string } {
+export function parseDuration(
+  input: string,
+): { seconds: number } | { error: string } {
   const t = input.trim().toLowerCase().replace(/\s+/g, "");
   if (!t) return { error: "Enter a rep length" };
   let sec: number;
@@ -451,14 +504,20 @@ export function parseDuration(input: string): { seconds: number } | { error: str
   if (mmss) sec = Number(mmss[1]) * 60 + Number(mmss[2]);
   else if (/^\d{1,3}s?$/.test(t)) sec = Number(t.replace("s", ""));
   else return { error: "Use seconds (150) or m:ss (2:30)" };
-  if (sec < MIN_REP_S || sec > MAX_REP_S) return { error: "Between 0:05 and 5:00" };
+  if (sec < MIN_REP_S || sec > MAX_REP_S)
+    return { error: "Between 0:05 and 5:00" };
   return { seconds: sec };
 }
 export const durationLabel = (s: number) =>
-  s < 60 ? `${s} s` : s % 60 === 0 ? `${s / 60} min` : `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")} min`;
+  s < 60
+    ? `${s} s`
+    : s % 60 === 0
+      ? `${s / 60} min`
+      : `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")} min`;
 
 /** Metres to cover at a speed for a rep length. */
-export const repMetres = (ms: number, seconds: number) => Math.round(ms * seconds);
+export const repMetres = (ms: number, seconds: number) =>
+  Math.round(ms * seconds);
 
 export function asymmetry(left: number, right: number) {
   const hi = Math.max(left, right);
@@ -511,7 +570,9 @@ export function derivedFor(
   if (mas) {
     out.push({
       label:
-        testKey === "mas_5min" ? "MAS" : `${MAS_MODES[masModeOf(testKey)!].label} MAS`,
+        testKey === "mas_5min"
+          ? "MAS"
+          : `${MAS_MODES[masModeOf(testKey)!].label} MAS`,
       value: `${mas.ms} m/s (${mas.kmh} km/h)`,
     });
   }
@@ -532,10 +593,19 @@ export function derivedFor(
   }
   if (testKey === "wingate_30s" && v.peak_w && v.avg_w) {
     if (bodyweight) {
-      out.push({ label: "Peak", value: `${round(v.peak_w / bodyweight, 1)} W/kg` });
-      out.push({ label: "Average", value: `${round(v.avg_w / bodyweight, 1)} W/kg` });
+      out.push({
+        label: "Peak",
+        value: `${round(v.peak_w / bodyweight, 1)} W/kg`,
+      });
+      out.push({
+        label: "Average",
+        value: `${round(v.avg_w / bodyweight, 1)} W/kg`,
+      });
     }
-    out.push({ label: "Avg ÷ peak", value: `${Math.round((v.avg_w / v.peak_w) * 100)}%` });
+    out.push({
+      label: "Avg ÷ peak",
+      value: `${Math.round((v.avg_w / v.peak_w) * 100)}%`,
+    });
   }
   if (testKey === "imtp" && v.peak_force_n && bodyweight) {
     out.push({
@@ -561,6 +631,8 @@ export function headlineValue(
         ? { value: e1rmFrom(v.load_kg), unit: "kg e1RM" }
         : null;
     case "chin_ups":
+      if (!v.reps && v.band_reps)
+        return { value: v.band_reps, unit: "reps (light band)" };
       return v.reps != null ? { value: v.reps, unit: "reps" } : null;
     case "mas_5min":
       return v.distance_m != null
@@ -571,7 +643,10 @@ export function headlineValue(
     case "mas_ski_5min": {
       const m = masOf(testKey, v);
       return m
-        ? { value: m.ms, unit: `m/s (${MAS_MODES[masModeOf(testKey)!].tab.toLowerCase()})` }
+        ? {
+            value: m.ms,
+            unit: `m/s (${MAS_MODES[masModeOf(testKey)!].tab.toLowerCase()})`,
+          }
         : null;
     }
     case "broad_jump":
@@ -649,7 +724,12 @@ export function validateTestValues(
   }
   if (Object.keys(values).length === 0 && !Object.keys(errors).length)
     errors._ = "Enter at least one result";
-  if (testKey === "wingate_30s" && values.avg_w != null && values.peak_w != null && values.avg_w > values.peak_w)
+  if (
+    testKey === "wingate_30s" &&
+    values.avg_w != null &&
+    values.peak_w != null &&
+    values.avg_w > values.peak_w
+  )
     errors.avg_w = "Average can't be higher than peak";
   return Object.keys(errors).length
     ? { ok: false, errors }
@@ -680,7 +760,11 @@ export function youtubeId(url: string | null | undefined): string | null {
 
 // ---------- Field-test categories ----------
 export type TestCategory = "power" | "strength" | "conditioning";
-export const TEST_CATEGORY_ORDER: TestCategory[] = ["power", "strength", "conditioning"];
+export const TEST_CATEGORY_ORDER: TestCategory[] = [
+  "power",
+  "strength",
+  "conditioning",
+];
 export const TEST_CATEGORY_LABEL: Record<TestCategory, string> = {
   power: "Power",
   strength: "Strength",
@@ -700,7 +784,9 @@ export function groupByCategory<T extends { category?: string | null }>(
   groups.push({
     category: null,
     label: "Other",
-    items: items.filter((i) => !TEST_CATEGORY_ORDER.includes(i.category as TestCategory)),
+    items: items.filter(
+      (i) => !TEST_CATEGORY_ORDER.includes(i.category as TestCategory),
+    ),
   });
   return groups.filter((g) => g.items.length > 0);
 }

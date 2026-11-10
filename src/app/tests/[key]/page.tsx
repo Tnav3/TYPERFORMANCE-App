@@ -99,6 +99,7 @@ export default async function TestPage({
             testKey={key}
             standard={standard}
             value={metric}
+            values={latest?.values}
             needsSex={!sex}
           />
         )}

@@ -37,6 +37,7 @@ export interface LiftMaxLike {
 
 export interface Current {
   value: number;
+  values?: Record<string, number>;
   on: string;
   from: "test" | "1rm";
 }
@@ -62,6 +63,7 @@ export function currentFor(
     if (v == null) continue;
     const c = {
       value: v,
+      values: e.values,
       on: e.tested_on,
       at: e.created_at,
       from: "test" as const,
@@ -84,6 +86,6 @@ export function currentFor(
       best = c;
   }
   if (!best) return null;
-  const { value, on, from } = best;
-  return { value, on, from };
+  const { value, values, on, from } = best as Current & { at: string };
+  return values ? { value, values, on, from } : { value, on, from };
 }

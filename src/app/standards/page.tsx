@@ -92,6 +92,7 @@ export default async function StandardsPage() {
                 testKey={r.testKey}
                 standard={r.st}
                 value={r.cur?.value ?? null}
+                values={r.cur?.values}
                 title={r.name}
                 note={
                   r.cur

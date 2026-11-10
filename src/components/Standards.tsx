@@ -4,7 +4,8 @@ import {
   LEVEL_LABEL,
   STANDARD_METRICS,
   formatMetric,
-  levelOf,
+  ALT_BRONZE,
+  entryLevel,
   nextTarget,
   type Level,
   type Standard,
@@ -33,6 +34,7 @@ export function StandardsCard({
   needsSex,
   title = "Standards",
   note,
+  values,
 }: {
   testKey: string;
   standard: Standard | null;
@@ -40,6 +42,8 @@ export function StandardsCard({
   needsSex?: boolean;
   title?: string;
   note?: string;
+  /** Raw entry values, for tests with another way to Bronze. */
+  values?: Record<string, number>;
 }) {
   const m = STANDARD_METRICS[testKey];
   if (!m) return null;
@@ -73,7 +77,8 @@ export function StandardsCard({
   const min = Math.max(0, lo - pad);
   const max = hi + pad;
   const pos = (n: number) => `${((n - min) / (max - min)) * 100}%`;
-  const level = value != null ? levelOf(value, standard) : null;
+  const level = entryLevel(testKey, values ?? {}, value, standard);
+  const alt = standard.bronze == null ? ALT_BRONZE[testKey] : undefined;
   const next = value != null ? nextTarget(value, standard) : null;
 
   return (
@@ -161,6 +166,14 @@ export function StandardsCard({
       ) : (
         <p className="text-sm font-bold">
           You&apos;ve hit Gold. Keep pushing your own best.
+        </p>
+      )}
+      {alt && (
+        <p className="mt-1 text-sm">
+          <b style={{ color: LEVEL_COLOR.bronze }}>Bronze:</b> {alt.text}
+          {level === "bronze" && values?.[alt.field] != null && (
+            <span className="text-muted"> (you {values[alt.field]})</span>
+          )}
         </p>
       )}
       {standard.source && (

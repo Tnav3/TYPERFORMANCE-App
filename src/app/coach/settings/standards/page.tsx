@@ -62,6 +62,12 @@ export default async function StandardsSettings({
                         Class). These numbers are for clients without one.
                       </p>
                     )}
+                    {d.key === "chin_ups" && (
+                      <p className="mt-1 text-xs text-muted">
+                        Leave Bronze blank and Bronze becomes 5+ reps with a
+                        light band (for clients under 1 clean rep).
+                      </p>
+                    )}
                     {d.key === "trap_bar_3rm" && (
                       <p className="mt-1 text-xs text-muted">
                         Also used for barbell deadlifts saved in the 1RM

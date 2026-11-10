@@ -6,7 +6,7 @@ import { groupByCategory, headlineValue } from "@/lib/testing";
 import { BackLink, Card, Heading, Screen } from "@/components/ui";
 import { LevelBadge } from "@/components/Standards";
 import { getStandards, standardFor } from "@/lib/standards-data";
-import { entryMetric, levelOf } from "@/lib/standards";
+import { entryLevel, entryMetric } from "@/lib/standards";
 
 export default async function TestsHome() {
   const { supabase, user, profile } = await requireFeature(
@@ -29,7 +29,7 @@ export default async function TestsHome() {
       profile?.weight_class_limit_kg,
     );
     const v = e ? entryMetric(key, e) : null;
-    return st && v != null ? levelOf(v, st) : null;
+    return st && e ? entryLevel(key, e.values, v, st) : null;
   };
   const summaries = summarize(
     defs.filter((d) => d.active),
