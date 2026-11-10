@@ -99,9 +99,10 @@ export function NutritionGuide({
           </div>
           <ul className="mt-4 space-y-2 text-sm leading-relaxed">
             <li>
-              <b>Spread your protein:</b> about {plan.proteinPerMeal} g at each
-              of {plan.meals} meals or snacks, every 3–4 hours, including one
-              soon after training.
+              <b>Spread your protein:</b> at least {plan.proteinPerMeal} g at
+              each of {plan.meals} meals or snacks, every 3–4 hours, including
+              one soon after training. Main meals can carry more, as in the
+              sample day.
             </li>
             <li>
               <b>Carbs follow your training:</b> eat more on the days and in the
@@ -144,8 +145,8 @@ export function NutritionGuide({
                   <td className="py-2 pr-2">
                     <span className="font-bold">{m.name}</span>
                     <span className="block text-xs text-muted">
-                      ≈ {serves(m.carbs, 30)} carb · {serves(m.protein, 25)}{" "}
-                      protein serves
+                      Serves: {serves(m.carbs, 30)} carb ·{" "}
+                      {serves(m.protein, 25)} protein
                     </span>
                   </td>
                   <td className="py-2 text-right">{m.carbs} g</td>
