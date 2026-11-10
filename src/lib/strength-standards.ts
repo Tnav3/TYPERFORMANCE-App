@@ -16,7 +16,7 @@ export const GROUPS: { key: OverviewGroup; title: string; intro: string }[] = [
     key: "power",
     title: "Power",
     intro:
-      "How explosively you can jump. Broad jump, triple hop and lateral bound are in metres; the countermovement jump is in centimetres. Single-leg jumps count your weaker leg, so closing the gap between legs lifts your score.",
+      "How explosively you can jump. Broad jump and triple hop are in metres; the countermovement jump is in centimetres. Single-leg jumps count your weaker leg, so closing the gap between legs lifts your score.",
   },
 ];
 
@@ -47,7 +47,6 @@ export const OVERVIEW: {
   { testKey: "chin_ups", name: "Chin-Ups", group: "strength" },
   { testKey: "broad_jump", name: "Broad Jump", group: "power" },
   { testKey: "triple_hop", name: "Triple Hop", group: "power" },
-  { testKey: "lateral_bound", name: "Lateral Bound", group: "power" },
   { testKey: "cmj", name: "Countermovement Jump", group: "power" },
 ];
 
