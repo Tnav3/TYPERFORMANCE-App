@@ -30,10 +30,10 @@ export function UfcCmjCard({
     tier: t,
     range:
       i === 0
-        ? `${c.floors[0].toFixed(1)}+`
+        ? `${c.floors[0].toFixed(1)}+ cm`
         : i < 6
-          ? `${c.floors[i].toFixed(1)} – ${(c.floors[i - 1] - 0.1).toFixed(1)}`
-          : `< ${c.floors[5].toFixed(1)}`,
+          ? `${c.floors[i].toFixed(1)} – ${(c.floors[i - 1] - 0.1).toFixed(1)} cm`
+          : `< ${c.floors[5].toFixed(1)} cm`,
   }));
 
   return (

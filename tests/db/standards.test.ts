@@ -27,13 +27,15 @@ describe("testing standards", () => {
       { test_key: "cmj", sex: "male", b: 51.4, s: 55.55, g: 60.1 },
       { test_key: "trap_bar_3rm", sex: "female", b: null, s: null, g: 2.19 },
       { test_key: "trap_bar_3rm", sex: "male", b: 1.96, s: 2.43, g: 2.9 },
+      { test_key: "triple_hop", sex: "female", b: 420, s: 470, g: 559 },
+      { test_key: "triple_hop", sex: "male", b: 540, s: 630, g: 718 },
     ]);
     const src = await q(`select count(*)::int n from test_standards where source is null`);
     expect(src.rows[0].n).toBe(0);
   });
   it("everyone can read; only the coach can change", async () => {
     const a = await asUser(db, alice, () => q(`select count(*)::int n from test_standards`));
-    expect(a.rows[0].n).toBe(9);
+    expect(a.rows[0].n).toBe(11);
     const u = await asUser(db, alice, () => q(`update test_standards set gold = 99 returning 1`));
     expect(u.rows).toHaveLength(0);
     await expect(

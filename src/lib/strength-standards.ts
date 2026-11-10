@@ -17,6 +17,8 @@ export const OVERVIEW: { testKey: string; name: string; lifts?: string[] }[] = [
   { testKey: "bench_3rm", name: "Bench Press", lifts: ["bench"] },
   { testKey: "chin_ups", name: "Chin-Ups" },
   { testKey: "broad_jump", name: "Broad Jump" },
+  { testKey: "triple_hop", name: "Triple Hop" },
+  { testKey: "lateral_bound", name: "Lateral Bound" },
   { testKey: "cmj", name: "Countermovement Jump" },
 ];
 

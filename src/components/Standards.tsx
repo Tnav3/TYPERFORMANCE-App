@@ -77,6 +77,26 @@ export function StandardsCard({
   const min = Math.max(0, lo - pad);
   const max = hi + pad;
   const pos = (n: number) => `${((n - min) / (max - min)) * 100}%`;
+  // Ticks closer than ~22% of the track would overlap: show a legend row
+  // under the track instead of labels at each tick.
+  const pct = marks.map(
+    (l) => (((standard[l] as number) - min) / (max - min)) * 100,
+  );
+  const crowded = pct.some((p, i) => i > 0 && p - pct[i - 1] < 22);
+  const tickText = (l: (typeof marks)[number]) => (
+    <>
+      <span
+        className="block font-extrabold uppercase"
+        style={{ color: LEVEL_COLOR[l] }}
+      >
+        {l}
+      </span>
+      <span className="text-muted">
+        {(standard[l] as number).toFixed(m.dp)}
+        {m.unit === "cm" ? " cm" : ""}
+      </span>
+    </>
+  );
   const level = entryLevel(testKey, values ?? {}, value, standard);
   const alt = standard.bronze == null ? ALT_BRONZE[testKey] : undefined;
   const next = value != null ? nextTarget(value, standard) : null;
@@ -98,7 +118,7 @@ export function StandardsCard({
 
       {/* Track */}
       <div
-        className="relative mb-9 mt-9 h-2 rounded-full bg-surface-2"
+        className={`relative ${crowded ? "mb-3" : "mb-9"} mt-9 h-2 rounded-full bg-surface-2`}
         role="img"
         aria-label={`Bronze ${standard.bronze ?? "not set"}, Silver ${standard.silver ?? "not set"}, Gold ${standard.gold ?? "not set"}${value != null ? `, you ${value}` : ""}`}
       >
@@ -119,23 +139,24 @@ export function StandardsCard({
             />
           );
         })}
-        {marks.map((l) => (
-          <span
-            key={`t-${l}`}
-            className="absolute top-3 -translate-x-1/2 whitespace-nowrap text-center text-[11px] leading-tight"
-            style={{ left: pos(standard[l] as number) }}
-          >
+        {!crowded &&
+          marks.map((l) => (
             <span
-              className="block font-extrabold uppercase"
-              style={{ color: LEVEL_COLOR[l] }}
+              key={`t-${l}`}
+              className="absolute top-3 -translate-x-1/2 whitespace-nowrap text-center text-[11px] leading-tight"
+              style={{ left: pos(standard[l] as number) }}
             >
-              {l}
+              {tickText(l)}
             </span>
-            <span className="text-muted">
-              {(standard[l] as number).toFixed(m.dp)}
-            </span>
-          </span>
-        ))}
+          ))}
+        {crowded &&
+          marks.map((l) => (
+            <span
+              key={`d-${l}`}
+              className="absolute -top-0.5 h-3 w-0.5 -translate-x-1/2 bg-text/70"
+              style={{ left: pos(standard[l] as number) }}
+            />
+          ))}
         {value != null && (
           <span
             className="absolute -top-8 -translate-x-1/2 text-center"
@@ -143,11 +164,20 @@ export function StandardsCard({
           >
             <span className="block whitespace-nowrap rounded-md bg-text px-1.5 py-0.5 text-[11px] font-black text-black">
               You {value.toFixed(m.dp)}
+              {m.unit === "cm" ? " cm" : ""}
             </span>
             <span className="mx-auto block h-4 w-0.5 bg-text" />
           </span>
         )}
       </div>
+
+      {crowded && (
+        <div className="mb-3 grid grid-cols-3 gap-2 text-[11px] leading-tight">
+          {marks.map((l) => (
+            <span key={`g-${l}`}>{tickText(l)}</span>
+          ))}
+        </div>
+      )}
 
       {value == null ? (
         <p className="text-sm text-muted">
