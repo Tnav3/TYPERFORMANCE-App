@@ -3,23 +3,52 @@
 import { entryMetric } from "./standards";
 
 /** Movements on the overview, in display order. */
-export const OVERVIEW: { testKey: string; name: string; lifts?: string[] }[] = [
+export type OverviewGroup = "strength" | "power";
+
+export const GROUPS: { key: OverviewGroup; title: string; intro: string }[] = [
+  {
+    key: "strength",
+    title: "Strength",
+    intro:
+      "How much you can lift for your size. Lifts are your estimated 1RM divided by your bodyweight (× BW), from your latest test or a max saved in the 1RM Calculator. Chin-ups are strict reps.",
+  },
+  {
+    key: "power",
+    title: "Power",
+    intro:
+      "How explosively you can jump. Broad jump, triple hop and lateral bound are in metres; the countermovement jump is in centimetres. Single-leg jumps count your weaker leg, so closing the gap between legs lifts your score.",
+  },
+];
+
+export const OVERVIEW: {
+  testKey: string;
+  name: string;
+  group: OverviewGroup;
+  lifts?: string[];
+}[] = [
   {
     testKey: "trap_bar_3rm",
+    group: "strength",
     name: "Deadlift (Trap Bar or Barbell)",
     lifts: ["trap_bar_dl", "deadlift"],
   },
   {
     testKey: "box_squat_3rm",
+    group: "strength",
     name: "Barbell Squat",
     lifts: ["back_squat", "box_squat"],
   },
-  { testKey: "bench_3rm", name: "Bench Press", lifts: ["bench"] },
-  { testKey: "chin_ups", name: "Chin-Ups" },
-  { testKey: "broad_jump", name: "Broad Jump" },
-  { testKey: "triple_hop", name: "Triple Hop" },
-  { testKey: "lateral_bound", name: "Lateral Bound" },
-  { testKey: "cmj", name: "Countermovement Jump" },
+  {
+    testKey: "bench_3rm",
+    name: "Bench Press",
+    group: "strength",
+    lifts: ["bench"],
+  },
+  { testKey: "chin_ups", name: "Chin-Ups", group: "strength" },
+  { testKey: "broad_jump", name: "Broad Jump", group: "power" },
+  { testKey: "triple_hop", name: "Triple Hop", group: "power" },
+  { testKey: "lateral_bound", name: "Lateral Bound", group: "power" },
+  { testKey: "cmj", name: "Countermovement Jump", group: "power" },
 ];
 
 export interface EntryLike {

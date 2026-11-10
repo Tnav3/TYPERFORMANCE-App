@@ -4,9 +4,10 @@ import { hasFeature } from "@/lib/features";
 import { formatDate } from "@/lib/dates";
 import { getEntries } from "@/lib/test-data";
 import { getStandards, standardFor } from "@/lib/standards-data";
-import { OVERVIEW, currentFor } from "@/lib/strength-standards";
+import { GROUPS, OVERVIEW, currentFor } from "@/lib/strength-standards";
 import { ufcClassForLimit } from "@/lib/ufc-cmj";
 import { StandardsCard } from "@/components/Standards";
+import { LEVEL_COLOR } from "@/lib/standards";
 import { UfcCmjCard } from "@/components/UfcCmjCard";
 import { BackLink, Card, Heading, Screen } from "@/components/ui";
 
@@ -65,9 +66,21 @@ export default async function StandardsPage() {
         href={state === "coach" ? "/" : "/tools"}
         label={state === "coach" ? "Home" : "Training Tools"}
       />
-      <Heading sub="Relative strength and jump standards to work towards. Lifts are estimated 1RM ÷ bodyweight from your latest test or saved 1RM.">
-        Strength Standards
-      </Heading>
+      <Heading>Strength Standards</Heading>
+      <Card className="mb-6">
+        <p className="text-[15px] leading-relaxed">
+          Targets to work towards, based on research in combat and other trained
+          athletes. <b style={{ color: LEVEL_COLOR.bronze }}>Bronze</b> is a
+          solid base, <b style={{ color: LEVEL_COLOR.silver }}>Silver</b> is
+          strong for a competing athlete, and{" "}
+          <b style={{ color: LEVEL_COLOR.gold }}>Gold</b> is top level.
+        </p>
+        <p className="mt-2 text-sm text-muted">
+          Each bar shows your latest result. Aim for the next medal, not all of
+          them at once. Tap &ldquo;Where these numbers come from&rdquo; on any
+          card to see the research.
+        </p>
+      </Card>
 
       {!sex ? (
         <Card className="mb-4">
@@ -84,40 +97,50 @@ export default async function StandardsPage() {
         </Card>
       ) : (
         <>
-          {rows
-            .filter((r) => r.st)
-            .map((r) => (
-              <StandardsCard
-                key={r.testKey}
-                testKey={r.testKey}
-                standard={r.st}
-                value={r.cur?.value ?? null}
-                values={r.cur?.values}
-                title={r.name}
-                note={
-                  r.cur
-                    ? `${r.cur.from === "1rm" ? "1RM Calculator" : "Test"} ${formatDate(r.cur.on)}`
-                    : undefined
-                }
-              />
-            ))}
-          {testing && cmj && (
-            <UfcCmjCard
-              sex={sex}
-              defaultCode={ufcDefault?.code ?? null}
-              value={cmj.cur?.value ?? null}
-            />
-          )}
-          {rows.some((r) => !r.st) && (
-            <p className="mb-4 text-xs text-muted">
-              No standards set yet for:{" "}
-              {rows
-                .filter((r) => !r.st)
-                .map((r) => r.name)
-                .join(", ")}
-              . Your coach can add them.
-            </p>
-          )}
+          {GROUPS.map((g) => {
+            const gr = rows.filter((r) => r.group === g.key);
+            if (gr.length === 0) return null;
+            const missing = gr.filter((r) => !r.st);
+            return (
+              <section key={g.key} className="mb-8">
+                <h2 className="text-xl font-black uppercase tracking-tight">
+                  {g.title}
+                </h2>
+                <p className="mb-3 mt-1 text-sm text-muted">{g.intro}</p>
+                {gr
+                  .filter((r) => r.st)
+                  .map((r) => (
+                    <StandardsCard
+                      key={r.testKey}
+                      testKey={r.testKey}
+                      standard={r.st}
+                      value={r.cur?.value ?? null}
+                      values={r.cur?.values}
+                      title={r.name}
+                      note={
+                        r.cur
+                          ? `${r.cur.from === "1rm" ? "1RM Calculator" : "Test"} ${formatDate(r.cur.on)}`
+                          : undefined
+                      }
+                    />
+                  ))}
+                {g.key === "power" && testing && cmj && (
+                  <UfcCmjCard
+                    sex={sex}
+                    defaultCode={ufcDefault?.code ?? null}
+                    value={cmj.cur?.value ?? null}
+                  />
+                )}
+                {missing.length > 0 && (
+                  <p className="text-xs text-muted">
+                    No standards set yet for:{" "}
+                    {missing.map((r) => r.name).join(", ")}. Your coach can add
+                    them.
+                  </p>
+                )}
+              </section>
+            );
+          })}
         </>
       )}
     </Screen>

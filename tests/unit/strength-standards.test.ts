@@ -156,3 +156,13 @@ describe("Bronze with a light band (chin-ups)", () => {
     expect(headlineValue("chin_ups", { reps: 3, band_reps: 7 })).toEqual({ value: 3, unit: "reps" });
   });
 });
+
+describe("overview groups", () => {
+  it("every movement sits in Strength or Power, lifts in Strength", async () => {
+    const { GROUPS } = await import("@/lib/strength-standards");
+    const keys = GROUPS.map((g) => g.key);
+    for (const r of OVERVIEW) expect(keys).toContain(r.group);
+    for (const r of OVERVIEW.filter((x) => x.lifts)) expect(r.group).toBe("strength");
+    expect(OVERVIEW.filter((r) => r.group === "power").map((r) => r.testKey)).toEqual(["broad_jump", "triple_hop", "lateral_bound", "cmj"]);
+  });
+});
