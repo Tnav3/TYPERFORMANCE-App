@@ -172,6 +172,26 @@ export const TEST_FIELDS: Record<string, FieldSpec[]> = {
       required: true,
     },
   ],
+  single_hop: [
+    {
+      key: "left_cm",
+      label: "Left leg",
+      unit: "cm",
+      min: 30,
+      max: 400,
+      step: 1,
+      required: true,
+    },
+    {
+      key: "right_cm",
+      label: "Right leg",
+      unit: "cm",
+      min: 30,
+      max: 400,
+      step: 1,
+      required: true,
+    },
+  ],
   triple_hop: [
     {
       key: "left_cm",
@@ -577,6 +597,7 @@ export function derivedFor(
     });
   }
   if (
+    testKey === "single_hop" ||
     testKey === "triple_hop" ||
     testKey === "lateral_bound" ||
     testKey === "slj" ||
@@ -651,6 +672,7 @@ export function headlineValue(
     }
     case "broad_jump":
       return v.best_cm != null ? { value: cmToM(v.best_cm), unit: "m" } : null;
+    case "single_hop":
     case "triple_hop":
     case "lateral_bound":
       return v.left_cm != null && v.right_cm != null
@@ -692,6 +714,7 @@ export function headlineValue(
 /** Horizontal jumps are entered in cm (tape reading) but shown in metres. */
 export const SHOWN_IN_METRES = new Set([
   "broad_jump",
+  "single_hop",
   "triple_hop",
   "lateral_bound",
 ]);

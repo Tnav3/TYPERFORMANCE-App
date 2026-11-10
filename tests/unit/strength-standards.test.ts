@@ -163,6 +163,6 @@ describe("overview groups", () => {
     const keys = GROUPS.map((g) => g.key);
     for (const r of OVERVIEW) expect(keys).toContain(r.group);
     for (const r of OVERVIEW.filter((x) => x.lifts)) expect(r.group).toBe("strength");
-    expect(OVERVIEW.filter((r) => r.group === "power").map((r) => r.testKey)).toEqual(["broad_jump", "triple_hop", "cmj"]);
+    expect(OVERVIEW.filter((r) => r.group === "power").map((r) => r.testKey)).toEqual(["broad_jump", "single_hop", "triple_hop", "cmj"]);
   });
 });

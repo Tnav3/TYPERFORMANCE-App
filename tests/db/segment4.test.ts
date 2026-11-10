@@ -42,6 +42,7 @@ describe("test definitions", () => {
     expect(f.rows.map((r) => r.key)).toEqual([
       "med_ball_throw",
       "broad_jump",
+      "single_hop",
       "triple_hop",
       "lateral_bound",
       "trap_bar_3rm",

@@ -58,6 +58,7 @@ export const STANDARD_METRICS: Record<
     dp: 2,
     value: (v) => (v.best_cm != null ? cmToM(v.best_cm) : null),
   },
+  single_hop: { label: "Weaker leg", unit: "m", dp: 2, value: weakerM },
   triple_hop: { label: "Weaker leg", unit: "m", dp: 2, value: weakerM },
   lateral_bound: { label: "Weaker leg", unit: "m", dp: 2, value: weakerM },
   trap_bar_3rm: rel(),

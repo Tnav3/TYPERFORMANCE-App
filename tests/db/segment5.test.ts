@@ -142,7 +142,7 @@ describe("test categories + Wingate (migration 011)", () => {
     const r = await q(`select mode, category, count(*)::int as n from test_definitions group by 1, 2 order by 1, 2`);
     expect(r.rows).toEqual([
       { mode: "field", category: "conditioning", n: 5 },
-      { mode: "field", category: "power", n: 4 },
+      { mode: "field", category: "power", n: 5 },
       { mode: "field", category: "strength", n: 4 },
       { mode: "forcedecks", category: null, n: 6 },
     ]);
