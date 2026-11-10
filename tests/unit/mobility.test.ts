@@ -180,3 +180,24 @@ describe("nutrition guide", () => {
     expect(validBodyweight("abc")).toBeNull();
   });
 });
+
+describe("nutrition: fat and sample day", () => {
+  it("fat makes up 25–30% of energy next to mid carbs + protein", async () => {
+    const { nutritionFor } = await import("@/lib/nutrition");
+    const p = nutritionFor(70, "moderate"); // carbs mid 420, protein mid 120 → 2160 kcal
+    expect(p.fat).toEqual([80, 105]); // 80.0 → 80, 102.9 → 105
+    const share = (f: number) => (9 * f) / (9 * f + 2160);
+    expect(share(p.fat[0])).toBeGreaterThan(0.24);
+    expect(share(p.fat[1])).toBeLessThan(0.31);
+  });
+  it("sample day splits roughly the middle of each range; rest days have 4 meals, training 5", async () => {
+    const { nutritionFor, sampleDay, serves } = await import("@/lib/nutrition");
+    const t = sampleDay(nutritionFor(70, "moderate"), "moderate");
+    expect(t.map((m) => m.name)).toEqual(["Breakfast", "Pre-training snack", "Post-training meal", "Dinner", "Evening snack"]);
+    const sum = (k: "carbs" | "protein" | "fat") => t.reduce((a, m) => a + m[k], 0);
+    expect(Math.abs(sum("carbs") - 420)).toBeLessThanOrEqual(10);
+    expect(Math.abs(sum("protein") - 120)).toBeLessThanOrEqual(10);
+    expect(sampleDay(nutritionFor(70, "rest"), "rest")).toHaveLength(4);
+    expect(serves(105, 30)).toBe(3.5);
+  });
+});

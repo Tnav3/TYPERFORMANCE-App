@@ -3,6 +3,8 @@ import { useState } from "react";
 import {
   DAY_TYPES,
   nutritionFor,
+  sampleDay,
+  serves,
   validBodyweight,
   type DayType,
 } from "@/lib/nutrition";
@@ -68,23 +70,32 @@ export function NutritionGuide({
       {plan && (
         <Card className="mb-4">
           <h2 className="mb-3 text-lg font-black uppercase">{d.label} day</h2>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-xl bg-surface-2 p-3">
-              <p className="text-xs uppercase tracking-widest text-muted">
-                Carbs
-              </p>
-              <p className="text-2xl font-black">{range(plan.carbs)}</p>
-              <p className="text-xs text-muted">
-                {d.carbs[0]}–{d.carbs[1]} g per kg
-              </p>
-            </div>
-            <div className="rounded-xl bg-surface-2 p-3">
-              <p className="text-xs uppercase tracking-widest text-muted">
-                Protein
-              </p>
-              <p className="text-2xl font-black">{range(plan.protein)}</p>
-              <p className="text-xs text-muted">1.4–2.0 g per kg</p>
-            </div>
+          <p className="mb-3 rounded-lg bg-surface-2 px-3 py-2 text-sm">
+            <b>For maintaining your weight.</b> These ranges fuel training at
+            your current bodyweight; they aren&apos;t set up to gain or lose
+            weight.
+          </p>
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              {
+                label: "Carbs",
+                g: plan.carbs,
+                note: `${d.carbs[0]}–${d.carbs[1]} g/kg`,
+              },
+              { label: "Protein", g: plan.protein, note: "1.4–2.0 g/kg" },
+              { label: "Fat", g: plan.fat, note: "25–30% of energy" },
+            ].map((m) => (
+              <div key={m.label} className="rounded-xl bg-surface-2 p-3">
+                <p className="text-xs uppercase tracking-widest text-muted">
+                  {m.label}
+                </p>
+                <p className="text-lg font-black leading-tight">
+                  {m.g[0]}–{m.g[1]}
+                  <span className="text-sm font-bold"> g</span>
+                </p>
+                <p className="text-[11px] text-muted">{m.note}</p>
+              </div>
+            ))}
           </div>
           <ul className="mt-4 space-y-2 text-sm leading-relaxed">
             <li>
@@ -104,10 +115,51 @@ export function NutritionGuide({
               </li>
             )}
             <li>
-              <b>Fat:</b> include some at most meals (oils, nuts, eggs,
-              avocado); it fills in the rest of your energy.
+              <b>Fat:</b> some at most meals (oils, nuts, eggs, avocado, fish),
+              but keep it light in the snack before training so it sits well.
             </li>
           </ul>
+        </Card>
+      )}
+
+      {plan && (
+        <Card className="mb-4">
+          <h2 className="mb-1 text-lg font-black uppercase">Sample day</h2>
+          <p className="mb-3 text-sm text-muted">
+            One way to split the middle of your ranges. Move meals around your
+            own training time.
+          </p>
+          <table className="w-full text-left text-sm">
+            <thead className="text-xs text-muted">
+              <tr>
+                <th className="py-1 pr-2 font-semibold">Meal</th>
+                <th className="py-1 text-right font-semibold">Carbs</th>
+                <th className="py-1 text-right font-semibold">Protein</th>
+                <th className="py-1 text-right font-semibold">Fat</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sampleDay(plan, day).map((m) => (
+                <tr key={m.name} className="border-t border-line align-top">
+                  <td className="py-2 pr-2">
+                    <span className="font-bold">{m.name}</span>
+                    <span className="block text-xs text-muted">
+                      ≈ {serves(m.carbs, 30)} carb · {serves(m.protein, 25)}{" "}
+                      protein serves
+                    </span>
+                  </td>
+                  <td className="py-2 text-right">{m.carbs} g</td>
+                  <td className="py-2 text-right">{m.protein} g</td>
+                  <td className="py-2 text-right">{m.fat} g</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p className="mt-3 text-xs text-muted">
+            A carb serve is about 30 g (¾ cup cooked rice, 1 large banana); a
+            protein serve is about 25 g (80 g cooked chicken, 4 eggs). See the
+            FAQ for food swaps.
+          </p>
         </Card>
       )}
 
@@ -128,9 +180,11 @@ export function NutritionGuide({
           Carbohydrate by training load and fast-refuel amounts: Thomas, Erdman
           &amp; Burke 2016, joint position statement of the American College of
           Sports Medicine, Academy of Nutrition and Dietetics and Dietitians of
-          Canada. Protein 1.4–2.0 g/kg/day in doses of about 0.25 g/kg every 3–4
-          hours: Jäger et al. 2017, International Society of Sports Nutrition
-          position stand.
+          Canada; the same statement puts fat at 20–35% of energy, and this
+          guide aims for the middle (25–30%). Protein 1.4–2.0 g/kg/day in doses
+          of about 0.25 g/kg every 3–4 hours: Jäger et al. 2017, International
+          Society of Sports Nutrition position stand. Meal splits are a worked
+          example, not from a study.
         </p>
       </details>
     </>
