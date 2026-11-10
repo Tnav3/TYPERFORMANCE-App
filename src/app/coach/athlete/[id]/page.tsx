@@ -182,7 +182,7 @@ export default async function AthleteDetail({
         href={`/coach/athlete/${id}/fights`}
         className="-mt-4 mb-6 flex min-h-12 items-center justify-between rounded-xl border border-line bg-surface-2 px-4 font-extrabold"
       >
-        Fight record <span aria-hidden>→</span>
+        Competition tracker <span aria-hidden>→</span>
       </Link>
 
       {pageError === "feature" && (

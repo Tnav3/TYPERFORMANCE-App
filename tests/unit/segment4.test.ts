@@ -81,7 +81,7 @@ describe("derived + headline", () => {
     });
     expect(
       headlineValue("lateral_bound", { left_cm: 210, right_cm: 190 }),
-    ).toEqual({ value: 190, unit: "cm (weaker leg)" });
+    ).toEqual({ value: 1.9, unit: "m (weaker leg)" });
     expect(headlineValue("cmj", {})).toBeNull();
     expect(pctChange(200, 220)).toBe(10);
     expect(pctChange(0, 5)).toBeNull();

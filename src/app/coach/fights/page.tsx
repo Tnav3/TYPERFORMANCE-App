@@ -46,7 +46,7 @@ export default async function CoachFights({
     <Screen wide>
       <BackLink href="/coach" label="Dashboard" />
       <Heading sub="Wins, losses, draws and rounds across all your clients.">
-        Fight Records
+        Competition Tracker
       </Heading>
 
       {years.length === 0 ? (

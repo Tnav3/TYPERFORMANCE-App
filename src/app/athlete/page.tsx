@@ -173,8 +173,8 @@ export default async function AthleteHome() {
       {on.fights && (
         <FeatureLink
           href="/fights"
-          title="Fight Record"
-          description="Your wins, losses, draws and rounds"
+          title="Competition Tracker"
+          description="Log your fights and track them year by year"
           icon={<Trophy size={22} strokeWidth={2.25} />}
         />
       )}

@@ -10,7 +10,7 @@ export const FEATURES: { key: Feature; column: keyof Profile; label: string; hin
   { key: "mas", column: "feat_mas", label: "MAS Calculator", hint: "Run, bike, row and SkiErg interval targets" },
   { key: "rpe", column: "feat_rpe", label: "RPE & RIR Chart", hint: "Reps in reserve and %1RM by reps × RPE" },
   { key: "hr", column: "feat_hr", label: "HR Zones", hint: "Heart-rate zones with matching RPE" },
-  { key: "fights", column: "feat_fights", label: "Fight Record", hint: "Wins, losses, draws and rounds" },
+  { key: "fights", column: "feat_fights", label: "Competition Tracker", hint: "Wins, losses, draws and rounds" },
 ];
 
 /** Coaches always have every feature. Missing columns (older rows) count as on. */

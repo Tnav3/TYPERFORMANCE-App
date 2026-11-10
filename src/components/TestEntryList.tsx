@@ -1,6 +1,6 @@
 import { deleteTestEntry, deleteTestVideo } from "@/app/tests/actions";
 import { formatDate } from "@/lib/dates";
-import { TEST_FIELDS, derivedFor } from "@/lib/testing";
+import { TEST_FIELDS, derivedFor, fieldText } from "@/lib/testing";
 import type { TestEntry } from "@/lib/test-data";
 
 /** Newest-first history for one test. */
@@ -46,10 +46,7 @@ export function TestEntryList({
             <p className="text-sm">
               {fields
                 .filter((f) => e.values[f.key] != null)
-                .map(
-                  (f) =>
-                    `${f.label}: ${e.values[f.key]}${f.unit ? " " + f.unit : ""}`,
-                )
+                .map((f) => fieldText(testKey, f, e.values[f.key]))
                 .join(" · ")}
             </p>
             {derivedFor(testKey, e.values, bw).length > 0 && (

@@ -650,11 +650,14 @@ export function headlineValue(
         : null;
     }
     case "broad_jump":
-      return v.best_cm != null ? { value: v.best_cm, unit: "cm" } : null;
+      return v.best_cm != null ? { value: cmToM(v.best_cm), unit: "m" } : null;
     case "triple_hop":
     case "lateral_bound":
       return v.left_cm != null && v.right_cm != null
-        ? { value: Math.min(v.left_cm, v.right_cm), unit: "cm (weaker leg)" }
+        ? {
+            value: cmToM(Math.min(v.left_cm, v.right_cm)),
+            unit: "m (weaker leg)",
+          }
         : null;
     case "cmj":
       return v.jump_height_cm != null
@@ -684,6 +687,21 @@ export function headlineValue(
       return v.rsi != null ? { value: v.rsi, unit: "RSI" } : null;
   }
   return null;
+}
+
+/** Horizontal jumps are entered in cm (tape reading) but shown in metres. */
+export const SHOWN_IN_METRES = new Set([
+  "broad_jump",
+  "triple_hop",
+  "lateral_bound",
+]);
+export const cmToM = (cm: number) => Math.round(cm) / 100;
+
+/** "Best jump: 2.56 m" for horizontal jumps, otherwise the value as entered. */
+export function fieldText(testKey: string, f: FieldSpec, v: number) {
+  if (SHOWN_IN_METRES.has(testKey) && f.unit === "cm")
+    return `${f.label}: ${cmToM(v).toFixed(2)} m`;
+  return `${f.label}: ${v}${f.unit ? " " + f.unit : ""}`;
 }
 
 export function pctChange(from: number, to: number): number | null {

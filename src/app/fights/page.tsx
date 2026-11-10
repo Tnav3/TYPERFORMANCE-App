@@ -24,7 +24,7 @@ export default async function FightsPage() {
     <Screen>
       <BackLink href="/" label="Home" />
       <Heading sub="Log each fight's result and how many rounds it went.">
-        Fight Record
+        Competition Tracker
       </Heading>
       <FightRecordView
         fights={(data ?? []) as Fight[]}

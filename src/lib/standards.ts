@@ -1,5 +1,5 @@
 // Bronze / Silver / Gold testing standards. Pure functions: unit-tested.
-import { e1rmFrom, masOf } from "./testing";
+import { cmToM, e1rmFrom, masOf } from "./testing";
 
 export type Sex = "male" | "female";
 export type Level = "gold" | "silver" | "bronze" | "below";
@@ -26,6 +26,10 @@ export const LEVEL_COLOR: Record<Exclude<Level, "below">, string> = {
 };
 
 const r = (n: number, dp: number) => Math.round(n * 10 ** dp) / 10 ** dp;
+const weakerM = (v: Record<string, number>) => {
+  const w = weaker(v);
+  return w == null ? null : cmToM(w);
+};
 const weaker = (v: Record<string, number>) =>
   v.left_cm != null && v.right_cm != null
     ? Math.min(v.left_cm, v.right_cm)
@@ -50,12 +54,12 @@ export const STANDARD_METRICS: Record<
   },
   broad_jump: {
     label: "Best jump",
-    unit: "cm",
-    dp: 0,
-    value: (v) => v.best_cm ?? null,
+    unit: "m",
+    dp: 2,
+    value: (v) => (v.best_cm != null ? cmToM(v.best_cm) : null),
   },
-  triple_hop: { label: "Weaker leg", unit: "cm", dp: 0, value: weaker },
-  lateral_bound: { label: "Weaker leg", unit: "cm", dp: 0, value: weaker },
+  triple_hop: { label: "Weaker leg", unit: "m", dp: 2, value: weakerM },
+  lateral_bound: { label: "Weaker leg", unit: "m", dp: 2, value: weakerM },
   trap_bar_3rm: rel(),
   box_squat_3rm: rel(),
   bench_3rm: rel(),

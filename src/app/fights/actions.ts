@@ -38,7 +38,7 @@ export async function saveFight(
   if (error)
     return {
       message: /switched off/i.test(error.message)
-        ? "Fight Record is switched off for your account."
+        ? "Competition Tracker is switched off for your account."
         : /row-level security/i.test(error.message)
           ? "Your account isn't active, so this can't be saved."
           : "Couldn't save. Please try again.",

@@ -79,7 +79,7 @@ export default async function CoachHome() {
           href="/coach/fights"
           className="col-span-2 flex min-h-12 items-center justify-center rounded-xl border border-line bg-surface-2 text-sm font-extrabold uppercase tracking-wide"
         >
-          Fight Records
+          Competition Tracker
         </Link>
       </div>
 

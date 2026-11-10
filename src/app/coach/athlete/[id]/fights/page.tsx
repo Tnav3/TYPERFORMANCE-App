@@ -37,7 +37,7 @@ export default async function CoachAthleteFights({
         href={`/coach/athlete/${id}`}
         label={p.full_name ?? "Athlete"}
       />
-      <Heading sub={p.email}>Fight Record</Heading>
+      <Heading sub={p.email}>Competition Tracker</Heading>
       <FightRecordView
         fights={(data ?? []) as Fight[]}
         back={back}

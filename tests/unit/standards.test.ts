@@ -34,7 +34,7 @@ describe("metrics", () => {
     expect(STANDARD_METRICS.bench_3rm.value({ load_kg: 100 }, null)).toBeNull();
   });
   it("one-leg tests use the weaker leg; MAS in m/s; Wingate W/kg", () => {
-    expect(STANDARD_METRICS.triple_hop.value({ left_cm: 520, right_cm: 495 }, null)).toBe(495);
+    expect(STANDARD_METRICS.triple_hop.value({ left_cm: 520, right_cm: 495 }, null)).toBe(4.95);
     expect(STANDARD_METRICS.mas_5min.value({ distance_m: 1350 }, null)).toBe(4.5);
     expect(STANDARD_METRICS.wingate_30s.value({ peak_w: 1200 }, 80)).toBe(15);
     expect(formatMetric(1.3456, "bench_3rm")).toBe("1.35 × BW");

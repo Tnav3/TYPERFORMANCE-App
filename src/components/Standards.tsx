@@ -93,7 +93,7 @@ export function StandardsCard({
       </span>
       <span className="text-muted">
         {(standard[l] as number).toFixed(m.dp)}
-        {m.unit === "cm" ? " cm" : ""}
+        {m.unit === "cm" || m.unit === "m" ? ` ${m.unit}` : ""}
       </span>
     </>
   );
@@ -164,7 +164,7 @@ export function StandardsCard({
           >
             <span className="block whitespace-nowrap rounded-md bg-text px-1.5 py-0.5 text-[11px] font-black text-black">
               You {value.toFixed(m.dp)}
-              {m.unit === "cm" ? " cm" : ""}
+              {m.unit === "cm" || m.unit === "m" ? ` ${m.unit}` : ""}
             </span>
             <span className="mx-auto block h-4 w-0.5 bg-text" />
           </span>
