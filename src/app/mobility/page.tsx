@@ -5,6 +5,9 @@ import { RomForm } from "@/components/RomForm";
 import { RomHistory, RomSummary } from "@/components/RomSummary";
 import { BackLink, Card, Heading, Screen } from "@/components/ui";
 
+// Self-tests are hidden while they're being reworked; flip to true to bring them back.
+const SELF_TESTS_ON = false;
+
 export default async function MobilityPage() {
   const { supabase, user, state } = await requireFeature(
     ["athlete", "coach"],
@@ -28,14 +31,15 @@ export default async function MobilityPage() {
           left and right is worth working on.
         </p>
         <p className="mt-2 text-sm text-muted">
-          Your coach measures most of these. You can do the self-tests below at
-          home and track them yourself.
+          {SELF_TESTS_ON
+            ? "Your coach measures most of these. You can do the self-tests below at home and track them yourself."
+            : "Your coach measures these during your screening."}
         </p>
       </Card>
 
       <RomSummary measures={measures} entries={entries} />
 
-      {state !== "coach" && selfTests.length > 0 && (
+      {SELF_TESTS_ON && state !== "coach" && selfTests.length > 0 && (
         <Card className="mb-6">
           <h2 className="mb-1 text-lg font-black uppercase">Self-tests</h2>
           <p className="mb-4 text-sm text-muted">

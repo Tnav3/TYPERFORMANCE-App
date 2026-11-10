@@ -166,7 +166,7 @@ export default async function AthleteHome() {
         <FeatureLink
           href="/mobility"
           title="Mobility"
-          description="Range of motion vs norms, plus self-tests"
+          description="Your range of motion vs healthy norms"
           icon={<PersonStanding size={22} strokeWidth={2.25} />}
         />
       )}
