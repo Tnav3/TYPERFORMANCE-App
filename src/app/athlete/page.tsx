@@ -3,7 +3,13 @@ import { requireState } from "@/lib/session";
 import { hasFeature } from "@/lib/features";
 import { planned } from "@/lib/planned-fights";
 import { NextFightCard } from "@/components/NextFightCard";
-import { ClipboardList, PersonStanding, Trophy, Wrench } from "lucide-react";
+import {
+  CircleHelp,
+  ClipboardList,
+  PersonStanding,
+  Trophy,
+  Wrench,
+} from "lucide-react";
 import { toolsFor, toolsSummary } from "@/lib/tools";
 import { formatDate, todayISO } from "@/lib/dates";
 import { fightCountdown } from "@/lib/fight";
@@ -200,6 +206,13 @@ export default async function AthleteHome() {
             </p>
           </Card>
         )}
+
+      <FeatureLink
+        href="/faq"
+        title="FAQ"
+        description="Training, niggles and food: quick answers"
+        icon={<CircleHelp size={22} strokeWidth={2.25} />}
+      />
 
       <Link
         href="/profile"
