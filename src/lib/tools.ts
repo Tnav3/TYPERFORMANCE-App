@@ -2,7 +2,7 @@
 import { hasFeature } from "./features";
 import type { Profile } from "./types";
 
-export type ToolKey = "1rm" | "mas" | "rpe" | "hr" | "standards";
+export type ToolKey = "1rm" | "mas" | "rpe" | "hr" | "standards" | "nutrition";
 
 export const TOOLS: {
   key: ToolKey;
@@ -45,6 +45,13 @@ export const TOOLS: {
     title: "Strength Standards",
     short: "Standards",
     description: "Relative strength and jumps vs Bronze, Silver, Gold",
+  },
+  {
+    key: "nutrition",
+    href: "/nutrition",
+    title: "Nutrition Guide",
+    short: "Nutrition",
+    description: "Carbs and protein for training and rest days",
   },
 ];
 

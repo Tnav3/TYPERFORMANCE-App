@@ -1,5 +1,12 @@
 import { redirect } from "next/navigation";
-import { Activity, Dumbbell, Gauge, HeartPulse, Medal } from "lucide-react";
+import {
+  Activity,
+  Apple,
+  Dumbbell,
+  Gauge,
+  HeartPulse,
+  Medal,
+} from "lucide-react";
 import { requireState } from "@/lib/session";
 import { toolsFor, type ToolKey } from "@/lib/tools";
 import { BackLink, FeatureLink, Heading, Screen } from "@/components/ui";
@@ -10,6 +17,7 @@ const ICON: Record<ToolKey, React.ReactNode> = {
   rpe: <Gauge size={22} strokeWidth={2.25} />,
   hr: <HeartPulse size={22} strokeWidth={2.25} />,
   standards: <Medal size={22} strokeWidth={2.25} />,
+  nutrition: <Apple size={22} strokeWidth={2.25} />,
 };
 
 export default async function ToolsPage() {

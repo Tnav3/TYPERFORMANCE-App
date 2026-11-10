@@ -157,3 +157,26 @@ describe("latest and parsing", () => {
     expect(fmt(9.5, m({ unit: "cm" }))).toBe("9.5 cm");
   });
 });
+
+describe("nutrition guide", () => {
+  it("carbs scale with the day; protein and per-meal dose don't", async () => {
+    const { nutritionFor } = await import("@/lib/nutrition");
+    const rest = nutritionFor(70, "rest");
+    expect(rest.carbs).toEqual([210, 350]);
+    expect(rest.protein).toEqual([100, 140]); // 98 → 100, 140
+    expect(rest.proteinPerMeal).toBe(20); // 17.5 → 20
+    expect(rest.meals).toBe(5);
+    expect(rest.recoveryCarbsPerHour).toBeNull();
+    const hard = nutritionFor(70, "hard");
+    expect(hard.carbs).toEqual([420, 700]);
+    expect(hard.recoveryCarbsPerHour).toEqual([70, 85]); // 84 → 85
+    expect(nutritionFor(70, "moderate").carbs).toEqual([350, 490]);
+    expect(nutritionFor(70, "very_hard").carbs).toEqual([560, 840]);
+  });
+  it("bodyweight must be 35–200 kg", async () => {
+    const { validBodyweight } = await import("@/lib/nutrition");
+    expect(validBodyweight("72,5")).toBe(72.5);
+    expect(validBodyweight("20")).toBeNull();
+    expect(validBodyweight("abc")).toBeNull();
+  });
+});

@@ -2,7 +2,15 @@
 import type { Profile } from "./types";
 
 export type Feature =
-  "checkin" | "testing" | "1rm" | "mas" | "rpe" | "hr" | "fights" | "mobility";
+  | "checkin"
+  | "testing"
+  | "1rm"
+  | "mas"
+  | "rpe"
+  | "hr"
+  | "fights"
+  | "mobility"
+  | "nutrition";
 
 export const FEATURES: {
   key: Feature;
@@ -57,6 +65,12 @@ export const FEATURES: {
     column: "feat_mobility",
     label: "Mobility Screen",
     hint: "Range of motion vs norms, self-tests and your screen",
+  },
+  {
+    key: "nutrition",
+    column: "feat_nutrition",
+    label: "Nutrition Guide",
+    hint: "Daily carb and protein ranges for training and rest days",
   },
 ];
 

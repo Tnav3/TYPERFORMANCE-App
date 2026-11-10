@@ -127,3 +127,14 @@ describe("mobility screen", () => {
     expect(c.rows[0].n).toBe(44);
   });
 });
+
+describe("nutrition switch (migration 025)", () => {
+  it("defaults on; only the coach can flip it", async () => {
+    const r = await q(`select feat_nutrition from profiles where id = $1`, [alice]);
+    expect(r.rows[0].feat_nutrition).toBe(true);
+    await expect(
+      asUser(db, alice, () => q(`update profiles set feat_nutrition = false where id = $1`, [alice])),
+    ).rejects.toThrow(/Only the coach/);
+    await asUser(db, coach, () => q(`update profiles set feat_nutrition = false where id = $1`, [alice]));
+  });
+});

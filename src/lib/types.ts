@@ -23,6 +23,7 @@ export interface Profile {
   feat_hr: boolean;
   feat_fights: boolean;
   feat_mobility: boolean;
+  feat_nutrition: boolean;
   second_fight_date: string | null;
   sex: "male" | "female" | null;
   created_at: string;

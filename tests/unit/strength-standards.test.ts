@@ -83,15 +83,15 @@ describe("Strength Standards overview", () => {
 });
 
 describe("Training Tools", () => {
-  const p = (o: Record<string, boolean>) => ({ role: "athlete" as const, feat_1rm: true, feat_mas: true, feat_rpe: true, feat_hr: true, feat_testing: true, ...o });
+  const p = (o: Record<string, boolean>) => ({ role: "athlete" as const, feat_1rm: true, feat_mas: true, feat_rpe: true, feat_hr: true, feat_testing: true, feat_nutrition: true, ...o });
   it("lists only switched-on tools; Standards need Testing or 1RM", () => {
-    expect(toolsFor(p({})).map((t) => t.key)).toEqual(["1rm", "mas", "rpe", "hr", "standards"]);
-    expect(toolsFor(p({ feat_1rm: false })).map((t) => t.key)).toEqual(["mas", "rpe", "hr", "standards"]);
-    expect(toolsFor(p({ feat_1rm: false, feat_testing: false })).map((t) => t.key)).toEqual(["mas", "rpe", "hr"]);
-    expect(toolsFor(p({ feat_1rm: false, feat_testing: false, feat_mas: false, feat_rpe: false, feat_hr: false }))).toEqual([]);
+    expect(toolsFor(p({})).map((t) => t.key)).toEqual(["1rm", "mas", "rpe", "hr", "standards", "nutrition"]);
+    expect(toolsFor(p({ feat_1rm: false })).map((t) => t.key)).toEqual(["mas", "rpe", "hr", "standards", "nutrition"]);
+    expect(toolsFor(p({ feat_1rm: false, feat_testing: false })).map((t) => t.key)).toEqual(["mas", "rpe", "hr", "nutrition"]);
+    expect(toolsFor(p({ feat_1rm: false, feat_testing: false, feat_mas: false, feat_rpe: false, feat_hr: false, feat_nutrition: false }))).toEqual([]);
   });
   it("summary line names what's inside", () => {
-    expect(toolsSummary(TOOLS)).toBe("1RM · MAS · RPE & RIR · HR Zones · Standards");
+    expect(toolsSummary(TOOLS)).toBe("1RM · MAS · RPE & RIR · HR Zones · Standards · Nutrition");
   });
 });
 
