@@ -50,7 +50,12 @@ export default async function TestPage({
   const isField = def.mode === "field";
   const latest = entries[entries.length - 1];
   const sex = profile?.sex ?? null;
-  const standard = standardFor(standards, key, sex);
+  const standard = standardFor(
+    standards,
+    key,
+    sex,
+    profile?.weight_class_limit_kg,
+  );
   const anyStandard = !!(
     standards[`${key}:male`] || standards[`${key}:female`]
   );

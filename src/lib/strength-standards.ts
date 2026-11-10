@@ -6,8 +6,8 @@ import { entryMetric } from "./standards";
 export const OVERVIEW: { testKey: string; name: string; lifts?: string[] }[] = [
   {
     testKey: "trap_bar_3rm",
-    name: "Trap Bar Deadlift",
-    lifts: ["trap_bar_dl"],
+    name: "Deadlift (Trap Bar or Barbell)",
+    lifts: ["trap_bar_dl", "deadlift"],
   },
   {
     testKey: "box_squat_3rm",

@@ -22,7 +22,12 @@ export default async function TestsHome() {
     key: string,
     e: Parameters<typeof entryMetric>[1] | null,
   ) => {
-    const st = standardFor(standards, key, profile?.sex);
+    const st = standardFor(
+      standards,
+      key,
+      profile?.sex,
+      profile?.weight_class_limit_kg,
+    );
     const v = e ? entryMetric(key, e) : null;
     return st && v != null ? levelOf(v, st) : null;
   };

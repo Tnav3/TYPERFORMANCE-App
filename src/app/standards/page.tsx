@@ -44,7 +44,12 @@ export default async function StandardsPage() {
   // Rows with nothing to compare against, or only reachable through a
   // switched-off feature, are left out.
   const rows = OVERVIEW.filter((r) => testing || r.lifts).map((r) => {
-    const st = standardFor(standards, r.testKey, sex);
+    const st = standardFor(
+      standards,
+      r.testKey,
+      sex,
+      profile?.weight_class_limit_kg,
+    );
     const cur = currentFor(r, entries, maxes ?? [], bw);
     return { ...r, st, cur };
   });

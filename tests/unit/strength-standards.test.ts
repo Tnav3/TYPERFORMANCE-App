@@ -72,7 +72,8 @@ describe("Strength Standards overview", () => {
     expect(currentFor(trap, [], [m("trap_bar_dl", "2026-11-01", 200, null)], null)).toBeNull();
   });
   it("only counts its own lifts and tests", () => {
-    expect(currentFor(trap, [], [m("deadlift", "2026-11-01", 200, 80)], null)).toBeNull();
+    expect(currentFor(trap, [], [m("deadlift", "2026-11-01", 200, 80)], null)!.value).toBe(2.5);
+    expect(currentFor(trap, [], [m("rdl", "2026-11-01", 200, 80)], null)).toBeNull();
     expect(currentFor(squat, [e("2026-10-01", 150, 75)], [], null)).toBeNull();
     expect(currentFor(squat, [], [m("back_squat", "2026-11-01", 160, 80)], null)!.value).toBe(2);
   });
@@ -91,5 +92,40 @@ describe("Training Tools", () => {
   });
   it("summary line names what's inside", () => {
     expect(toolsSummary(TOOLS)).toBe("1RM · MAS · RPE & RIR · HR Zones · Standards");
+  });
+});
+
+describe("CMJ standards from UFC PI", () => {
+  const median = (xs: number[]) => {
+    const s = [...xs].sort((a, b) => a - b);
+    const m = s.length / 2;
+    return Math.round(((s[m - 1] + s[m]) / 2) * 100) / 100;
+  };
+  it("migration 019 fallback rows = median of division tiers", async () => {
+    const { readFileSync } = await import("node:fs");
+    const sql = readFileSync("supabase/migrations/019_standards_research.sql", "utf8");
+    for (const sex of ["male", "female"] as const) {
+      const cs = ufcClassesFor(sex);
+      const want = [2, 1, 0].map((i) => median(cs.map((c) => c.floors[i])));
+      const row = new RegExp(`\\('${sex}',\\s*([\\d.]+), ([\\d.]+), ([\\d.]+),`).exec(sql)!;
+      expect(row.slice(1, 4).map(Number)).toEqual(want);
+    }
+  });
+  it("division standard: Bronze Good, Silver Very Good, Gold World Class", async () => {
+    const { ufcCmjStandard } = await import("@/lib/ufc-cmj");
+    const lw = UFC_CMJ.find((c) => c.code === "LW")!;
+    expect(ufcCmjStandard(lw)).toMatchObject({ bronze: 50.5, silver: 53.8, gold: 58.2, sex: "male" });
+  });
+  it("standardFor uses the division when a limit is known, else the row", async () => {
+    const { standardFor } = await import("@/lib/standards-data");
+    const row = { test_key: "cmj", sex: "male" as const, bronze: 51.4, silver: 55.55, gold: 60.1, source: null };
+    const all = { "cmj:male": row, "bench_3rm:male": { ...row, test_key: "bench_3rm" } };
+    expect(standardFor(all, "cmj", "male", "75.00")!.gold).toBe(59.9); // WW
+    expect(standardFor(all, "cmj", "male", null)).toBe(row);
+    expect(standardFor(all, "bench_3rm", "male", 75)!.test_key).toBe("bench_3rm");
+    expect(standardFor(all, "cmj", null, 75)).toBeNull();
+  });
+  it("deadlift row covers trap bar and barbell", () => {
+    expect(OVERVIEW[0].lifts).toEqual(["trap_bar_dl", "deadlift"]);
   });
 });

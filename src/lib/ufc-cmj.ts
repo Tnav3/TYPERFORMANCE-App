@@ -2,7 +2,7 @@
 // Source: UFC PI "A Cross-Sectional Performance Analysis and Projection of the
 // UFC Athlete", Vol. 2 (2021), Table 11.1. Force-plate CMJ, jump height from
 // impulse-momentum. Pure data + functions: unit-tested.
-import type { Sex } from "./standards";
+import type { Sex, Standard } from "./standards";
 
 export const UFC_TIERS = [
   "World Class",
@@ -153,4 +153,16 @@ export function ufcNext(
       };
   }
   return null;
+}
+
+/** Bronze = Good, Silver = Very Good, Gold = World Class for one UFC division. */
+export function ufcCmjStandard(c: UfcClass): Standard {
+  return {
+    test_key: "cmj",
+    sex: c.sex,
+    bronze: c.floors[2],
+    silver: c.floors[1],
+    gold: c.floors[0],
+    source: `UFC ${c.sex === "female" ? "Women's " : ""}${c.name} CMJ benchmarks: Bronze = Good, Silver = Very Good, Gold = World Class. ${UFC_CMJ_SOURCE} Your division is matched from your weight-class limit.`,
+  };
 }

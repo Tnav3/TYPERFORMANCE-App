@@ -55,6 +55,19 @@ export default async function StandardsSettings({
                       {m.label}
                       {m.unit ? ` (${m.unit})` : ""} · higher is better
                     </p>
+                    {d.key === "cmj" && (
+                      <p className="mt-1 text-xs text-muted">
+                        Clients with a weight class get their UFC
+                        division&apos;s tiers instead (Good / Very Good / World
+                        Class). These numbers are for clients without one.
+                      </p>
+                    )}
+                    {d.key === "trap_bar_3rm" && (
+                      <p className="mt-1 text-xs text-muted">
+                        Also used for barbell deadlifts saved in the 1RM
+                        Calculator.
+                      </p>
+                    )}
                   </div>
                   {at === d.key && error && (
                     <p className="mb-2 text-sm font-bold text-brand">{error}</p>

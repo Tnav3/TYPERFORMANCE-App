@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Sex, Standard } from "./standards";
+import { ufcClassForLimit, ufcCmjStandard } from "./ufc-cmj";
 
 /** All standards, keyed "test_key:sex". */
 export async function getStandards(
@@ -22,8 +23,20 @@ export async function getStandards(
   );
 }
 
-export const standardFor = (
+/**
+ * The standard for one test and sex. CMJ with a known weight-class limit uses
+ * the matching UFC division's tiers; otherwise the coach-editable row.
+ */
+export function standardFor(
   all: Record<string, Standard>,
   key: string,
   sex: Sex | null | undefined,
-) => (sex ? (all[`${key}:${sex}`] ?? null) : null);
+  limitKg?: number | string | null,
+): Standard | null {
+  if (!sex) return null;
+  if (key === "cmj" && limitKg != null) {
+    const c = ufcClassForLimit(sex, Number(limitKg));
+    if (c) return ufcCmjStandard(c);
+  }
+  return all[`${key}:${sex}`] ?? null;
+}
