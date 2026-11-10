@@ -184,6 +184,12 @@ export default async function AthleteDetail({
       >
         Competition tracker <span aria-hidden>→</span>
       </Link>
+      <Link
+        href={`/coach/athlete/${id}/mobility`}
+        className="-mt-4 mb-6 flex min-h-12 items-center justify-between rounded-xl border border-line bg-surface-2 px-4 font-extrabold"
+      >
+        Mobility screen <span aria-hidden>→</span>
+      </Link>
 
       {pageError === "feature" && (
         <p className="mb-3 rounded-xl border border-brand/60 bg-brand/10 px-4 py-3 text-sm font-bold text-brand">

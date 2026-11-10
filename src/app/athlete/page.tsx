@@ -3,7 +3,7 @@ import { requireState } from "@/lib/session";
 import { hasFeature } from "@/lib/features";
 import { planned } from "@/lib/planned-fights";
 import { NextFightCard } from "@/components/NextFightCard";
-import { ClipboardList, Trophy, Wrench } from "lucide-react";
+import { ClipboardList, PersonStanding, Trophy, Wrench } from "lucide-react";
 import { toolsFor, toolsSummary } from "@/lib/tools";
 import { formatDate, todayISO } from "@/lib/dates";
 import { fightCountdown } from "@/lib/fight";
@@ -71,6 +71,7 @@ export default async function AthleteHome() {
     rpe: hasFeature(profile, "rpe"),
     hr: hasFeature(profile, "hr"),
     fights: hasFeature(profile, "fights"),
+    mobility: hasFeature(profile, "mobility"),
   };
   const tools = toolsFor(profile);
   // Their planned fight date has passed: ask how it went
@@ -161,6 +162,15 @@ export default async function AthleteHome() {
         />
       )}
 
+      {on.mobility && (
+        <FeatureLink
+          href="/mobility"
+          title="Mobility"
+          description="Range of motion vs norms, plus self-tests"
+          icon={<PersonStanding size={22} strokeWidth={2.25} />}
+        />
+      )}
+
       {tools.length > 0 && (
         <FeatureLink
           href="/tools"
@@ -179,13 +189,17 @@ export default async function AthleteHome() {
         />
       )}
 
-      {!on.checkin && !on.testing && tools.length === 0 && !on.fights && (
-        <Card className="mb-4">
-          <p className="text-muted">
-            Your coach hasn&apos;t switched on any features for you yet.
-          </p>
-        </Card>
-      )}
+      {!on.checkin &&
+        !on.testing &&
+        tools.length === 0 &&
+        !on.fights &&
+        !on.mobility && (
+          <Card className="mb-4">
+            <p className="text-muted">
+              Your coach hasn&apos;t switched on any features for you yet.
+            </p>
+          </Card>
+        )}
 
       <Link
         href="/profile"
