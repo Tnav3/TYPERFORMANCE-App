@@ -4,7 +4,8 @@ import { freshDb, signUp, asUser, makeCoach } from "./harness";
 
 let db: PGlite;
 let coach: string, alice: string, bob: string;
-const q = (sql: string, params: unknown[] = []) => db.query<Record<string, unknown>>(sql, params);
+const q = (sql: string, params: unknown[] = []) =>
+  db.query<Record<string, unknown>>(sql, params);
 
 beforeEach(async () => {
   db = await freshDb();
@@ -12,25 +13,39 @@ beforeEach(async () => {
   alice = await signUp(db, "alice@typ.test", "Alice");
   bob = await signUp(db, "bob@typ.test", "Bob");
   await makeCoach(db, "coach@typ.test");
-  await q(`update profiles set status = 'active' where id in ($1, $2)`, [alice, bob]);
+  await q(`update profiles set status = 'active' where id in ($1, $2)`, [
+    alice,
+    bob,
+  ]);
 });
 
 describe("coach edits an athlete's profile", () => {
   it("coach can change another athlete's details", async () => {
     const r = await asUser(db, coach, () =>
-      q(`update profiles set full_name = 'Alice Smith', weight_class = 'Lightweight', weight_class_limit_kg = 70.3, sex = 'female' where id = $1 returning id`, [alice]),
+      q(
+        `update profiles set full_name = 'Alice Smith', weight_class = 'Lightweight', weight_class_limit_kg = 70.3, sex = 'female' where id = $1 returning id`,
+        [alice],
+      ),
     );
     expect(r.rows).toHaveLength(1);
-    const p = await q(`select full_name, sex from profiles where id = $1`, [alice]);
+    const p = await q(`select full_name, sex from profiles where id = $1`, [
+      alice,
+    ]);
     expect(p.rows[0]).toEqual({ full_name: "Alice Smith", sex: "female" });
   });
   it("an athlete can't edit someone else (no rows touched)", async () => {
-    const r = await asUser(db, bob, () => q(`update profiles set full_name = 'Hacked' where id = $1 returning id`, [alice]));
+    const r = await asUser(db, bob, () =>
+      q(`update profiles set full_name = 'Hacked' where id = $1 returning id`, [
+        alice,
+      ]),
+    );
     expect(r.rows).toHaveLength(0);
   });
   it("the coach still can't change email through the app", async () => {
     await expect(
-      asUser(db, coach, () => q(`update profiles set email = 'x@y.z' where id = $1`, [alice])),
+      asUser(db, coach, () =>
+        q(`update profiles set email = 'x@y.z' where id = $1`, [alice]),
+      ),
     ).rejects.toThrow(/cannot be changed/);
   });
 });
@@ -38,14 +53,63 @@ describe("coach edits an athlete's profile", () => {
 describe("tutorial columns (migration 026)", () => {
   it("existing accounts start done; athletes can reset and record their own tips", async () => {
     // accounts created after the migration have no done-time
-    const r = await q(`select tutorial_done_at, tips_seen from profiles where id = $1`, [alice]);
+    const r = await q(
+      `select tutorial_done_at, tips_seen from profiles where id = $1`,
+      [alice],
+    );
     expect(r.rows[0].tutorial_done_at).toBeNull();
     expect(r.rows[0].tips_seen).toEqual([]);
     const u = await asUser(db, alice, () =>
-      q(`update profiles set tutorial_done_at = now(), tips_seen = '{mas,testing}' where id = $1 returning cardinality(tips_seen) n`, [alice]),
+      q(
+        `update profiles set tutorial_done_at = now(), tips_seen = '{mas,testing}' where id = $1 returning cardinality(tips_seen) n`,
+        [alice],
+      ),
     );
     expect(u.rows[0].n).toBe(2);
-    const other = await asUser(db, bob, () => q(`update profiles set tips_seen = '{x}' where id = $1 returning id`, [alice]));
+    const other = await asUser(db, bob, () =>
+      q(`update profiles set tips_seen = '{x}' where id = $1 returning id`, [
+        alice,
+      ]),
+    );
     expect(other.rows).toHaveLength(0);
+  });
+});
+
+describe("last opened (migration 027)", () => {
+  it("backfills from last sign-in, then the athlete's own stamp updates it", async () => {
+    await q(
+      `update auth.users set last_sign_in_at = '2026-10-01T00:00:00Z' where id = $1`,
+      [alice],
+    );
+    const { readFileSync } = await import("node:fs");
+    await q(`update profiles set last_seen_at = null where id = $1`, [alice]);
+    await q(
+      `update profiles set tutorial_done_at = now() where id in ($1, $2)`,
+      [alice, coach],
+    );
+    await db.exec(
+      readFileSync(
+        "supabase/migrations/027_last_seen_and_tutorial_rollout.sql",
+        "utf8",
+      ),
+    );
+    const a = await q(
+      `select last_seen_at, tutorial_done_at from profiles where id = $1`,
+      [alice],
+    );
+    expect(new Date(a.rows[0].last_seen_at as string).toISOString()).toBe(
+      "2026-10-01T00:00:00.000Z",
+    );
+    expect(a.rows[0].tutorial_done_at).toBeNull();
+    const c = await q(`select tutorial_done_at from profiles where id = $1`, [
+      coach,
+    ]);
+    expect(c.rows[0].tutorial_done_at).not.toBeNull(); // coach isn't toured
+    const u = await asUser(db, alice, () =>
+      q(`update profiles set last_seen_at = now() where id = $1 returning id`, [
+        alice,
+      ]),
+    );
+    expect(u.rows).toHaveLength(1);
   });
 });

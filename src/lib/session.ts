@@ -1,6 +1,8 @@
 // Server-side helpers: load the current user's profile and enforce
 // which screens they're allowed on.
 import { redirect } from "next/navigation";
+import { after } from "next/server";
+import { shouldTouch } from "./activity";
 import { createClient } from "./supabase/server";
 import { gateState, HOME_FOR, type GateState } from "./gate";
 import type { Profile } from "./types";
@@ -17,6 +19,15 @@ export async function getSessionProfile() {
     .select("*")
     .eq("id", user.id)
     .single<Profile>();
+  // Record "last opened the app" (at most hourly), after the page is sent
+  if (profile && shouldTouch(profile.last_seen_at, new Date())) {
+    after(async () => {
+      await supabase
+        .from("profiles")
+        .update({ last_seen_at: new Date().toISOString() })
+        .eq("id", user.id);
+    });
+  }
   return { supabase, user, profile: profile ?? null };
 }
 

@@ -9,6 +9,7 @@ import type { AccountStatus, Profile } from "@/lib/types";
 import { Card, Logo, Screen, SignOutButton } from "@/components/ui";
 import { TrafficLight } from "@/components/TrafficLight";
 import { setAthleteStatus } from "./actions";
+import { activityTone, byLeastRecent, lastSeenLabel } from "@/lib/activity";
 
 export default async function CoachHome() {
   const { supabase } = await requireState(["coach"]);
@@ -25,6 +26,22 @@ export default async function CoachHome() {
   const counts = { red: 0, amber: 0, green: 0, none: 0 };
   rows.forEach((r) => counts[r.light]++);
   const notSubmitted = rows.filter((r) => r.missedLastWeek).length;
+  const { data: seen } = await supabase
+    .from("profiles")
+    .select("id, full_name, last_seen_at")
+    .eq("role", "athlete")
+    .eq("status", "active");
+  const now = new Date();
+  const activity = byLeastRecent(
+    (seen ?? []) as {
+      id: string;
+      full_name: string | null;
+      last_seen_at: string | null;
+    }[],
+  );
+  const activeWeek = activity.filter(
+    (a) => activityTone(a.last_seen_at, now) === "ok",
+  ).length;
 
   return (
     <Screen wide>
@@ -140,6 +157,43 @@ export default async function CoachHome() {
             </Link>
           ))}
         </Section>
+      )}
+
+      {activity.length > 0 && (
+        <details className="mb-8 rounded-xl border border-line bg-surface">
+          <summary className="flex min-h-12 cursor-pointer items-center justify-between px-4 text-sm font-extrabold">
+            <span>App use</span>
+            <span className="font-semibold text-muted">
+              {activeWeek} of {activity.length} opened it in the last 7 days
+            </span>
+          </summary>
+          <ul className="divide-y divide-line border-t border-line">
+            {activity.map((a) => {
+              const tone = activityTone(a.last_seen_at, now);
+              return (
+                <li key={a.id}>
+                  <Link
+                    href={`/coach/athlete/${a.id}`}
+                    className="flex min-h-11 items-center justify-between gap-3 px-4 text-sm"
+                  >
+                    <span className="truncate font-bold">
+                      {a.full_name ?? "Unnamed"}
+                    </span>
+                    <span
+                      className={`shrink-0 ${tone === "ok" ? "text-ok" : tone === "warn" ? "text-warn" : "text-brand"}`}
+                    >
+                      {lastSeenLabel(a.last_seen_at, now)}
+                    </span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+          <p className="border-t border-line px-4 py-2 text-xs text-muted">
+            Last time each client opened the app. Green: this week · amber: 1–3
+            weeks · red: longer or never.
+          </p>
+        </details>
       )}
 
       {inactive.length > 0 && (

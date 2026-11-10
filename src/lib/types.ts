@@ -26,6 +26,7 @@ export interface Profile {
   feat_nutrition: boolean;
   tutorial_done_at: string | null;
   tips_seen: string[] | null;
+  last_seen_at: string | null;
   second_fight_date: string | null;
   sex: "male" | "female" | null;
   created_at: string;
