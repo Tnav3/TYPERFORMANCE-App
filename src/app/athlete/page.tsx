@@ -3,14 +3,8 @@ import { requireState } from "@/lib/session";
 import { hasFeature } from "@/lib/features";
 import { planned } from "@/lib/planned-fights";
 import { NextFightCard } from "@/components/NextFightCard";
-import {
-  Activity,
-  ClipboardList,
-  Dumbbell,
-  Gauge,
-  HeartPulse,
-  Trophy,
-} from "lucide-react";
+import { ClipboardList, Trophy, Wrench } from "lucide-react";
+import { toolsFor, toolsSummary } from "@/lib/tools";
 import { formatDate, todayISO } from "@/lib/dates";
 import { fightCountdown } from "@/lib/fight";
 import { addDays, mondayOf } from "@/lib/week";
@@ -78,6 +72,7 @@ export default async function AthleteHome() {
     hr: hasFeature(profile, "hr"),
     fights: hasFeature(profile, "fights"),
   };
+  const tools = toolsFor(profile);
   // Their planned fight date has passed: ask how it went
   const fightToLog =
     on.fights && profile.next_fight_date && profile.next_fight_date < today;
@@ -166,39 +161,12 @@ export default async function AthleteHome() {
         />
       )}
 
-      {on.rm && (
+      {tools.length > 0 && (
         <FeatureLink
-          href="/calculator"
-          title="1RM Calculator"
-          description="Your e1RM and loads for every %"
-          icon={<Dumbbell size={22} strokeWidth={2.25} />}
-        />
-      )}
-
-      {on.mas && (
-        <FeatureLink
-          href="/mas"
-          title="MAS Calculator"
-          description="Interval targets: run, bike, row, SkiErg"
-          icon={<Activity size={22} strokeWidth={2.25} />}
-        />
-      )}
-
-      {on.rpe && (
-        <FeatureLink
-          href="/rpe"
-          title="RPE & RIR Chart"
-          description="Reps in reserve and %1RM by RPE"
-          icon={<Gauge size={22} strokeWidth={2.25} />}
-        />
-      )}
-
-      {on.hr && (
-        <FeatureLink
-          href="/hr"
-          title="HR Zones"
-          description="Heart-rate zones with matching RPE"
-          icon={<HeartPulse size={22} strokeWidth={2.25} />}
+          href="/tools"
+          title="Training Tools"
+          description={toolsSummary(tools)}
+          icon={<Wrench size={22} strokeWidth={2.25} />}
         />
       )}
 
@@ -211,19 +179,13 @@ export default async function AthleteHome() {
         />
       )}
 
-      {!on.checkin &&
-        !on.testing &&
-        !on.rm &&
-        !on.mas &&
-        !on.rpe &&
-        !on.hr &&
-        !on.fights && (
-          <Card className="mb-4">
-            <p className="text-muted">
-              Your coach hasn&apos;t switched on any features for you yet.
-            </p>
-          </Card>
-        )}
+      {!on.checkin && !on.testing && tools.length === 0 && !on.fights && (
+        <Card className="mb-4">
+          <p className="text-muted">
+            Your coach hasn&apos;t switched on any features for you yet.
+          </p>
+        </Card>
+      )}
 
       <Link
         href="/profile"

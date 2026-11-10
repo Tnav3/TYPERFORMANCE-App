@@ -13,7 +13,10 @@ export default async function CalculatorPage({
 }: {
   searchParams: Promise<{ lift?: string }>;
 }) {
-  const { supabase, user, state } = await requireFeature(["athlete", "coach"], "1rm");
+  const { supabase, user, state } = await requireFeature(
+    ["athlete", "coach"],
+    "1rm",
+  );
   const { lift } = await searchParams;
   const isAthlete = state === "athlete";
   const [lifts, maxes, bw] = await Promise.all([
@@ -29,7 +32,10 @@ export default async function CalculatorPage({
 
   return (
     <Screen>
-      <BackLink href="/" label="Home" />
+      <BackLink
+        href={state === "coach" ? "/" : "/tools"}
+        label={state === "coach" ? "Home" : "Training Tools"}
+      />
       <Heading sub="Enter a set you did, get your estimated 1RM and the load for each %.">
         1RM Calculator
       </Heading>
@@ -40,7 +46,11 @@ export default async function CalculatorPage({
         saved={Object.fromEntries(
           Object.entries(latest).map(([k, v]) => [
             k,
-            { e1rm_kg: v.e1rm_kg, saved_on: v.saved_on, bodyweight_kg: v.bodyweight_kg },
+            {
+              e1rm_kg: v.e1rm_kg,
+              saved_on: v.saved_on,
+              bodyweight_kg: v.bodyweight_kg,
+            },
           ]),
         )}
         initialLift={lift ?? null}
@@ -55,21 +65,37 @@ export default async function CalculatorPage({
           </h2>
           <ul className="divide-y divide-line rounded-2xl border border-line bg-surface">
             {savedList.map((m) => (
-              <li key={m.id} className="flex items-center justify-between gap-3 px-4 py-3">
+              <li
+                key={m.id}
+                className="flex items-center justify-between gap-3 px-4 py-3"
+              >
                 <a href={`/calculator?lift=${m.lift_key}`} className="min-w-0">
-                  <p className="font-extrabold">{names[m.lift_key] ?? m.lift_key}</p>
+                  <p className="font-extrabold">
+                    {names[m.lift_key] ?? m.lift_key}
+                  </p>
                   <p className="text-xs text-muted">
                     {m.load_kg} kg × {m.reps}
-                    {m.bodyweight_kg != null ? ` at ${m.bodyweight_kg} kg BW` : ""} · {formatDate(m.saved_on)}
+                    {m.bodyweight_kg != null
+                      ? ` at ${m.bodyweight_kg} kg BW`
+                      : ""}{" "}
+                    · {formatDate(m.saved_on)}
                   </p>
                 </a>
                 <div className="flex shrink-0 items-center gap-3">
-                  <span className="text-lg font-black">{+m.e1rm_kg.toFixed(2)} kg</span>
+                  <span className="text-lg font-black">
+                    {+m.e1rm_kg.toFixed(2)} kg
+                  </span>
                   <details className="relative">
-                    <summary className="flex min-h-11 min-w-11 cursor-pointer list-none items-center justify-center text-muted" aria-label="Delete">
+                    <summary
+                      className="flex min-h-11 min-w-11 cursor-pointer list-none items-center justify-center text-muted"
+                      aria-label="Delete"
+                    >
                       ✕
                     </summary>
-                    <form action={deleteLiftMax} className="absolute right-0 z-10 mt-1">
+                    <form
+                      action={deleteLiftMax}
+                      className="absolute right-0 z-10 mt-1"
+                    >
                       <input type="hidden" name="id" value={m.id} />
                       <input type="hidden" name="next" value="/calculator" />
                       <button className="min-h-11 whitespace-nowrap rounded-xl border border-brand/60 bg-surface px-3 text-sm font-bold text-brand">
@@ -82,7 +108,8 @@ export default async function CalculatorPage({
             ))}
           </ul>
           <p className="mt-2 text-xs text-muted">
-            Deleting removes the newest entry; an older one for that lift (if any) becomes current.
+            Deleting removes the newest entry; an older one for that lift (if
+            any) becomes current.
           </p>
         </section>
       )}

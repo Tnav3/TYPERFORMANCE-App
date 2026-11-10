@@ -31,11 +31,15 @@ export function StandardsCard({
   standard,
   value,
   needsSex,
+  title = "Standards",
+  note,
 }: {
   testKey: string;
   standard: Standard | null;
   value: number | null;
   needsSex?: boolean;
+  title?: string;
+  note?: string;
 }) {
   const m = STANDARD_METRICS[testKey];
   if (!m) return null;
@@ -43,7 +47,7 @@ export function StandardsCard({
   if (needsSex)
     return (
       <Card className="mb-4">
-        <h2 className="text-lg font-black uppercase">Standards</h2>
+        <h2 className="text-lg font-black uppercase">{title}</h2>
         <p className="mt-1 text-sm text-muted">
           Add your sex in{" "}
           <a
@@ -77,9 +81,12 @@ export function StandardsCard({
       <div className="flex items-start justify-between gap-3">
         <div>
           <h2 className="text-lg font-black uppercase leading-tight">
-            Standards
+            {title}
           </h2>
-          <p className="text-xs text-muted">{m.label}</p>
+          <p className="text-xs text-muted">
+            {m.label}
+            {note ? ` · ${note}` : ""}
+          </p>
         </div>
         {level && level !== "below" && <LevelBadge level={level} />}
       </div>

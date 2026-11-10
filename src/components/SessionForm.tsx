@@ -165,19 +165,6 @@ export function SessionForm({
           </div>
         </Section>
 
-        <Section title="Start time" error={err("start_time")}>
-          <input
-            type="time"
-            name="start_time"
-            value={time}
-            onChange={(ev) => {
-              setTime(ev.target.value);
-              clear("start_time");
-            }}
-            className="min-h-12 w-full rounded-xl border border-line bg-surface-2 px-4 text-text focus:border-brand focus:outline-none"
-          />
-        </Section>
-
         <Section title="Discipline" error={err("discipline_id")}>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {disciplines.map((d) => (
@@ -308,15 +295,40 @@ export function SessionForm({
         </Section>
 
         <div className="fixed inset-x-0 bottom-0 border-t border-line bg-ink/95 px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur">
-          <div className="mx-auto flex max-w-md items-center gap-4">
-            <div className="w-24 shrink-0">
+          {err("start_time") && (
+            <p className="mx-auto mb-1.5 max-w-md text-sm text-brand">
+              {err("start_time")}
+            </p>
+          )}
+          <div className="mx-auto flex max-w-md items-end gap-3">
+            <label className="w-[7.5rem] shrink-0">
+              <span className="block text-xs uppercase tracking-widest text-muted">
+                Start time
+              </span>
+              <input
+                type="time"
+                name="start_time"
+                value={time}
+                aria-invalid={!!err("start_time")}
+                onChange={(ev) => {
+                  setTime(ev.target.value);
+                  clear("start_time");
+                }}
+                className={`mt-0.5 min-h-12 w-full rounded-xl border bg-surface-2 px-2 text-text focus:border-brand focus:outline-none ${
+                  err("start_time") || !time ? "border-warn/70" : "border-line"
+                }`}
+              />
+            </label>
+            <div className="w-14 shrink-0">
               <p className="text-xs uppercase tracking-widest text-muted">
                 Load
               </p>
-              <p className="text-xl font-black">{load ?? "–"}</p>
+              <p className="flex min-h-12 items-center text-xl font-black">
+                {load ?? "–"}
+              </p>
             </div>
             <Button type="submit" disabled={pending}>
-              {pending ? "Saving…" : existing ? "Save changes" : "Save session"}
+              {pending ? "Saving…" : existing ? "Update" : "Save"}
             </Button>
           </div>
         </div>
@@ -351,7 +363,7 @@ export function SessionForm({
         </form>
       )}
       {/* room for the fixed save bar */}
-      <div className="h-28" aria-hidden />
+      <div className="h-36" aria-hidden />
     </>
   );
 }

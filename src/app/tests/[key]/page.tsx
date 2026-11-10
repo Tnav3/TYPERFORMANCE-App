@@ -15,6 +15,8 @@ import { BackLink, Card, Heading, Screen } from "@/components/ui";
 import { TestEntryForm } from "@/components/TestEntryForm";
 import { TestEntryList } from "@/components/TestEntryList";
 import { StandardsCard } from "@/components/Standards";
+import { UfcCmjCard } from "@/components/UfcCmjCard";
+import { ufcClassForLimit } from "@/lib/ufc-cmj";
 import { getStandards, standardFor } from "@/lib/standards-data";
 import { STANDARD_METRICS, entryMetric } from "@/lib/standards";
 
@@ -95,6 +97,19 @@ export default async function TestPage({
             needsSex={!sex}
           />
         )}
+
+      {key === "cmj" && profile?.role === "athlete" && sex && (
+        <UfcCmjCard
+          sex={sex}
+          defaultCode={
+            profile.weight_class_limit_kg != null
+              ? (ufcClassForLimit(sex, Number(profile.weight_class_limit_kg))
+                  ?.code ?? null)
+              : null
+          }
+          value={metric}
+        />
+      )}
 
       {latest && masOf(key, latest.values) && (
         <MasTargets testKey={key} values={latest.values} />

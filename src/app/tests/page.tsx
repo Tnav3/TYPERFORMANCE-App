@@ -43,6 +43,13 @@ export default async function TestsHome() {
         Testing
       </Heading>
 
+      <Link
+        href="/standards"
+        className="mb-6 inline-block text-sm font-bold underline underline-offset-4"
+      >
+        See all your Strength Standards →
+      </Link>
+
       {groups.map((g, i) => (
         <section key={g.label} className={i > 0 ? "mt-8" : ""}>
           <h2 className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted">
