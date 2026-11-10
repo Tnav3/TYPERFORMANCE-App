@@ -23,7 +23,7 @@ export const CATEGORY_LABEL: Record<Lift["category"], string> = {
   press: "Press",
   pull: "Pull",
   olympic: "Olympic",
-  jump: "Loaded jumps & throws",
+  jump: "Loaded jumps, throws & ballistic pulls",
 };
 export const CATEGORY_ORDER: Lift["category"][] = [
   "squat",
@@ -183,9 +183,9 @@ export function velocityAt(model: VelocityModel, pct: number): number | null {
 }
 
 /** Newest saved e1RM per lift. Input rows in any order. */
-export function latestMaxes<
-  T extends { lift_key: string; created_at: string },
->(rows: T[]): Record<string, T> {
+export function latestMaxes<T extends { lift_key: string; created_at: string }>(
+  rows: T[],
+): Record<string, T> {
   const out: Record<string, T> = {};
   for (const r of rows) {
     const cur = out[r.lift_key];
@@ -200,7 +200,9 @@ export function groupLifts(lifts: Lift[]) {
     label: CATEGORY_LABEL[c],
     lifts: lifts
       .filter((l) => l.category === c)
-      .sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name)),
+      .sort(
+        (a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name),
+      ),
   })).filter((g) => g.lifts.length > 0);
 }
 
@@ -215,5 +217,8 @@ export function slugify(name: string) {
 
 /** Capitalise the first letter of every word (incl. after "-" or "("), leave the rest as typed: "paused box squat" → "Paused Box Squat", "RDL" stays "RDL". */
 export function titleCase(name: string): string {
-  return name.replace(/(^|[\s\-(/])([a-z])/g, (_, sep: string, c: string) => sep + c.toUpperCase());
+  return name.replace(
+    /(^|[\s\-(/])([a-z])/g,
+    (_, sep: string, c: string) => sep + c.toUpperCase(),
+  );
 }
