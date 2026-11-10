@@ -33,7 +33,7 @@ insert into public.test_standards (test_key, sex, bronze, silver, gold, source) 
   ('box_squat_3rm', 'male', 1.55, 1.85, 2.05,
    'Back-squat 1RM ÷ BW in male MMA: lower-level 1.56 ± 0.24, higher-level 1.84 ± 0.23 (James et al. 2016, IJSPP). Gold = higher-level + 1 SD. Back-squat data applied to the box squat.'),
   ('bench_3rm', 'male', 1.00, 1.20, 1.50,
-   'Bench 1RM ÷ BW in male MMA: national/regional ≈ 1.0 (review, PMC6628448), higher-level 1.2 (James et al. 2016), elite heavyweights 1.5 ± 0.2 (Andreato/MDPI 2022).'),
+   'Bench 1RM ÷ BW in male MMA: national/regional ≈ 1.0 (review, PMC6628448), higher-level 1.2 (James et al. 2016), elite heavyweights 1.5 ± 0.2 (IJERPH 2022;19:8741).'),
   ('cmj', 'male', 31, 36, 41,
    'CMJ height, male national-team boxers 36.0 ± 4.6 cm (Haugen et al. 2021). Bronze/Gold = mean ∓ 1 SD.'),
   ('cmj', 'female', 22, 25, 28,
