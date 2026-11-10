@@ -47,11 +47,24 @@ export async function saveProfile(
   if (!user) redirect("/login");
 
   const d = result.data;
+  // The coach can edit any athlete's profile; everyone else only their own.
+  const requested = String(formData.get("athlete_id") ?? "");
+  const target = /^[0-9a-f-]{36}$/i.test(requested) ? requested : user.id;
+  const byCoach = target !== user.id;
+  if (byCoach) {
+    const { data: me } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+    if (me?.role !== "coach") return { message: "Only the coach can do that." };
+  }
   const { data: before } = await supabase
     .from("profiles")
     .select("profile_completed_at, main_discipline_id, second_fight_date")
-    .eq("id", user.id)
+    .eq("id", target)
     .single();
+  if (!before) return { message: "Couldn't find that profile." };
 
   // Discipline must exist and be active — unless it's the one they already had
   // (the coach may have hidden it since; keeping it shouldn't block other edits).
@@ -64,7 +77,7 @@ export async function saveProfile(
     return { errors: { main_discipline_id: "Choose your main discipline" } };
   }
 
-  const { error } = await supabase
+  const { data: saved, error } = await supabase
     .from("profiles")
     .update({
       full_name: d.full_name,
@@ -75,15 +88,20 @@ export async function saveProfile(
       ...toColumns([d.next_fight_date, before?.second_fight_date]),
       training_age_years: d.training_age_years,
       sex: d.sex,
-      profile_completed_at:
-        before?.profile_completed_at ?? new Date().toISOString(),
+      // A coach edit never completes onboarding on the athlete's behalf
+      profile_completed_at: byCoach
+        ? before.profile_completed_at
+        : (before.profile_completed_at ?? new Date().toISOString()),
     })
-    .eq("id", user.id);
+    .eq("id", target)
+    .select("id");
 
-  if (error) return { message: "Couldn't save. Please try again." };
+  if (error || !saved?.length)
+    return { message: "Couldn't save. Please try again." };
 
   revalidatePath("/", "layout");
+  if (byCoach) return { saved: true };
   // First-time onboarding continues to the next step; edits stay on the page
-  if (!before?.profile_completed_at) redirect("/");
+  if (!before.profile_completed_at) redirect("/");
   return { saved: true };
 }

@@ -9,11 +9,14 @@ export function ProfileForm({
   disciplines,
   submitLabel,
   today,
+  athleteId,
 }: {
   profile: Profile;
   disciplines: Discipline[];
   submitLabel: string;
   today: string;
+  /** Coach editing someone else's profile. */
+  athleteId?: string;
 }) {
   const [state, action, pending] = useActionState<ProfileFormState, FormData>(
     saveProfile,
@@ -38,6 +41,7 @@ export function ProfileForm({
     <form onSubmit={onSubmit} noValidate>
       {state.message && <Alert>{state.message}</Alert>}
       {state.saved && <Alert tone="ok">Saved.</Alert>}
+      {athleteId && <input type="hidden" name="athlete_id" value={athleteId} />}
 
       <Field label="Full name" error={e.full_name}>
         <Input
@@ -76,7 +80,10 @@ export function ProfileForm({
         />
       </Field>
 
-      <Field label="Sex" hint="Optional. Only used to show you the right testing standards.">
+      <Field
+        label="Sex"
+        hint="Optional. Only used to show you the right testing standards."
+      >
         <Select name="sex" defaultValue={profile.sex ?? ""}>
           <option value="">Prefer not to say</option>
           <option value="male">Male</option>
