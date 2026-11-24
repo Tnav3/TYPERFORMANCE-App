@@ -2,15 +2,13 @@ import Link from "next/link";
 import { requireState } from "@/lib/session";
 import { getLifts } from "@/lib/lift-data";
 import {
-  EXERCISE_CATEGORIES,
   MEASURES,
-  SUBCATEGORIES,
-  subLabel,
   type Exercise,
 } from "@/lib/programming/types";
 import { Alert, Heading, Screen } from "@/components/ui";
 import { FIELD_KEYS, FIELD_LABEL } from "@/lib/programming/fields";
 import { EQUIPMENT_LIST, equipmentLabel } from "@/lib/programming/equipment";
+import { labelOf, loadCategories, type Categories } from "@/lib/programming/categories-data";
 import { addExercise, bulkExercises, setExerciseActive, updateExercise } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -20,13 +18,13 @@ const input =
 const smallBtn =
   "min-h-11 shrink-0 rounded-xl border border-line bg-surface-2 px-3 text-sm font-bold";
 
-function PatternSelect({ name, value, form }: { name: string; value: string; form?: string }) {
+function PatternSelect({ name, value, form, cats }: { name: string; value: string; form?: string; cats: Categories }) {
   return (
     <select name={name} form={form} defaultValue={value} className={input} aria-label="Category">
-      {EXERCISE_CATEGORIES.map(([c, l]) => (
+      {cats.cats.map(([c, l]) => (
         <optgroup key={c} label={l}>
           <option value={`${c}.`}>{l} (general)</option>
-          {SUBCATEGORIES[c].map(([k, sl]) => (
+          {(cats.subs[c] ?? []).map(([k, sl]) => (
             <option key={k} value={`${c}.${k}`}>{l} › {sl}</option>
           ))}
         </optgroup>
@@ -38,9 +36,11 @@ function PatternSelect({ name, value, form }: { name: string; value: string; for
 function ExerciseFields({
   e,
   lifts,
+  cats,
 }: {
   e?: Exercise;
   lifts: { key: string; name: string }[];
+  cats: Categories;
 }) {
   return (
     <div className="space-y-3">
@@ -54,7 +54,7 @@ function ExerciseFields({
         aria-label="Exercise name"
       />
       <div className="grid grid-cols-2 gap-2">
-        <PatternSelect name="pattern" value={e ? `${e.category}.${e.subcategory ?? ""}` : "accessory."} />
+        <PatternSelect name="pattern" cats={cats} value={e ? `${e.category}.${e.subcategory ?? ""}` : "accessory."} />
         <select
           name="measure"
           defaultValue={e?.measure ?? "load"}
@@ -175,9 +175,10 @@ export default async function LibraryPage({
 }) {
   const { supabase } = await requireState(["coach"]);
   const { error, q = "", cat = "", sub = "", hidden, tag = "", novideo } = await searchParams;
-  const [{ data }, lifts] = await Promise.all([
+  const [{ data }, lifts, cats] = await Promise.all([
     supabase.from("exercises").select("*").order("name"),
     getLifts(supabase),
+    loadCategories(supabase),
   ]);
   const all = (data ?? []) as Exercise[];
   const pool = all.filter((e) => (hidden ? !e.active : e.active));
@@ -194,7 +195,7 @@ export default async function LibraryPage({
     .filter((l) => l.kind !== "jump")
     .map((l) => ({ key: l.key, name: l.name }));
   const liftName = new Map(lifts.map((l) => [l.key, l.name]));
-  const catLabel = new Map<string, string>(EXERCISE_CATEGORIES);
+  const catLabel = new Map<string, string>(cats.cats);
   const catCount = new Map<string, number>();
   for (const e of pool) catCount.set(e.category, (catCount.get(e.category) ?? 0) + 1);
   const tagCount = new Map<string, number>();
@@ -210,7 +211,7 @@ export default async function LibraryPage({
   };
   const chip = (on: boolean) =>
     `inline-flex min-h-9 items-center gap-1.5 rounded-full px-3 text-sm font-bold ${on ? "bg-brand text-white" : "border border-line text-muted hover:text-text"}`;
-  const groups = (cat ? [cat] : EXERCISE_CATEGORIES.map(([v]) => v)).map((c) => [c, shown.filter((e) => e.category === c)] as const).filter(([, l]) => l.length);
+  const groups = (cat ? [cat] : cats.cats.map(([v]) => v)).map((c) => [c, shown.filter((e) => e.category === c)] as const).filter(([, l]) => l.length);
   const fmtDefault = (e: Exercise) => {
     if (!e.default_sets && !e.default_reps) return null;
     return [e.default_sets && e.default_reps ? `${e.default_sets}×${e.default_reps}` : e.default_reps ?? `${e.default_sets} sets`].join("");
@@ -236,25 +237,26 @@ export default async function LibraryPage({
           <summary className="flex min-h-11 cursor-pointer list-none items-center rounded-xl bg-brand px-4 text-sm font-extrabold uppercase text-white">+ New exercise</summary>
           <div className="absolute right-0 z-20 mt-2 w-[min(92vw,640px)] rounded-2xl border border-line bg-surface p-4 shadow-2xl">
             <form action={addExercise}>
-              <ExerciseFields lifts={liftOptions} />
+              <ExerciseFields lifts={liftOptions} cats={cats} />
               <button className="mt-3 min-h-11 rounded-xl bg-brand px-4 text-sm font-extrabold uppercase text-white">Add exercise</button>
             </form>
           </div>
         </details>
       </div>
 
+      <p className="mb-2 text-right text-xs"><Link href="/coach/library/categories" className="font-bold text-muted underline underline-offset-4">Edit categories</Link></p>
       {/* Category chips */}
       <div className="mb-2 flex flex-wrap gap-1.5">
         <Link href={link({ cat: undefined })} className={chip(!cat)}>All <span className="opacity-70">{pool.length}</span></Link>
-        {EXERCISE_CATEGORIES.map(([v, l]) => (
+        {cats.cats.map(([v, l]) => (
           <Link key={v} href={link({ cat: cat === v ? undefined : v, sub: undefined })} className={chip(cat === v)}>
             {l} <span className="opacity-70">{catCount.get(v) ?? 0}</span>
           </Link>
         ))}
       </div>
-      {cat && (cat as string) in SUBCATEGORIES && (
+      {cat && cats.subs[cat] && (
         <div className="mb-2 flex flex-wrap gap-1.5 border-l-2 border-brand pl-2">
-          {SUBCATEGORIES[cat as keyof typeof SUBCATEGORIES].map(([k, l]) => {
+          {cats.subs[cat].map(([k, l]) => {
             const n = pool.filter((e) => e.category === cat && e.subcategory === k).length;
             return (
               <Link key={k} href={link({ sub: sub === k ? undefined : k })} className={`${chip(sub === k)} !min-h-8 !text-xs`}>
@@ -292,7 +294,7 @@ export default async function LibraryPage({
           <option value="archive">Archive</option>
           <option value="restore">Restore</option>
         </select>
-        <div className="w-56"><PatternSelect name="pattern" value={cat ? `${cat}.${sub && sub !== "none" ? sub : ""}` : "accessory."} /></div>
+        <div className="w-56"><PatternSelect name="pattern" cats={cats} value={cat ? `${cat}.${sub && sub !== "none" ? sub : ""}` : "accessory."} /></div>
         <input name="value" list="bulk-values" placeholder="Tag (for tag actions)" className={`${input} !w-44`} aria-label="Tag" />
         <datalist id="bulk-values">
           {topTags.map(([t]) => <option key={t} value={t} />)}
@@ -316,7 +318,7 @@ export default async function LibraryPage({
                       <span className="min-w-0">
                         <span className="block font-bold">{e.name}</span>
                         <span className="mt-1 flex flex-wrap gap-1 text-[11px]">
-                          {subLabel(e.category, e.subcategory) && <span className="rounded-md bg-brand/10 px-1.5 py-0.5 font-bold text-brand">{subLabel(e.category, e.subcategory)}</span>}
+                          {labelOf(cats, e.category, e.subcategory) && <span className="rounded-md bg-brand/10 px-1.5 py-0.5 font-bold text-brand">{labelOf(cats, e.category, e.subcategory)}</span>}
                           {e.video_url ? (
                             <span className="rounded-md bg-ok/15 px-1.5 py-0.5 font-bold text-ok">▶ video</span>
                           ) : (
@@ -336,7 +338,7 @@ export default async function LibraryPage({
                     </summary>
                     <form action={updateExercise} className="mt-3">
                       <input type="hidden" name="id" value={e.id} />
-                      <ExerciseFields e={e} lifts={liftOptions} />
+                      <ExerciseFields e={e} lifts={liftOptions} cats={cats} />
                       <button className={`${smallBtn} mt-3`}>Save</button>
                     </form>
                     <form action={setExerciseActive} className="mt-2">

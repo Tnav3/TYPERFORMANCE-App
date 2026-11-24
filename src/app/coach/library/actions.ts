@@ -7,18 +7,16 @@ import { FIELD_KEYS } from "@/lib/programming/fields";
 import { EQUIPMENT_KEYS } from "@/lib/programming/equipment";
 import {
   cleanVideoUrl,
-  isCategory,
   MEASURES,
-  SUBCATEGORIES,
 } from "@/lib/programming/types";
 
 const PATH = "/coach/library";
-/** "knee.squat" or "knee" → { category, subcategory } (null if not a real pair). */
+/** "knee.squat" or "knee" → { category, subcategory }. Shape only; the database checks the pair exists. */
 function pattern(v: string): { category: string; subcategory: string | null } | null {
   const [c, sub] = v.split(".");
-  if (!isCategory(c)) return null;
+  if (!/^[a-z][a-z0-9_]{1,29}$/.test(c ?? "")) return null;
   if (!sub) return { category: c, subcategory: null };
-  return SUBCATEGORIES[c].some(([k]) => k === sub) ? { category: c, subcategory: sub } : null;
+  return /^[a-z][a-z0-9_]{1,29}$/.test(sub) ? { category: c, subcategory: sub } : null;
 }
 const MEAS = MEASURES.map((m) => m[0]) as string[];
 const KEY = /^[a-z0-9_]{2,40}$/;
