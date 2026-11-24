@@ -1,14 +1,17 @@
 import Link from "next/link";
 import { requireFeature } from "@/lib/session";
+import { clientMenu } from "@/lib/client/menu";
+import { ClientTabBar } from "@/components/ClientTabBar";
 import { todayISO } from "@/lib/dates";
 import { addDays, dayMonth, dayShort } from "@/lib/week";
 import type { Workout } from "@/lib/programming/types";
-import { BackLink, Card, Heading, Screen } from "@/components/ui";
+import { Card, Heading, Screen } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
 
 export default async function TrainPage() {
-  const { supabase, user } = await requireFeature(["athlete"], "program");
+  const { supabase, user, profile } = await requireFeature(["athlete"], "program");
+  const menu = await clientMenu(supabase, profile, user!.id, todayISO());
   const today = todayISO();
   const from = addDays(today, -7);
   const to = addDays(today, 13);
@@ -67,7 +70,6 @@ export default async function TrainPage() {
 
   return (
     <Screen>
-      <BackLink href="/" label="Home" />
       <Heading>Training</Heading>
       {phase && (
         <div className="mb-4 rounded-xl border border-line bg-surface p-3 text-sm">
@@ -121,6 +123,7 @@ export default async function TrainPage() {
       <Link href="/train/history" className="text-sm text-muted underline underline-offset-4">
         Exercise history & PRs
       </Link>
+      <ClientTabBar train chat={menu.chatOn} progress chatBadge={menu.unreadChat} moreBadge={menu.formsDue} />
     </Screen>
   );
 }
