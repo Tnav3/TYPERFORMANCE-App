@@ -1,9 +1,10 @@
+import { ClientTabs } from "@/components/ClientTabs";
 import { notFound } from "next/navigation";
 import { requireState } from "@/lib/session";
 import { bodyweights, loggedSets } from "@/lib/programming/history-data";
 import type { Exercise } from "@/lib/programming/types";
 import { BodyweightTrend, ExerciseList } from "@/components/ProgressViews";
-import { BackLink, Heading, Screen } from "@/components/ui";
+import { Screen } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -26,8 +27,7 @@ export default async function CoachProgressPage({ params }: { params: Promise<{ 
 
   return (
     <Screen wide>
-      <BackLink href={`/coach/athlete/${id}`} label={name} />
-      <Heading>Progress</Heading>
+      <ClientTabs id={id} name={name} active="progress" />
       {weights.length > 0 && (
         <div className="mb-6">
           <BodyweightTrend

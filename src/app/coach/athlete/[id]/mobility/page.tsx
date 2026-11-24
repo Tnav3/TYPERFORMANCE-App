@@ -1,10 +1,11 @@
+import { ClientTabs } from "@/components/ClientTabs";
 import { notFound } from "next/navigation";
 import { requireState } from "@/lib/session";
 import { todayISO } from "@/lib/dates";
 import { getRomEntries, getRomMeasures } from "@/lib/mobility-data";
 import { RomForm } from "@/components/RomForm";
 import { RomHistory, RomSummary } from "@/components/RomSummary";
-import { BackLink, Card, Heading, Screen } from "@/components/ui";
+import { Card, Screen } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -29,11 +30,7 @@ export default async function CoachAthleteMobility({
 
   return (
     <Screen>
-      <BackLink
-        href={`/coach/athlete/${id}`}
-        label={p.full_name ?? "Athlete"}
-      />
-      <Heading sub={p.email}>Mobility Screen</Heading>
+      <ClientTabs id={id} name={p.full_name ?? p.email} active="mobility" />
 
       <RomSummary measures={measures} entries={entries} showUntested />
 

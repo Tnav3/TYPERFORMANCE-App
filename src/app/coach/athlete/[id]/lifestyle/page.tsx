@@ -1,3 +1,4 @@
+import { ClientTabs } from "@/components/ClientTabs";
 import { notFound } from "next/navigation";
 import { requireState } from "@/lib/session";
 import { formatDate, todayISO } from "@/lib/dates";
@@ -6,7 +7,7 @@ import { bodyweights } from "@/lib/programming/history-data";
 import { PhotoGallery } from "@/components/PhotoGallery";
 import { habitStats } from "@/lib/programming/habits";
 import { BodyweightTrend } from "@/components/ProgressViews";
-import { Alert, BackLink, Card, Heading, Screen } from "@/components/ui";
+import { Alert, Card, Screen } from "@/components/ui";
 import { addHabit, setHabitActive, setMacroTargets } from "@/app/lifestyle-actions";
 
 export const dynamic = "force-dynamic";
@@ -43,8 +44,7 @@ export default async function LifestylePage({
 
   return (
     <Screen wide>
-      <BackLink href={`/coach/athlete/${id}`} label={name} />
-      <Heading>Habits &amp; nutrition</Heading>
+      <ClientTabs id={id} name={name} active="lifestyle" />
       {error && <Alert>{error}</Alert>}
       {off.length > 0 && (
         <Alert tone="info">Switched off for this client: {off.join(", ")}. Turn them on from their profile&apos;s features.</Alert>

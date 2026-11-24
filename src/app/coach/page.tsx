@@ -7,7 +7,6 @@ import { formatChange, LIGHT_ORDER } from "@/lib/load-metrics";
 import { dayMonth } from "@/lib/week";
 import type { AccountStatus, Profile } from "@/lib/types";
 import { Card, Logo, Screen, SignOutButton } from "@/components/ui";
-import { Activity, Dumbbell, MessageCircle, Users } from "lucide-react";
 import { TrafficLight } from "@/components/TrafficLight";
 import { CoachOverview } from "@/components/CoachOverview";
 import { setAthleteStatus } from "./actions";
@@ -44,24 +43,6 @@ export default async function CoachHome() {
     (a) => activityTone(a.last_seen_at, now) === "ok",
   ).length;
 
-  const { count: unread } = await supabase
-    .from("messages")
-    .select("id", { count: "exact", head: true })
-    .neq("sender_id", me.id)
-    .is("read_at", null);
-
-  const main: [string, string, React.ReactNode, number?][] = [
-    ["/coach/programs", "Programs", <Dumbbell key="p" size={26} />],
-    ["/coach/chat", "Inbox", <MessageCircle key="c" size={26} />, unread ?? 0],
-    ["/coach/feed", "Workout Feed", <Activity key="f" size={26} />],
-    ["/coach/groups", "Groups", <Users key="g" size={26} />],
-  ];
-  const more: [string, [string, string][]][] = [
-    ["Programming", [["/coach/library", "Exercise library"], ["/coach/messages", "Scheduled messages"], ["/coach/sequences", "Onboarding sequences"], ["/coach/fights", "Competition tracker"]]],
-    ["Clients & business", [["/coach/invites", "Invites & payments"], ["/notifications", "Phone notifications"], ["/coach/settings", "Settings"]]],
-    ["Tools", [["/week", "Log my own training"], ["/calculator", "1RM calculator"], ["/mas", "MAS calculator"], ["/rpe", "RPE & RIR chart"], ["/hr", "HR zones"]]],
-  ];
-
   return (
     <Screen wide>
       <header className="mb-6 flex items-center justify-between">
@@ -86,22 +67,6 @@ export default async function CoachHome() {
           ))}
         </Section>
       )}
-
-      <nav className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {main.map(([href, label, icon, badge]) => (
-          <Link
-            key={href}
-            href={href}
-            className="relative flex min-h-24 flex-col items-center justify-center gap-2 rounded-2xl border border-line bg-surface text-center transition-colors hover:border-brand"
-          >
-            <span className="text-brand">{icon}</span>
-            <span className="text-sm font-extrabold uppercase tracking-wide">{label}</span>
-            {badge ? (
-              <span className="absolute right-3 top-3 rounded-full bg-brand px-2 py-0.5 text-xs font-black text-white">{badge}</span>
-            ) : null}
-          </Link>
-        ))}
-      </nav>
 
       <CoachOverview
         supabase={supabase}
@@ -141,24 +106,6 @@ export default async function CoachHome() {
           </div>
         )}
       </section>
-
-      <details className="mb-4 overflow-hidden rounded-2xl border border-line bg-surface" open={false}>
-        <summary className="flex min-h-14 cursor-pointer items-center justify-between px-4 font-extrabold uppercase tracking-wide">
-          More <span className="text-sm font-semibold normal-case text-muted">Library, messages, invites, tools…</span>
-        </summary>
-        <div className="grid gap-4 border-t border-line p-4 sm:grid-cols-3">
-          {more.map(([title, links]) => (
-            <div key={title}>
-              <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-muted">{title}</p>
-              {links.map(([href, label]) => (
-                <Link key={href} href={href} className="flex min-h-11 items-center justify-between rounded-lg px-2 font-semibold hover:bg-surface-2">
-                  {label} <span className="text-muted" aria-hidden>›</span>
-                </Link>
-              ))}
-            </div>
-          ))}
-        </div>
-      </details>
 
       {activity.length > 0 && (
         <details className="mb-4 overflow-hidden rounded-2xl border border-line bg-surface">

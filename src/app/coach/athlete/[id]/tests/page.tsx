@@ -1,3 +1,4 @@
+import { ClientTabs } from "@/components/ClientTabs";
 import { notFound } from "next/navigation";
 import { requireState } from "@/lib/session";
 import { formatDate, todayISO } from "@/lib/dates";
@@ -18,7 +19,7 @@ import {
   pace500,
   MAS_MODES,
 } from "@/lib/testing";
-import { BackLink, Card, Screen } from "@/components/ui";
+import { Card, Screen } from "@/components/ui";
 import { ForceDecksDayForm } from "@/components/ForceDecksDayForm";
 import { CoachFieldTestForm } from "@/components/CoachFieldTestForm";
 import { TestEntryList } from "@/components/TestEntryList";
@@ -111,13 +112,7 @@ export default async function CoachAthleteTests({
 
   return (
     <Screen wide>
-      <BackLink
-        href={`/coach/athlete/${id}`}
-        label={p.full_name ?? "Athlete"}
-      />
-      <h1 className="mb-6 text-2xl font-black uppercase tracking-tight">
-        Testing · {p.full_name ?? p.email}
-      </h1>
+      <ClientTabs id={id} name={p.full_name ?? p.email} active="tests" />
 
       <div className="mb-6 grid gap-3 sm:grid-cols-2">
         <Card>

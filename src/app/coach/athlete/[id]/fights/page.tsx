@@ -1,10 +1,11 @@
+import { ClientTabs } from "@/components/ClientTabs";
 import { notFound } from "next/navigation";
 import { requireState } from "@/lib/session";
 import { todayISO } from "@/lib/dates";
 import type { Fight } from "@/lib/fights";
 import { FightForm } from "@/components/FightForm";
 import { FightRecordView } from "@/components/FightRecordView";
-import { BackLink, Card, Heading, Screen } from "@/components/ui";
+import { Card, Screen } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -33,11 +34,7 @@ export default async function CoachAthleteFights({
 
   return (
     <Screen>
-      <BackLink
-        href={`/coach/athlete/${id}`}
-        label={p.full_name ?? "Athlete"}
-      />
-      <Heading sub={p.email}>Competition Tracker</Heading>
+      <ClientTabs id={id} name={p.full_name ?? p.email} active="fights" />
       <FightRecordView
         fights={(data ?? []) as Fight[]}
         back={back}

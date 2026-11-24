@@ -1,9 +1,10 @@
+import { ClientTabs } from "@/components/ClientTabs";
 import { notFound } from "next/navigation";
 import { requireState } from "@/lib/session";
 import { todayISO } from "@/lib/dates";
 import type { Discipline, Profile } from "@/lib/types";
 import { ProfileForm } from "@/components/ProfileForm";
-import { BackLink, Heading, Screen } from "@/components/ui";
+import { Screen } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -28,13 +29,7 @@ export default async function CoachEditProfile({
 
   return (
     <Screen>
-      <BackLink
-        href={`/coach/athlete/${id}`}
-        label={p.full_name ?? "Athlete"}
-      />
-      <Heading sub={`${p.email} · changes show on their account straight away`}>
-        Edit profile
-      </Heading>
+      <ClientTabs id={id} name={p.full_name ?? p.email} active="profile" sub="Changes show on their account straight away" />
       <ProfileForm
         profile={p}
         disciplines={list}

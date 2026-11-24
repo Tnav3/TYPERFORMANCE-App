@@ -1,3 +1,4 @@
+import { ClientTabs } from "@/components/ClientTabs";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireState } from "@/lib/session";
@@ -17,7 +18,7 @@ import {
 } from "@/lib/load-metrics";
 import { RPE_LABELS, wellnessLabel } from "@/lib/scales";
 import type { Profile } from "@/lib/types";
-import { BackLink, Card, Screen } from "@/components/ui";
+import { Card, Screen } from "@/components/ui";
 import { TrafficLight } from "@/components/TrafficLight";
 import { type LoadChartWeek } from "@/components/LoadChart";
 import { CoachLoadCharts } from "@/components/CoachLoadCharts";
@@ -152,13 +153,10 @@ export default async function AthleteDetail({
 
   return (
     <Screen wide>
-      <BackLink href="/coach" label="Dashboard" />
+      <ClientTabs id={id} name={p.full_name ?? p.email} active="overview" />
 
       <header className="mb-6 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-black uppercase tracking-tight">
-            {p.full_name ?? p.email}
-          </h1>
           <p className="text-muted">
             {[
               p.discipline?.name,
@@ -179,33 +177,7 @@ export default async function AthleteDetail({
           </span>
         </div>
       </header>
-      <div className="mb-6 grid grid-cols-2 gap-2">
-        <Link
-          href={`/coach/athlete/${id}/program`}
-          className="flex min-h-12 items-center justify-center rounded-xl bg-brand px-3 text-sm font-extrabold uppercase text-white"
-        >
-          Program
-        </Link>
-        <Link
-          href={`/coach/athlete/${id}/progress`}
-          className="flex min-h-12 items-center justify-center rounded-xl bg-brand px-3 text-sm font-extrabold uppercase text-white"
-        >
-          Progress
-        </Link>
-        <Link
-          href={`/coach/athlete/${id}/lifestyle`}
-          className="flex min-h-12 items-center justify-center rounded-xl border border-line bg-surface-2 px-3 text-sm font-extrabold uppercase"
-        >
-          Habits &amp; nutrition
-        </Link>
-        <Link
-          href={`/coach/chat/${id}`}
-          className="flex min-h-12 items-center justify-center rounded-xl border border-line bg-surface-2 px-3 text-sm font-extrabold uppercase"
-        >
-          Chat
-        </Link>
-      </div>
-      <details className="-mt-3 mb-6 rounded-xl border border-line bg-surface p-3" open={(followUps ?? []).length > 0}>
+      <details className="mb-6 rounded-xl border border-line bg-surface p-3" open={(followUps ?? []).length > 0}>
         <summary className="cursor-pointer text-sm font-bold">
           Follow-ups{(followUps ?? []).length ? ` · ${(followUps ?? []).length}` : ""}
         </summary>
@@ -231,12 +203,6 @@ export default async function AthleteDetail({
           <button className="min-h-11 rounded-xl border border-line bg-surface-2 px-3 text-sm font-bold">Add</button>
         </form>
       </details>
-      <Link
-        href={`/coach/athlete/${id}/tests`}
-        className="mb-6 flex min-h-12 items-center justify-between rounded-xl border border-line bg-surface-2 px-4 font-extrabold"
-      >
-        Testing: results, DSI, MAS, clips <span aria-hidden>→</span>
-      </Link>
       <Link
         href={`/coach/athlete/${id}/fights`}
         className="-mt-4 mb-6 flex min-h-12 items-center justify-between rounded-xl border border-line bg-surface-2 px-4 font-extrabold"
