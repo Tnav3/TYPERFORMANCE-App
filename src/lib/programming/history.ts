@@ -89,3 +89,21 @@ export function rollingAverage(points: { date: string; kg: number }[], days = 7)
     return { date: p.date, avg: Math.round((win.reduce((a, q) => a + q.kg, 0) / win.length) * 10) / 10 };
   });
 }
+
+/** Every time a session beat all earlier sessions of the same exercise (e1RM). */
+export function pbEvents(rows: (LoggedSet & { key: string })[]): { key: string; date: string; e1rm: number; previous: number }[] {
+  const byKey = new Map<string, (LoggedSet & { key: string })[]>();
+  for (const r of rows) byKey.set(r.key, [...(byKey.get(r.key) ?? []), r]);
+  const out: { key: string; date: string; e1rm: number; previous: number }[] = [];
+  for (const [key, list] of byKey) {
+    let best = 0;
+    for (const s of sessions(list).reverse()) {
+      if (s.bestE1rm == null) continue;
+      if (s.bestE1rm > best) {
+        if (best > 0) out.push({ key, date: s.date, e1rm: s.bestE1rm, previous: best });
+        best = s.bestE1rm;
+      }
+    }
+  }
+  return out;
+}

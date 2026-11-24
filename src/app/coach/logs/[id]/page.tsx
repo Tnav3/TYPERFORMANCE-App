@@ -22,6 +22,12 @@ export default async function CoachLogPage({ params }: { params: Promise<{ id: s
     supabase.from("set_logs").select("*").eq("log_id", id).order("set_no"),
     supabase.from("item_logs").select("*").eq("log_id", id),
   ]);
+  const { data: ready } = await supabase
+    .from("readiness")
+    .select("score, sleep, energy, soreness, stress, motivation, sleep_hours")
+    .eq("athlete_id", log.athlete_id)
+    .eq("checked_on", log.workout_date)
+    .maybeSingle();
   if (!log.coach_seen_at && log.completed_at)
     await supabase.from("workout_logs").update({ coach_seen_at: new Date().toISOString() }).eq("id", id);
 
@@ -46,6 +52,13 @@ export default async function CoachLogPage({ params }: { params: Promise<{ id: s
         <Link href={`/coach/chat/${log.athlete_id}`} className="font-bold text-brand">Reply in chat →</Link>
         {w && <Link href={`/coach/workouts/${w.id}`} className="underline underline-offset-4">Edit workout</Link>}
       </div>
+      {ready && (
+        <p className={`mb-4 rounded-xl border px-3 py-2 text-sm ${ready.score >= 70 ? "border-ok/50" : ready.score >= 50 ? "border-warn/50" : "border-brand/50"}`}>
+          <span className="font-black">Readiness {ready.score}</span> · sleep {ready.sleep}/5
+          {ready.sleep_hours != null && ` (${Number(ready.sleep_hours)} h)`} · energy {ready.energy}/5 · soreness {ready.soreness}/5 · stress{" "}
+          {ready.stress}/5 · motivation {ready.motivation}/5
+        </p>
+      )}
       {log.comment && (
         <Card className="mb-4 !p-4">
           <p className="text-xs uppercase tracking-widest text-muted">Their comment</p>

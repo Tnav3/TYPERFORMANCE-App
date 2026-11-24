@@ -22,7 +22,17 @@ export default async function FeedPage({
     .limit(60);
   if (unseen) q = q.is("coach_seen_at", null);
   const { data } = await q;
+  const raw = (data ?? []) as unknown as { athlete_id: string; workout_date: string }[];
+  const { data: ready } = raw.length
+    ? await supabase
+        .from("readiness")
+        .select("athlete_id, checked_on, score")
+        .in("athlete_id", [...new Set(raw.map((r) => r.athlete_id))])
+        .gte("checked_on", raw.map((r) => r.workout_date).sort()[0])
+    : { data: [] };
+  const readyBy = new Map((ready ?? []).map((r) => [`${r.athlete_id}|${r.checked_on}`, r.score as number]));
   const rows = (data ?? []) as unknown as {
+    athlete_id: string;
     id: string;
     workout_date: string;
     completed_at: string;
@@ -63,6 +73,11 @@ export default async function FeedPage({
                   <div className="shrink-0 text-right text-xs text-muted">
                     <p className="text-base font-black text-text">RPE {r.session_rpe}</p>
                     <p>{r.duration_min} min</p>
+                    {readyBy.has(`${r.athlete_id}|${r.workout_date}`) && (
+                      <p className={(() => { const sc = readyBy.get(`${r.athlete_id}|${r.workout_date}`)!; return sc >= 70 ? "text-ok" : sc >= 50 ? "text-warn" : "text-brand"; })()}>
+                        Ready {readyBy.get(`${r.athlete_id}|${r.workout_date}`)}
+                      </p>
+                    )}
                     {notes > 0 && <p className="text-brand">{notes} note{notes === 1 ? "" : "s"}</p>}
                   </div>
                 </div>

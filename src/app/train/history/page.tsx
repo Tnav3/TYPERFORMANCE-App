@@ -15,6 +15,7 @@ export default async function HistoryPage() {
   const { data } = ids.length
     ? await supabase.from("exercises").select("id, name, measure").in("id", ids)
     : { data: [] };
+  const { data: badges } = await supabase.from("badges").select("key, detail, earned_on").eq("athlete_id", user!.id).order("earned_on", { ascending: false });
   const exercises = new Map(((data ?? []) as Exercise[]).map((e) => [e.id, e]));
   return (
     <Screen>
@@ -28,6 +29,15 @@ export default async function HistoryPage() {
           <Link href="/train/leaderboard" className="font-bold text-brand">Leaderboards →</Link>
         )}
       </div>
+      {(badges ?? []).length > 0 && (
+        <div className="mb-5 flex flex-wrap gap-2">
+          {(badges ?? []).map((b) => (
+            <span key={b.key} className="rounded-full border border-brand/50 bg-brand/10 px-3 py-1 text-xs font-bold" title={b.earned_on}>
+              🏅 {b.detail ?? b.key}
+            </span>
+          ))}
+        </div>
+      )}
       <ExerciseList rows={rows} exercises={exercises} hrefBase="/train/history" />
     </Screen>
   );

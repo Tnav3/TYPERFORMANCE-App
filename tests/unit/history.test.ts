@@ -40,3 +40,16 @@ describe("exercise history", () => {
     expect(r.map((x) => x.avg)).toEqual([80, 81, 79]);
   });
 });
+
+import { pbEvents } from "@/lib/programming/history";
+describe("PB events", () => {
+  it("counts each time a best was beaten (first session is not a PB)", () => {
+    const rows = [
+      { key: "a", date: "2026-11-01", reps: 5, kg: 100, value: null },
+      { key: "a", date: "2026-11-08", reps: 5, kg: 105, value: null },
+      { key: "a", date: "2026-11-15", reps: 5, kg: 102.5, value: null },
+      { key: "a", date: "2026-11-22", reps: 5, kg: 110, value: null },
+    ];
+    expect(pbEvents(rows).map((p) => p.date)).toEqual(["2026-11-08", "2026-11-22"]);
+  });
+});
