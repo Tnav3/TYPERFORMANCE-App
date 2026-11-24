@@ -1,11 +1,11 @@
 "use client";
 // TrainHeroic-style logging: tap a set to complete it (saves instantly),
 // rest timer starts automatically, progress bar for the session.
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Check, RotateCcw, Timer, X } from "lucide-react";
-import Link from "next/link";
-import { ExerciseVideo } from "@/components/ExerciseVideo";
+import { ExerciseSheet } from "@/components/ExerciseSheet";
+import { Info, PlayCircle } from "lucide-react";
 import {
   finishWorkout,
   logSet,
@@ -92,6 +92,8 @@ export function WorkoutLogger({
   const [blocks, setBlocks] = useState(initial);
   const [status, setStatus] = useState<Record<string, SaveState>>({});
   const [rest, setRest] = useState<{ until: number; total: number } | null>(null);
+  const [sheet, setSheet] = useState<{ id: string; name: string } | null>(null);
+  const closeSheet = useCallback(() => setSheet(null), []);
   const [now, setNow] = useState(() => Date.now());
   const [comment, setComment] = useState(initialComment);
   const [finishOpen, setFinishOpen] = useState(false);
@@ -257,9 +259,13 @@ export function WorkoutLogger({
                       <p className="font-black uppercase tracking-tight">
                         <span className="mr-2 text-brand">{it.label}</span>
                         {it.exerciseId ? (
-                          <Link href={`/train/history/${it.exerciseId}`} className="hover:underline">
+                          <button
+                            type="button"
+                            onClick={() => setSheet({ id: it.exerciseId!, name: it.name })}
+                            className="text-left uppercase underline decoration-line decoration-2 underline-offset-4 hover:decoration-brand"
+                          >
                             {it.name}
-                          </Link>
+                          </button>
                         ) : (
                           it.name
                         )}
@@ -276,13 +282,16 @@ export function WorkoutLogger({
                     </p>
                     {it.warn && <p className="text-xs text-warn">{it.warn}</p>}
                     {it.notes && <p className="mt-1 text-sm">{it.notes}</p>}
-                    {it.cues && (
-                      <details className="mt-1 text-sm">
-                        <summary className="cursor-pointer text-muted">Coaching cues</summary>
-                        <p className="mt-1 whitespace-pre-line">{it.cues}</p>
-                      </details>
+                    {it.exerciseId && (
+                      <button
+                        type="button"
+                        onClick={() => setSheet({ id: it.exerciseId!, name: it.name })}
+                        className="mt-1 inline-flex min-h-9 items-center gap-1.5 text-sm font-bold text-brand"
+                      >
+                        {it.videoUrl ? <PlayCircle size={16} /> : <Info size={16} />}
+                        {it.videoUrl ? "Demo, how-to & my history" : "How-to & my history"}
+                      </button>
                     )}
-                    <ExerciseVideo url={it.videoUrl} name={it.name} />
                     {it.prev && <p className="text-xs text-muted">Last time: {it.prev}</p>}
                     {!readOnly && (
                       <div className="mt-1 flex flex-wrap gap-2">
@@ -496,6 +505,7 @@ export function WorkoutLogger({
           </div>
         </div>
       )}
+      {sheet && <ExerciseSheet exerciseId={sheet.id} name={sheet.name} historyHref={`/train/history/${sheet.id}`} onClose={closeSheet} />}
     </div>
   );
 }
