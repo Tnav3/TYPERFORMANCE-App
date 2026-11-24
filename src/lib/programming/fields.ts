@@ -12,6 +12,7 @@ export const FIELD_KEYS = [
   "heart_rate",
   "rpe",
   "height",
+  "velocity",
 ] as const;
 export type FieldKey = (typeof FIELD_KEYS)[number];
 
@@ -26,6 +27,7 @@ export const FIELD_LABEL: Record<FieldKey, string> = {
   heart_rate: "Heart rate",
   rpe: "RPE",
   height: "Height",
+  velocity: "Velocity",
 };
 
 export interface Units {
@@ -44,8 +46,8 @@ const BY_MEASURE: Record<string, FieldKey[]> = {
   calories: ["calories"],
 };
 
-export function fieldsFor(ex: { fields?: string[] | null; measure: string }): FieldKey[] {
-  const f = (ex.fields ?? []).filter((x): x is FieldKey => (FIELD_KEYS as readonly string[]).includes(x));
+export function fieldsFor(ex: { fields?: string[] | null; measure: string }, line?: { fields?: string[] | null } | null): FieldKey[] {
+  const f = ((line?.fields?.length ? line.fields : ex.fields) ?? []).filter((x): x is FieldKey => (FIELD_KEYS as readonly string[]).includes(x));
   return f.length ? f.slice(0, 4) : BY_MEASURE[ex.measure] ?? ["reps", "weight"];
 }
 
@@ -67,6 +69,8 @@ export function unitLabel(field: FieldKey, u: Units, bodyweight = false): string
       return "cm";
     case "watts":
       return "W";
+    case "velocity":
+      return "m/s";
     default:
       return field === "reps" ? "reps" : "";
   }
@@ -94,6 +98,8 @@ export function toCanonical(field: FieldKey, raw: string, u: Units): number | nu
       return round(u.distance_unit === "km" ? n * 1000 : u.distance_unit === "mi" ? n * MI : n, 1);
     case "speed":
       return round(u.speed_unit === "mph" ? n * (MI / 1000) : n, 2);
+    case "velocity":
+      return round(n, 2);
     case "reps":
     case "watts":
     case "calories":
@@ -114,6 +120,8 @@ export function fromCanonical(field: FieldKey, v: number | null | undefined, u: 
       return String(u.distance_unit === "km" ? round(v / 1000, 2) : u.distance_unit === "mi" ? round(v / MI, 2) : round(v, 0));
     case "speed":
       return String(u.speed_unit === "mph" ? round(v / (MI / 1000), 1) : round(v, 1));
+    case "velocity":
+      return String(round(v, 2));
     default:
       return String(round(v, 1));
   }

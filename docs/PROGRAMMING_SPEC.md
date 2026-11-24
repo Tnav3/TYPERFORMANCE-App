@@ -33,6 +33,8 @@ Principles
 - **One week at a time** (toggle per program, copied on assign): clients only see workouts up to the end of the current Monday–Sunday week; later weeks unlock automatically each Monday. Enforced in the database, so hidden weeks can't be opened by link. The coach always sees everything.
 - `program_items` (ordered within a day): either an **exercise** or a **text block** (warm-up, ESD conditioning, finisher).
   - Exercise fields: block label (A, B, C) + slot (A1, A2 = superset), sets, reps (text: `5`, `8-10`, `AMRAP`, `30s`), load type (`percent`, `rpe`, `kg`, `bodyweight`, `none`), percent, RPE, kg, tempo, rest (seconds), notes.
+  - **VBT**: a target bar speed on any line (`4x3 @ 80% 0.7m/s`, or speed only `3x3 @ 0.9 m/s`); "velocity" (m/s) can be recorded per set.
+  - **Per-line metrics**: each exercise has default metrics from the library; any line can override which metrics are recorded.
   - **Block label** (optional): name any block, e.g. "A: Power", "Finisher"; shown to the client above the block.
   - **Timers for the client**: a tap-to-start rest timer on every exercise (uses the prescribed rest, or 60/90/120 s quick picks), auto-start after ticking a set, and a **stopwatch** on timed exercises that fills the set's seconds when stopped.
 - **One-line entry**: typing `4x5 @ 80%`, `3x8 RPE 7`, `3x10 @ 40kg`, `3x8-10`, `3xAMRAP`, `5x3 @ 80% tempo 30X1 rest 3m` fills the fields. Unparseable text is kept as notes (never lost).
@@ -99,6 +101,7 @@ Cards (each can be shown/hidden by the coach; choice saved on the coach's profil
 
 ## Segment G: General-population tools
 - **Habits**: coach sets habits per client (e.g. "8k steps", "3 L water"); client ticks daily; coach sees a 4-week grid.
+  - **Gamified**: daily streak counter, "perfect day" when every habit is ticked, weekly habit score, badges at 7/30/100-day streaks (same reward/celebration system as workouts).
 - **Macros**: coach sets protein/carb/fat/calorie targets; client logs a daily total in about 10 seconds; weekly adherence shown. No food database.
 - **Meal plan builder** (premium toggle `feat_mealplan`, off by default): calculates energy and macro targets from bodyweight, height, age, sex, activity and goal (and training vs rest days), then lays out a sample day (meals × macros) from a food list the coach can edit. Clearly labelled general guidance, not an individualised dietetic plan.
 - **Progress photos**: private storage bucket, folder per client, front/side/back with date; only the client and coach can view.
@@ -123,3 +126,8 @@ Marketplace and program sales, food-by-food logging, wearable sync, native App S
 - **Readiness check** (before starting a workout, once per day, skippable): sleep quality, energy, soreness, stress, motivation on 1–5 taps, plus hours slept. Gives a 0–100 readiness score with a traffic light. Coach sees it on the feed, the log and the client's page. Low readiness (< 50) shows the client a note to keep loads at the low end / drop a set, as the coach chooses.
 - **Session summary** (after Finish): duration, sets done vs prescribed, total volume (kg), new PBs this session, comparison with the last time each exercise was done, streak.
 - **Rewards**: celebration screen with PB badges; milestones for 1st, 10th, 25th, 50th, 100th… workouts, weekly streaks (all prescribed workouts done in a week) and PB counts. Badges shown on the client's progress page; the coach gets them on the overview "New personal bests" card.
+
+## Segment M: Mobile notifications
+- Web Push (works on Android; on iPhone only after the app is added to the home screen, iOS 16.4+). An in-app prompt walks clients through Add to Home Screen → Allow notifications.
+- Sent for: new chat message / announcement (incl. scheduled and recurring), new workouts assigned, an optional daily workout reminder at the client's chosen time, optional habit reminder.
+- Each client controls which they get. The database pings the app (pg_net) when a message is created; the app sends the push with VAPID keys.

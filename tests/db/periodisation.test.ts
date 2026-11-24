@@ -139,3 +139,28 @@ describe("substitution (039)", () => {
     await expect(asUser(db, alice, () => q(`select substitute_exercise('program', $1, $2, $3)`, [pid, front, squat]))).rejects.toThrow(/Coach only/);
   });
 });
+
+describe("VBT and per-line metrics (042)", () => {
+  it("velocity targets and line fields travel to clients; duplicate keeps instructions", async () => {
+    await asUser(db, coach, async () => {
+      const p = await q(`insert into programs (name, weeks, instructions, reveal_weekly) values ('VBT block', 1, 'Use the bar sensor', false) returning id`);
+      const d = await q(`insert into program_days (program_id, week_no, day_no) values ($1, 1, 1) returning id`, [p.rows[0].id]);
+      const ex = (await q(`select id from exercises where name = 'Back Squat'`)).rows[0].id;
+      await q(`insert into program_items (day_id, exercise_id, sets, reps, load_type, percent, velocity, fields) values ($1, $2, 4, '3', 'percent', 80, 0.7, '{reps,weight,velocity}')`, [d.rows[0].id, ex]);
+      await q(`insert into program_items (day_id, exercise_id, sets, reps, load_type, velocity) values ($1, $2, 3, '3', 'velocity', 0.9)`, [d.rows[0].id, ex]);
+      const copy = await q(`select duplicate_program($1, 'VBT copy') id`, [p.rows[0].id]);
+      const c = await q(`select instructions from programs where id = $1`, [copy.rows[0].id]);
+      expect(c.rows[0].instructions).toBe("Use the bar sensor");
+      await q(`select assign_program($1, $2, null, '2026-12-07')`, [p.rows[0].id, alice]);
+    });
+    const r = await q(`select velocity::float v, fields from workout_items order by velocity`);
+    expect(r.rows).toEqual([{ v: 0.7, fields: ["reps", "weight", "velocity"] }, { v: 0.9, fields: null }]);
+    await expect(
+      asUser(db, coach, async () => {
+        const d = (await q(`select id from program_days limit 1`)).rows[0].id;
+        const ex = (await q(`select id from exercises limit 1`)).rows[0].id;
+        await q(`insert into program_items (day_id, exercise_id, load_type) values ($1, $2, 'velocity')`, [d, ex]);
+      }),
+    ).rejects.toThrow(/velocity_needed|check/);
+  });
+});

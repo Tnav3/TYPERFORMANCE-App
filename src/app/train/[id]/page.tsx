@@ -128,7 +128,7 @@ export default async function WorkoutLogPage({
       const load = lineLoad(it, base, bodyweight);
       const logged = sets.filter((x) => x.item_id === it.id);
       const rows = Math.max(setCount(it.sets), ...logged.map((x) => x.set_no));
-      const fields = fieldsFor(ex);
+      const fields = fieldsFor(ex, it);
       const units: Units = { ...DEFAULT_UNITS, ...(ex.weight_unit ? { weight_unit: ex.weight_unit } : {}), ...(ex.distance_unit ? { distance_unit: ex.distance_unit } : {}), ...(ex.speed_unit ? { speed_unit: ex.speed_unit } : {}) };
       const prev = last.get(ex.id);
       const target = targetReps(it.reps);
@@ -145,6 +145,7 @@ export default async function WorkoutLogPage({
             percent: it.percent != null ? Number(it.percent) : null,
             rpe: it.rpe != null ? Number(it.rpe) : null,
             load_kg: it.load_kg != null ? Number(it.load_kg) : null,
+                          velocity: it.velocity != null ? Number(it.velocity) : null,
             rest_sec: null,
             tempo: null,
           }) || "As prescribed",
@@ -182,6 +183,7 @@ export default async function WorkoutLogPage({
             if (f === "weight" && load) hint.weight = suggestedDisplayWeight(load.kg, units);
             if (f === "time" && timeTarget) hint.time = timeTarget;
             if (f === "rpe" && it.rpe != null) hint.rpe = String(Number(it.rpe));
+            if (f === "velocity" && it.velocity != null) hint.velocity = String(Number(it.velocity));
             if (f === "calories" && it.reps && /\d+\s*cal$/i.test(it.reps)) hint.calories = String(target);
             if (f === "distance" && it.reps && /\d+\s*m$/i.test(it.reps) && target != null)
               hint.distance = fromCanonical("distance", target, units);

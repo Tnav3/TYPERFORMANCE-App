@@ -162,7 +162,7 @@ export async function copyDay(fd: FormData) {
     go(back, "Pick a week and day.");
   const { data: src } = await supabase
     .from("program_days")
-    .select("title, notes, program_items(position, kind, exercise_id, block, slot, sets, reps, load_type, percent, rpe, load_kg, tempo, rest_sec, title, notes, block_title)")
+    .select("title, notes, program_items(position, kind, exercise_id, block, slot, sets, reps, load_type, percent, rpe, load_kg, tempo, rest_sec, title, notes, block_title, velocity, fields)")
     .eq("id", id)
     .single();
   if (!src) go(back, "Day not found.");

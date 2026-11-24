@@ -73,10 +73,12 @@ export interface ItemFields {
   title: string | null;
   notes: string | null;
   block_title?: string | null;
+  velocity?: number | string | null;
+  fields?: string[] | null;
 }
 
 export const ITEM_COLUMNS =
-  "id, position, kind, exercise_id, block, slot, sets, reps, load_type, percent, rpe, load_kg, tempo, rest_sec, title, notes, block_title";
+  "id, position, kind, exercise_id, block, slot, sets, reps, load_type, percent, rpe, load_kg, tempo, rest_sec, title, notes, block_title, velocity, fields";
 
 /** The block's label: first non-empty block_title among its items. */
 export const blockTitle = (items: { block_title?: string | null }[]) =>

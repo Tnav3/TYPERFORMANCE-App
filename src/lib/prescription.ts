@@ -1,7 +1,7 @@
 // Prescription lines: one-line entry ("4x5 @ 80%"), display, and load calculation.
 // Pure functions so they can be unit-tested.
 
-export type LoadType = "percent" | "rpe" | "kg" | "bodyweight" | "none";
+export type LoadType = "percent" | "rpe" | "kg" | "bodyweight" | "velocity" | "none";
 
 export interface Prescription {
   sets: number | null;
@@ -10,6 +10,7 @@ export interface Prescription {
   percent: number | null;
   rpe: number | null;
   load_kg: number | null;
+  velocity: number | null;
   tempo: string | null;
   rest_sec: number | null;
   notes: string | null;
@@ -22,6 +23,7 @@ export const EMPTY: Prescription = {
   percent: null,
   rpe: null,
   load_kg: null,
+  velocity: null,
   tempo: null,
   rest_sec: null,
   notes: null,
@@ -68,19 +70,24 @@ export function parsePrescription(input: string): Prescription {
     out.load_type = "rpe";
     out.rpe = Math.min(10, Math.max(1, n(m[1])));
   });
+  // target bar speed (VBT): "0.7 m/s", "@0.7m/s", "0.7ms"
+  take(/\s@?\s*(\d(?:[.,]\d{1,2})?)\s*m\/?s(?=\s|$)/i, (m) => {
+    out.velocity = Math.min(3, Math.max(0.1, n(m[1])));
+    if (out.load_type === "none") out.load_type = "velocity";
+  });
   // percent
   take(/\s@?\s*(\d{1,3}(?:[.,]\d{1,2})?)\s*%(?:\s*1rm)?/i, (m) => {
-    out.load_type = "percent";
+    out.load_type = out.load_type === "rpe" ? "rpe" : "percent";
     out.percent = Math.min(120, Math.max(1, n(m[1])));
   });
   // kg
   take(/\s@?\s*(\d{1,3}(?:[.,]\d{1,2})?)\s*kgs?(?=\s|$)/i, (m) => {
-    if (out.load_type === "none") out.load_type = "kg";
+    if (out.load_type === "none" || out.load_type === "velocity") out.load_type = "kg";
     out.load_kg = Math.min(600, n(m[1]));
   });
   // bodyweight
   take(/\s@?\s*(bw|bodyweight)(?=\s|$)/i, () => {
-    if (out.load_type === "none") out.load_type = "bodyweight";
+    if (out.load_type === "none" || out.load_type === "velocity") out.load_type = "bodyweight";
   });
   // tempo
   take(/\stempo\s*([0-9xX]{3,4})(?=\s|$)/i, (m) => {
@@ -117,6 +124,8 @@ export function formatPrescription(p: Partial<Prescription>): string {
   else if (p.load_type === "rpe" && rpe != null) parts.push(`@ RPE ${trimNum(rpe)}`);
   else if (p.load_type === "kg" && kg != null) parts.push(`@ ${trimNum(kg)} kg`);
   else if (p.load_type === "bodyweight") parts.push("@ BW");
+  const vel = p.velocity != null ? Number(p.velocity) : null;
+  if (vel != null) parts.push(p.load_type === "velocity" ? `@ ${trimNum(vel)} m/s` : `${trimNum(vel)} m/s`);
   if (p.tempo) parts.push(`tempo ${p.tempo}`);
   if (p.rest_sec) parts.push(`rest ${formatRest(Number(p.rest_sec))}`);
   return parts.join(" ");

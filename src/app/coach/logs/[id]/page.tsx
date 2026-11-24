@@ -87,6 +87,7 @@ export default async function CoachLogPage({ params }: { params: Promise<{ id: s
                           percent: it.percent != null ? Number(it.percent) : null,
                           rpe: it.rpe != null ? Number(it.rpe) : null,
                           load_kg: it.load_kg != null ? Number(it.load_kg) : null,
+                          velocity: it.velocity != null ? Number(it.velocity) : null,
                         }) || "—"}
                       </p>
                       <p className="text-sm">
@@ -99,7 +100,7 @@ export default async function CoachLogPage({ params }: { params: Promise<{ id: s
                                 return (
                                   describeSet(
                                     { reps: s.reps, load_kg: s.load_kg != null ? Number(s.load_kg) : null, value: s.value != null ? Number(s.value) : null, metrics: s.metrics ?? {} },
-                                    fieldsFor(ex as { measure: string; fields?: string[] | null }),
+                                    fieldsFor(ex as { measure: string; fields?: string[] | null }, it),
                                     u,
                                   ) || "✓"
                                 );

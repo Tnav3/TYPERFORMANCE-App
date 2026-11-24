@@ -62,7 +62,7 @@ export async function logSet(input: {
   }
   const { data: item } = await ctx.supabase
     .from("workout_items")
-    .select("exercises(measure, fields, weight_unit, distance_unit, speed_unit)")
+    .select("fields, exercises(measure, fields, weight_unit, distance_unit, speed_unit)")
     .eq("id", input.itemId)
     .maybeSingle();
   const ex = (item?.exercises ?? { measure: "load" }) as unknown as {
@@ -73,7 +73,7 @@ export async function logSet(input: {
   const metrics: Partial<Record<FieldKey, number | null>> = {};
   let reps: number | null = null;
   let kg: number | null = null;
-  for (const f of fieldsFor(ex)) {
+  for (const f of fieldsFor(ex, item as { fields?: string[] | null } | null)) {
     const v = toCanonical(f, String(input.values?.[f] ?? ""), units);
     if (f === "reps") reps = v == null ? null : Math.min(1000, v);
     else if (f === "weight") kg = v == null ? null : Math.min(600, v);

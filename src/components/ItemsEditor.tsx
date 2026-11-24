@@ -2,6 +2,7 @@
 import { ChevronDown, ChevronUp, Trash2 } from "lucide-react";
 import { formatPrescription, itemLabel } from "@/lib/prescription";
 import { blockTitle, byBlock, type ItemFields } from "@/lib/programming/types";
+import { FIELD_KEYS, FIELD_LABEL, type FieldKey } from "@/lib/programming/fields";
 import {
   addItem,
   deleteItem,
@@ -27,6 +28,7 @@ function lineFor(i: ItemFields) {
     percent: i.percent != null ? Number(i.percent) : null,
     rpe: i.rpe != null ? Number(i.rpe) : null,
     load_kg: i.load_kg != null ? Number(i.load_kg) : null,
+    velocity: i.velocity != null ? Number(i.velocity) : null,
     tempo: i.tempo,
     rest_sec: i.rest_sec,
   })
@@ -122,7 +124,9 @@ export function ItemsEditor({
                               percent: i.percent != null ? Number(i.percent) : null,
                               rpe: i.rpe != null ? Number(i.rpe) : null,
                               load_kg: i.load_kg != null ? Number(i.load_kg) : null,
+                              velocity: i.velocity != null ? Number(i.velocity) : null,
                             }) || "No prescription"}
+                        {i.fields?.length ? ` · records ${i.fields.map((f) => FIELD_LABEL[f as FieldKey] ?? f).join(", ")}` : ""}
                         {i.kind === "exercise" && i.notes ? ` · ${i.notes}` : ""}
                       </span>
                     </span>
@@ -149,6 +153,19 @@ export function ItemsEditor({
                           className={input}
                           aria-label="Prescription"
                         />
+                        <fieldset>
+                          <legend className="mb-1 text-xs text-muted">Record on this line (none ticked = the exercise&apos;s default)</legend>
+                          <div className="flex flex-wrap gap-1">
+                            {FIELD_KEYS.map((k) => (
+                              <label key={k} className="cursor-pointer">
+                                <input type="checkbox" name="fields" value={k} defaultChecked={i.fields?.includes(k)} className="peer sr-only" />
+                                <span className="inline-flex min-h-8 items-center rounded-full border border-line px-2.5 text-[11px] font-bold text-muted peer-checked:border-brand peer-checked:bg-brand peer-checked:text-white">
+                                  {FIELD_LABEL[k]}
+                                </span>
+                              </label>
+                            ))}
+                          </div>
+                        </fieldset>
                       </>
                     ) : (
                       <>
@@ -250,7 +267,8 @@ export function ItemsEditor({
           />
           <p className="text-xs text-muted">
             Examples: 4x5 @ 80% · 3x8 RPE 7 · 3x10 @ 40kg · 3x8-10 · 3x30s ·
-            tempo 31X1 · rest 90s. Anything else is kept as a note.
+            4x3 @ 80% 0.7m/s · tempo 31X1 · rest 90s. Anything else is kept as a note.
+            Change what gets recorded per line under Edit.
           </p>
           {items.length > 0 && (
             <label className="flex min-h-11 items-center gap-3 text-sm">

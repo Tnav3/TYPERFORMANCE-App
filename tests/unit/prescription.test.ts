@@ -101,3 +101,16 @@ describe("loads", () => {
     expect(targetReps("AMRAP")).toBeNull();
   });
 });
+
+describe("VBT targets", () => {
+  it("parses bar speed alone or with a %", () => {
+    expect(p("3x3 @ 0.9 m/s")).toMatchObject({ sets: 3, reps: "3", load_type: "velocity", velocity: 0.9, notes: null });
+    expect(p("4x3 @ 80% 0.7m/s")).toMatchObject({ load_type: "percent", percent: 80, velocity: 0.7, notes: null });
+    expect(formatPrescription(p("4x3 @ 80% 0.7m/s"))).toBe("4 × 3 @ 80% 0.7 m/s");
+    expect(formatPrescription(p("3x3 @ 0.9 m/s"))).toBe("3 × 3 @ 0.9 m/s");
+  });
+  it("round-trips", () => {
+    const a = p("3x3 @ 0.9 m/s rest 2m");
+    expect(p(formatPrescription(a).replace(/ × /, "x").replace(/(\d) min( |$)/, "$1m$2"))).toEqual(a);
+  });
+});
