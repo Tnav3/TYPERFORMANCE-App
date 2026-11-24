@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireState } from "@/lib/session";
 import { ChatThread, type ChatMessage } from "@/components/ChatThread";
+import { MESSAGE_COLUMNS } from "@/lib/chat-media";
 import { BackLink, Heading, Screen } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
@@ -13,7 +14,7 @@ export default async function CoachThreadPage({ params }: { params: Promise<{ at
     supabase.from("profiles").select("full_name, email, feat_chat, status").eq("id", athleteId).maybeSingle(),
     supabase
       .from("messages")
-      .select("id, athlete_id, sender_id, body, created_at, read_at, announcement")
+      .select(MESSAGE_COLUMNS)
       .eq("athlete_id", athleteId)
       .order("created_at", { ascending: false })
       .limit(100),
@@ -36,7 +37,7 @@ export default async function CoachThreadPage({ params }: { params: Promise<{ at
           Chat is switched off for this client, so they won&apos;t see new messages until you switch it on.
         </p>
       )}
-      <ChatThread athleteId={athleteId} me={user!.id} initial={((data ?? []) as ChatMessage[]).reverse()} />
+      <ChatThread athleteId={athleteId} me={user!.id} initial={((data ?? []) as unknown as ChatMessage[]).reverse()} isCoach />
     </Screen>
   );
 }

@@ -17,7 +17,7 @@ export default async function InboxPage() {
   const [{ data: msgs }, { data: clients }] = await Promise.all([
     supabase
       .from("messages")
-      .select("athlete_id, sender_id, body, created_at, read_at")
+      .select("athlete_id, sender_id, body, created_at, read_at, attachment_kind")
       .order("created_at", { ascending: false })
       .limit(1000),
     supabase.from("profiles").select("id, full_name, email").eq("role", "athlete").eq("status", "active").order("full_name"),
@@ -25,7 +25,7 @@ export default async function InboxPage() {
   const latest = new Map<string, { body: string; created_at: string; mine: boolean }>();
   const unread = new Map<string, number>();
   for (const m of msgs ?? []) {
-    if (!latest.has(m.athlete_id)) latest.set(m.athlete_id, { body: m.body, created_at: m.created_at, mine: m.sender_id === user!.id });
+    if (!latest.has(m.athlete_id)) latest.set(m.athlete_id, { body: m.body || ({ image: "📷 Photo", video: "🎥 Video", audio: "🎤 Voice message", file: "📄 File" } as Record<string, string>)[m.attachment_kind ?? ""] || "", created_at: m.created_at, mine: m.sender_id === user!.id });
     if (m.sender_id !== user!.id && !m.read_at) unread.set(m.athlete_id, (unread.get(m.athlete_id) ?? 0) + 1);
   }
   const rows = (clients ?? [])
