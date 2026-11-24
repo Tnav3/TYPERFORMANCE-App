@@ -23,6 +23,7 @@ import {
   Users,
   UsersRound,
   Workflow,
+  Zap,
   X,
   type LucideIcon,
 } from "lucide-react";
@@ -57,6 +58,7 @@ export function CoachNav({ unread, notes = 0 }: { unread: number; notes?: number
       [
         { href: "/coach/forms", label: "Check-in forms", icon: ClipboardList },
         { href: "/coach/messages", label: "Announcements & scheduled", icon: CalendarClock },
+        { href: "/coach/automations", label: "Automations", icon: Zap },
         { href: "/coach/sequences", label: "Onboarding sequences", icon: Workflow },
       ],
     ],
