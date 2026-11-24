@@ -6,6 +6,7 @@ import { addDays, mondayOf } from "@/lib/week";
 import { ISO_DATE } from "@/lib/programming/patterns";
 import type { CalStatus } from "@/components/WorkoutCalendar";
 import { WorkoutCalendar } from "@/components/WorkoutCalendar";
+import { SeasonList } from "@/components/SeasonList";
 import { Alert, BackLink, Card, Heading, Screen } from "@/components/ui";
 import {
   addMember,
@@ -147,6 +148,10 @@ export default async function GroupPage({
             </div>
           </form>
         </Card>
+      </div>
+
+      <div className="mb-6">
+        <SeasonList supabase={supabase} target={{ group_id: id }} back={back} today={today} />
       </div>
 
       <WorkoutCalendar from={from} today={today} navBase={`/coach/groups/${id}`} workouts={cal} />

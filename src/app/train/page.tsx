@@ -20,6 +20,13 @@ export default async function TrainPage() {
       .eq("athlete_id", user!.id)
       .gte("workout_date", from),
   ]);
+  const { data: phaseRows } = await supabase
+    .from("phases")
+    .select("name, goal, start_date, end_date")
+    .lte("start_date", today)
+    .gte("end_date", today)
+    .limit(1);
+  const phase = phaseRows?.[0];
   const list = (workouts ?? []) as Workout[];
   const logBy = new Map((logs ?? []).map((l) => [l.workout_id, l]));
   const todays = list.filter((w) => w.workout_date === today);
@@ -55,6 +62,19 @@ export default async function TrainPage() {
     <Screen>
       <BackLink href="/" label="Home" />
       <Heading>Training</Heading>
+      {phase && (
+        <div className="mb-4 rounded-xl border border-line bg-surface p-3 text-sm">
+          <span className="text-xs uppercase tracking-widest text-muted">Current phase</span>
+          <p className="font-black uppercase">
+            {phase.name}{" "}
+            <span className="font-normal normal-case text-muted">
+              · week {Math.floor((Date.parse(today) - Date.parse(phase.start_date)) / 604800000) + 1} of{" "}
+              {Math.ceil((Date.parse(phase.end_date) - Date.parse(phase.start_date) + 86400000) / 604800000)}
+            </span>
+          </p>
+          {phase.goal && <p className="text-muted">{phase.goal}</p>}
+        </div>
+      )}
 
       <section className="mb-6 space-y-2">
         <h2 className="text-xs font-semibold uppercase tracking-widest text-muted">Today</h2>

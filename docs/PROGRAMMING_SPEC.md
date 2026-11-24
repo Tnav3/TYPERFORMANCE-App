@@ -109,3 +109,8 @@ Cards (each can be shown/hidden by the coach; choice saved on the coach's profil
 
 ## Out of scope (v1)
 Marketplace and program sales, food-by-food logging, wearable sync, native App Store apps, video uploads for exercises (links only).
+
+## Segment L: Readiness, session summary, rewards
+- **Readiness check** (before starting a workout, once per day, skippable): sleep quality, energy, soreness, stress, motivation on 1–5 taps, plus hours slept. Gives a 0–100 readiness score with a traffic light. Coach sees it on the feed, the log and the client's page. Low readiness (< 50) shows the client a note to keep loads at the low end / drop a set, as the coach chooses.
+- **Session summary** (after Finish): duration, sets done vs prescribed, total volume (kg), new PBs this session, comparison with the last time each exercise was done, streak.
+- **Rewards**: celebration screen with PB badges; milestones for 1st, 10th, 25th, 50th, 100th… workouts, weekly streaks (all prescribed workouts done in a week) and PB counts. Badges shown on the client's progress page; the coach gets them on the overview "New personal bests" card.

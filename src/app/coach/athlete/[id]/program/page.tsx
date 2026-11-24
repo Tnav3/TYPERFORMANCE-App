@@ -6,6 +6,7 @@ import { addDays, mondayOf } from "@/lib/week";
 import { ISO_DATE } from "@/lib/programming/patterns";
 import type { Workout } from "@/lib/programming/types";
 import { statusFor, WorkoutCalendar } from "@/components/WorkoutCalendar";
+import { SeasonList } from "@/components/SeasonList";
 import { Alert, BackLink, Card, Heading, Screen } from "@/components/ui";
 import { addWorkout, unassign } from "@/app/coach/workouts/actions";
 
@@ -109,6 +110,10 @@ export default async function ClientProgramPage({
             </div>
           </form>
         </Card>
+      </div>
+
+      <div className="mb-6">
+        <SeasonList supabase={supabase} target={{ athlete_id: id }} back={back} today={today} />
       </div>
 
       <WorkoutCalendar
