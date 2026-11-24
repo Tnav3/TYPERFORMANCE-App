@@ -128,3 +128,18 @@ export async function removeMember(fd: FormData) {
     await supabase.from("group_members").delete().eq("group_id", group).eq("athlete_id", athlete);
   go(`/coach/groups/${group}`);
 }
+
+/** Swap an exercise in a client's/group's assigned workouts from today on (logged ones are left alone). */
+export async function swapInAssignment(fd: FormData) {
+  const supabase = await coachOnly();
+  const id = String(fd.get("assignment_id") ?? "");
+  const back = safePath(fd.get("back"), "/coach");
+  const from = String(fd.get("from") ?? "");
+  const toName = str(fd.get("to"), 80);
+  if (!UUID.test(id) || !UUID.test(from) || !toName) go(back, "Pick both exercises.");
+  const { data: to } = await supabase.from("exercises").select("id").ilike("name", toName!).maybeSingle();
+  if (!to) go(back, `"${toName}" isn't in the exercise library yet.`);
+  const { data, error } = await supabase.rpc("substitute_exercise", { p_scope: "assignment", p_target: id, p_from: from, p_to: to!.id });
+  if (error) go(back, friendly(error.message));
+  go(`${back}${back.includes("?") ? "&" : "?"}swapped=${Number(data ?? 0)}`);
+}

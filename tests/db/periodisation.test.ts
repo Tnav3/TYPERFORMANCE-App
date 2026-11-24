@@ -111,3 +111,31 @@ describe("block labels (037)", () => {
     expect(r.rows[0].n).toBe(2);
   });
 });
+
+describe("substitution (039)", () => {
+  it("swaps an exercise across a program, keeping the prescription; future unlogged workouts only for assignments", async () => {
+    const ids = async (n: string) => (await q(`select id from exercises where name = $1`, [n])).rows[0].id as string;
+    const squat = await ids("Back Squat");
+    const front = await ids("Front Squat");
+    const today = (await q(`select sydney_today()::text d`)).rows[0].d as string;
+    const pid = await asUser(db, coach, async () => {
+      const p = await q(`insert into programs (name, weeks) values ('Swap me', 2) returning id`);
+      for (const w of [1, 2]) {
+        const d = await q(`insert into program_days (program_id, week_no, day_no) values ($1, $2, 1) returning id`, [p.rows[0].id, w]);
+        await q(`insert into program_items (day_id, exercise_id, sets, reps, load_type, percent) values ($1, $2, 4, '5', 'percent', $3)`, [d.rows[0].id, squat, 75 + w * 5]);
+      }
+      return p.rows[0].id as string;
+    });
+    const n = await asUser(db, coach, () => q(`select substitute_exercise('program', $1, $2, $3) n`, [pid, squat, front]));
+    expect(n.rows[0].n).toBe(2);
+    const r = await q(`select i.percent::float p from program_items i join program_days d on d.id = i.day_id where d.program_id = $1 and i.exercise_id = $2 order by p`, [pid, front]);
+    expect(r.rows).toEqual([{ p: 80 }, { p: 85 }]);
+    // Assignment scope leaves logged workouts alone
+    const a = await asUser(db, coach, () => q(`select assign_program($1, $2, null, $3::date) id`, [pid, alice, today]));
+    const first = await q(`select id from workouts where workout_date = $1::date and athlete_id = $2`, [today, alice]);
+    await asUser(db, alice, () => q(`insert into workout_logs (workout_id) values ($1)`, [first.rows[0].id]));
+    const m = await asUser(db, coach, () => q(`select substitute_exercise('assignment', $1, $2, $3) n`, [a.rows[0].id, front, squat]));
+    expect(m.rows[0].n).toBe(1);
+    await expect(asUser(db, alice, () => q(`select substitute_exercise('program', $1, $2, $3)`, [pid, front, squat]))).rejects.toThrow(/Coach only/);
+  });
+});

@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireState } from "@/lib/session";
@@ -8,7 +9,7 @@ import type { Workout } from "@/lib/programming/types";
 import { statusFor, WorkoutCalendar } from "@/components/WorkoutCalendar";
 import { SeasonList } from "@/components/SeasonList";
 import { Alert, BackLink, Card, Heading, Screen } from "@/components/ui";
-import { addWorkout, unassign } from "@/app/coach/workouts/actions";
+import { addWorkout, swapInAssignment, unassign } from "@/app/coach/workouts/actions";
 
 export const dynamic = "force-dynamic";
 
@@ -22,7 +23,7 @@ export default async function ClientProgramPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ from?: string; error?: string; removed?: string }>;
+  searchParams: Promise<{ from?: string; error?: string; removed?: string; swapped?: string }>;
 }) {
   const { supabase } = await requireState(["coach"]);
   const { id } = await params;
@@ -49,6 +50,7 @@ export default async function ClientProgramPage({
       supabase.from("group_members").select("groups(id, name)").eq("athlete_id", id),
     ]);
   if (!client) notFound();
+  const { data: exList } = await supabase.from("exercises").select("id, name").eq("active", true).order("name");
   const logBy = new Map((logs ?? []).map((l) => [l.workout_id, l]));
   const name = client.full_name ?? client.email;
   const back = `/coach/athlete/${id}/program?from=${from}`;
@@ -58,6 +60,7 @@ export default async function ClientProgramPage({
       <BackLink href={`/coach/athlete/${id}`} label={name} />
       <Heading sub="Tap a workout to edit it or see what was logged.">Program</Heading>
       {sp.error && <Alert>{sp.error}</Alert>}
+      {sp.swapped && <Alert tone="ok">Swapped on {sp.swapped} upcoming line{sp.swapped === "1" ? "" : "s"}.</Alert>}
       {sp.removed && <Alert tone="ok">Removed {sp.removed} upcoming workouts. Past and logged ones are kept.</Alert>}
 
       <div className="mb-6 grid gap-3 sm:grid-cols-2">
@@ -66,7 +69,8 @@ export default async function ClientProgramPage({
           {(assignments ?? []).length === 0 && <p className="text-sm text-muted">None assigned yet.</p>}
           <ul className="space-y-2 text-sm">
             {(assignments ?? []).map((a) => (
-              <li key={a.id} className="flex items-center justify-between gap-2">
+              <Fragment key={a.id}>
+              <li className="flex items-center justify-between gap-2">
                 <span>
                   {a.program_name} <span className="text-muted">from {a.start_date}</span>
                 </span>
@@ -76,6 +80,22 @@ export default async function ClientProgramPage({
                   <button className="text-xs text-muted underline underline-offset-4">Remove upcoming</button>
                 </form>
               </li>
+              <li>
+                <details className="text-xs">
+                  <summary className="cursor-pointer text-muted">Swap an exercise in upcoming workouts</summary>
+                  <form action={swapInAssignment} className="mt-1 grid grid-cols-[1fr_1fr_auto] gap-1">
+                    <input type="hidden" name="assignment_id" value={a.id} />
+                    <input type="hidden" name="back" value={back} />
+                    <select name="from" required defaultValue="" className={input} aria-label="Replace">
+                      <option value="" disabled>Replace…</option>
+                      {(exList ?? []).map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
+                    </select>
+                    <input name="to" list="swap-ex" required placeholder="With…" className={input} aria-label="With" />
+                    <button className={smallBtn}>Swap</button>
+                  </form>
+                </details>
+              </li>
+              </Fragment>
             ))}
           </ul>
           {(groups ?? []).length > 0 && (
@@ -116,6 +136,9 @@ export default async function ClientProgramPage({
         <SeasonList supabase={supabase} target={{ athlete_id: id }} back={back} today={today} />
       </div>
 
+      <datalist id="swap-ex">
+        {(exList ?? []).map((e) => <option key={e.id} value={e.name} />)}
+      </datalist>
       <WorkoutCalendar
         from={from}
         today={today}

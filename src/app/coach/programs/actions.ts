@@ -29,6 +29,13 @@ export async function createProgram(fd: FormData) {
   const weeks = int(fd.get("weeks")) ?? 4;
   if (!name || name.length < 2) go(LIST, "Enter a program name.");
   if (weeks < 1 || weeks > 52) go(LIST, "Weeks must be 1–52.");
+  const master = String(fd.get("from_master") ?? "");
+  if (UUID.test(master)) {
+    const { data: copy, error: e } = await supabase.rpc("duplicate_program", { p_program: master, p_name: name });
+    if (e) go(LIST, friendly(e.message));
+    await supabase.from("programs").update({ is_master: false, tag: str(fd.get("tag"), 40) }).eq("id", copy);
+    go(progPath(String(copy)));
+  }
   const { data, error } = await supabase
     .from("programs")
     .insert({ name, weeks, tag: str(fd.get("tag"), 40) })
@@ -219,4 +226,29 @@ export async function assignProgram(fd: FormData) {
   });
   if (error) go(progPath(id), friendly(error.message));
   go(kind === "a" ? `/coach/athlete/${targetId}/program?from=${start}` : `/coach/groups/${targetId}?from=${start}`);
+}
+
+/** Copy a program into the master template library. */
+export async function saveAsMaster(fd: FormData) {
+  const supabase = await coachOnly();
+  const id = String(fd.get("id") ?? "");
+  const name = str(fd.get("name"), 80);
+  if (!UUID.test(id) || !name) go(LIST, "Name the master template.");
+  const { data, error } = await supabase.rpc("duplicate_program", { p_program: id, p_name: name });
+  if (error) go(LIST, friendly(error.message));
+  await supabase.from("programs").update({ is_master: true }).eq("id", data);
+  go(`${LIST}?view=masters`);
+}
+
+/** Swap one exercise for another across the whole program, keeping prescriptions. */
+export async function swapInProgram(fd: FormData) {
+  const supabase = await coachOnly();
+  const id = String(fd.get("program_id") ?? "");
+  const from = String(fd.get("from") ?? "");
+  const toName = str(fd.get("to"), 80);
+  if (!UUID.test(id) || !UUID.test(from) || !toName) go(progPath(id), "Pick both exercises.");
+  const { data: to } = await supabase.from("exercises").select("id").ilike("name", toName!.replace(/[%_\\]/g, (c) => `\\${c}`)).maybeSingle();
+  if (!to) go(progPath(id), `"${toName}" isn't in the exercise library yet.`);
+  const { data, error } = await supabase.rpc("substitute_exercise", { p_scope: "program", p_target: id, p_from: from, p_to: to!.id });
+  go(`${progPath(id)}?swapped=${Number(data ?? 0)}`, error ? friendly(error.message) : undefined);
 }

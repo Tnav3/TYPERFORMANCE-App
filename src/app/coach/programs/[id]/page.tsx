@@ -10,6 +10,7 @@ import {
   copyWeek,
   deleteProgram,
   openDay,
+  swapInProgram,
   updateProgram,
 } from "../actions";
 
@@ -31,11 +32,11 @@ export default async function ProgramPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ error?: string; copied?: string }>;
+  searchParams: Promise<{ error?: string; copied?: string; swapped?: string }>;
 }) {
   const { supabase } = await requireState(["coach"]);
   const { id } = await params;
-  const { error, copied } = await searchParams;
+  const { error, copied, swapped } = await searchParams;
   const [{ data: program }, { data: days }, { data: clients }, { data: groups }, { data: assigned }] =
     await Promise.all([
       supabase.from("programs").select("*").eq("id", id).maybeSingle<Program>(),
@@ -58,6 +59,11 @@ export default async function ProgramPage({
         .limit(10),
     ]);
   if (!program) notFound();
+  const { data: allExercises } = await supabase.from("exercises").select("id, name").eq("active", true).order("name");
+  const usedMap = new Map<string, string>();
+  for (const d of (days ?? []) as unknown as { program_items: { exercise_id: string | null; exercises: { name: string } | null }[] }[])
+    for (const i of d.program_items) if (i.exercise_id && i.exercises) usedMap.set(i.exercise_id, i.exercises.name);
+  const usedExercises = [...usedMap.entries()].map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name));
 
   type DayRow = {
     id: string;
@@ -79,6 +85,7 @@ export default async function ProgramPage({
       </Heading>
       {error && <Alert>{error}</Alert>}
       {copied && <Alert tone="ok">Copied to {copied}.</Alert>}
+      {swapped && <Alert tone="ok">Swapped on {swapped} line{swapped === "1" ? "" : "s"}. Sets, reps and progression kept.</Alert>}
 
       {/* Assign */}
       <Card className="mb-6 !p-4">
@@ -207,6 +214,26 @@ export default async function ProgramPage({
           </section>
         ))}
       </div>
+
+      {/* Swap */}
+      {usedExercises.length > 0 && (
+        <details className="mt-8 rounded-2xl border border-line bg-surface p-4">
+          <summary className="cursor-pointer font-extrabold">Swap an exercise everywhere</summary>
+          <form action={swapInProgram} className="mt-3 grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
+            <input type="hidden" name="program_id" value={program.id} />
+            <select name="from" required defaultValue="" className={input} aria-label="Replace">
+              <option value="" disabled>Replace…</option>
+              {usedExercises.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
+            </select>
+            <input name="to" list="swap-list" required placeholder="With…" className={input} aria-label="With" />
+            <button className={smallBtn}>Swap</button>
+            <datalist id="swap-list">
+              {(allExercises ?? []).map((e) => <option key={e.id} value={e.name} />)}
+            </datalist>
+          </form>
+          <p className="mt-1 text-xs text-muted">Every week and day of this template. Sets, reps, % and progression stay the same. Already-assigned workouts aren&apos;t changed (swap those from the client&apos;s Program page).</p>
+        </details>
+      )}
 
       {/* Details */}
       <details className="mt-8 rounded-2xl border border-line bg-surface p-4">

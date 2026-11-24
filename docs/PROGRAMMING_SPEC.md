@@ -112,6 +112,8 @@ Cards (each can be shown/hidden by the coach; choice saved on the coach's profil
 ## Segment I: Moving off Trainerize
 - Bulk invite: paste a list of emails → creates pending invites the coach can approve on signup.
 - Programs are rebuilt as templates (Trainerize exports are limited); the one-line entry makes this fast.
+- **Master templates**: any program can be saved as a master (a protected copy in its own "Master templates" tab). New programs can start from a master, so the master itself is never edited by accident.
+- **Exercise substitution**: swap one exercise for another across a whole template, or across a client's/group's upcoming assigned workouts (logged ones untouched), keeping sets, reps, % and progression. Single lines can still be swapped in the editor.
 - Launch checklist in `docs/LAUNCH.md`.
 
 ## Out of scope (v1)
