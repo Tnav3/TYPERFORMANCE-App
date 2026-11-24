@@ -35,3 +35,4 @@ Migrations for this module start at `029_`. They are tested locally with PGlite 
 | M Push notifications | Done: web push, outbox, reminders, prefs page |
 - Habit gamification done (streaks, perfect days, weekly score, badges)
 - VBT done (m/s targets, velocity metric, per-line metric overrides)
+| N Onboarding sequences | Done |

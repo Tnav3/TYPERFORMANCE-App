@@ -131,3 +131,8 @@ Marketplace and program sales, food-by-food logging, wearable sync, native App S
 - Web Push (works on Android; on iPhone only after the app is added to the home screen, iOS 16.4+). An in-app prompt walks clients through Add to Home Screen → Allow notifications.
 - Sent for: new chat message / announcement (incl. scheduled and recurring), new workouts assigned, an optional daily workout reminder at the client's chosen time, optional habit reminder.
 - Each client controls which they get. The database pings the app (pg_net) when a message is created; the app sends the push with VAPID keys.
+
+## Segment N: Onboarding sequences (Trainerize "Auto Messages & Events")
+- Sequences of timed in-app chat messages (day offset + Sydney time), `{first_name}` personalisation.
+- Start automatically when the coach approves a client (or an invited client signs up), or by hand with a chosen start date. Pause, stop per client, see progress (x/y sent).
+- Starter 4-message welcome included. Delivered by the minute job; late steps still go out up to 2 days late, never older.

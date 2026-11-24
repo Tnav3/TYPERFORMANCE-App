@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { requireState } from "@/lib/session";
 import { todayISO } from "@/lib/dates";
 import { scheduleLabel } from "@/lib/programming/schedule";
@@ -72,6 +73,9 @@ export default async function ScheduledMessagesPage({
       <Heading sub="Delivered inside the app's chat (not email). Recurring messages go out within a minute of the set time, Sydney time.">
         Scheduled messages
       </Heading>
+      <Link href="/coach/sequences" className="mb-4 flex min-h-12 items-center justify-between rounded-xl border border-line bg-surface-2 px-4 font-extrabold">
+        Onboarding sequences <span aria-hidden>→</span>
+      </Link>
       {sp.error && <Alert>{sp.error}</Alert>}
       {sp.saved && <Alert tone="ok">Saved.</Alert>}
 

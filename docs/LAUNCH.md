@@ -51,7 +51,7 @@ What happens: paid → account active (or an invite is created if they haven't s
 5. Run both systems for one full block. Cancel Trainerize after that.
 
 ## 5. Going live
-1. Load migrations `029`–`043` into the **live** Supabase project (SQL editor, in order). They only add things; nothing existing is removed.
+1. Load migrations `029`–`044` into the **live** Supabase project (SQL editor, in order). They only add things; nothing existing is removed.
 2. In Supabase (live) check **Database → Extensions → pg_cron** is enabled (needed for scheduled messages), then run:
    `select cron.schedule('send-due-messages', '* * * * *', 'select public.send_due_messages()');`
 3. **Database → Publications → supabase_realtime**: make sure `messages` is included (live chat).
