@@ -98,8 +98,8 @@ function ExerciseFields({
             </select>
           </label>
           <label>Speed in
-            <select name="speed_unit" defaultValue={e?.speed_unit ?? "kmh"} className={input}>
-              <option value="kmh">km/h</option><option value="mph">mph</option>
+            <select name="speed_unit" defaultValue={e?.speed_unit ?? "ms"} className={input}>
+              <option value="ms">m/s</option><option value="kmh">km/h</option><option value="mph">mph</option>
             </select>
           </label>
         </div>

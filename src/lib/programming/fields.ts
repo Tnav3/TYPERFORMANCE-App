@@ -1,5 +1,5 @@
 // What each exercise collects, unit handling, and canonical storage.
-// Canonical: weight kg, time seconds, distance metres, speed km/h, height cm.
+// Canonical: weight kg, time seconds, distance metres, speed km/h (shown as m/s by default), height cm.
 
 export const FIELD_KEYS = [
   "reps",
@@ -27,16 +27,16 @@ export const FIELD_LABEL: Record<FieldKey, string> = {
   heart_rate: "Heart rate",
   rpe: "RPE",
   height: "Height",
-  velocity: "Velocity",
+  velocity: "Bar speed (VBT)",
 };
 
 export interface Units {
   weight_unit: "kg" | "lb";
   distance_unit: "m" | "km" | "mi";
-  speed_unit: "kmh" | "mph";
+  speed_unit: "ms" | "kmh" | "mph";
 }
 
-export const DEFAULT_UNITS: Units = { weight_unit: "kg", distance_unit: "m", speed_unit: "kmh" };
+export const DEFAULT_UNITS: Units = { weight_unit: "kg", distance_unit: "m", speed_unit: "ms" };
 
 const BY_MEASURE: Record<string, FieldKey[]> = {
   load: ["reps", "weight"],
@@ -60,7 +60,7 @@ export function unitLabel(field: FieldKey, u: Units, bodyweight = false): string
     case "distance":
       return u.distance_unit;
     case "speed":
-      return u.speed_unit === "mph" ? "mph" : "km/h";
+      return u.speed_unit === "mph" ? "mph" : u.speed_unit === "kmh" ? "km/h" : "m/s";
     case "calories":
       return "cal";
     case "heart_rate":
@@ -97,7 +97,7 @@ export function toCanonical(field: FieldKey, raw: string, u: Units): number | nu
     case "distance":
       return round(u.distance_unit === "km" ? n * 1000 : u.distance_unit === "mi" ? n * MI : n, 1);
     case "speed":
-      return round(u.speed_unit === "mph" ? n * (MI / 1000) : n, 2);
+      return round(u.speed_unit === "mph" ? n * (MI / 1000) : u.speed_unit === "kmh" ? n : n * 3.6, 2);
     case "velocity":
       return round(n, 2);
     case "reps":
@@ -119,7 +119,7 @@ export function fromCanonical(field: FieldKey, v: number | null | undefined, u: 
     case "distance":
       return String(u.distance_unit === "km" ? round(v / 1000, 2) : u.distance_unit === "mi" ? round(v / MI, 2) : round(v, 0));
     case "speed":
-      return String(u.speed_unit === "mph" ? round(v / (MI / 1000), 1) : round(v, 1));
+      return String(u.speed_unit === "mph" ? round(v / (MI / 1000), 1) : u.speed_unit === "kmh" ? round(v, 1) : round(v / 3.6, 2));
     case "velocity":
       return String(round(v, 2));
     default:

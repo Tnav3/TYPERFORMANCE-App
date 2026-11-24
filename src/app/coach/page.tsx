@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { requireState } from "@/lib/session";
-import { formatDate, todayISO } from "@/lib/dates";
+import { todayISO } from "@/lib/dates";
 import { fightCountdown } from "@/lib/fight";
 import { getDashboard, type DashboardRow } from "@/lib/dashboard";
 import { formatChange, LIGHT_ORDER } from "@/lib/load-metrics";
-import { dayMonth, addDays } from "@/lib/week";
+import { dayMonth } from "@/lib/week";
 import type { AccountStatus, Profile } from "@/lib/types";
 import { Card, Logo, Screen, SignOutButton } from "@/components/ui";
+import { Activity, Dumbbell, MessageCircle, Users } from "lucide-react";
 import { TrafficLight } from "@/components/TrafficLight";
 import { CoachOverview } from "@/components/CoachOverview";
 import { setAthleteStatus } from "./actions";
@@ -26,7 +27,6 @@ export default async function CoachHome() {
   );
   const counts = { red: 0, amber: 0, green: 0, none: 0 };
   rows.forEach((r) => counts[r.light]++);
-  const notSubmitted = rows.filter((r) => r.missedLastWeek).length;
   const { data: seen } = await supabase
     .from("profiles")
     .select("id, full_name, last_seen_at")
@@ -44,95 +44,36 @@ export default async function CoachHome() {
     (a) => activityTone(a.last_seen_at, now) === "ok",
   ).length;
 
+  const { count: unread } = await supabase
+    .from("messages")
+    .select("id", { count: "exact", head: true })
+    .neq("sender_id", me.id)
+    .is("read_at", null);
+
+  const main: [string, string, React.ReactNode, number?][] = [
+    ["/coach/programs", "Programs", <Dumbbell key="p" size={26} />],
+    ["/coach/chat", "Inbox", <MessageCircle key="c" size={26} />, unread ?? 0],
+    ["/coach/feed", "Workout Feed", <Activity key="f" size={26} />],
+    ["/coach/groups", "Groups", <Users key="g" size={26} />],
+  ];
+  const more: [string, [string, string][]][] = [
+    ["Programming", [["/coach/library", "Exercise library"], ["/coach/messages", "Scheduled messages"], ["/coach/sequences", "Onboarding sequences"], ["/coach/fights", "Competition tracker"]]],
+    ["Clients & business", [["/coach/invites", "Invites & payments"], ["/notifications", "Phone notifications"], ["/coach/settings", "Settings"]]],
+    ["Tools", [["/week", "Log my own training"], ["/calculator", "1RM calculator"], ["/mas", "MAS calculator"], ["/rpe", "RPE & RIR chart"], ["/hr", "HR zones"]]],
+  ];
+
   return (
     <Screen wide>
       <header className="mb-6 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Logo size={40} />
-          <h1 className="text-xl font-black uppercase tracking-tight">
-            Dashboard
-          </h1>
+          <h1 className="text-xl font-black uppercase tracking-tight">Dashboard</h1>
         </div>
         <SignOutButton />
       </header>
 
-      <div className="mb-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
-        {[
-          ["/coach/programs", "Programs"],
-          ["/coach/feed", "Workout Feed"],
-          ["/coach/groups", "Groups"],
-          ["/coach/library", "Exercises"],
-          ["/coach/chat", "Inbox"],
-          ["/coach/messages", "Scheduled Msgs"],
-          ["/coach/invites", "Invites & Payments"],
-          ["/notifications", "Notifications"],
-        ].map(([href, label]) => (
-          <Link
-            key={href}
-            href={href}
-            className="flex min-h-12 items-center justify-center rounded-xl bg-brand text-sm font-extrabold uppercase tracking-wide text-white"
-          >
-            {label}
-          </Link>
-        ))}
-      </div>
-
-      <CoachOverview
-        supabase={supabase}
-        today={today}
-        hidden={((me as unknown as { dashboard_prefs?: { hidden?: string[] } }).dashboard_prefs?.hidden) ?? []}
-        missedCheckins={rows
-          .filter((r) => r.missedLastWeek)
-          .map((r) => ({ id: r.profile.id, name: r.profile.full_name ?? r.profile.email }))}
-      />
-
-      <div className="mb-6 grid grid-cols-2 gap-2">
-        <Link
-          href="/week"
-          className="flex min-h-12 items-center justify-center rounded-xl border border-line bg-surface-2 text-sm font-extrabold uppercase tracking-wide"
-        >
-          Log my training
-        </Link>
-        <Link
-          href="/coach/settings"
-          className="flex min-h-12 items-center justify-center rounded-xl border border-line bg-surface-2 text-sm font-extrabold uppercase tracking-wide"
-        >
-          Settings
-        </Link>
-        <Link
-          href="/calculator"
-          className="flex min-h-12 items-center justify-center rounded-xl border border-line bg-surface-2 text-sm font-extrabold uppercase tracking-wide"
-        >
-          1RM Calculator
-        </Link>
-        <Link
-          href="/mas"
-          className="flex min-h-12 items-center justify-center rounded-xl border border-line bg-surface-2 text-sm font-extrabold uppercase tracking-wide"
-        >
-          MAS Calculator
-        </Link>
-        <Link
-          href="/rpe"
-          className="flex min-h-12 items-center justify-center rounded-xl border border-line bg-surface-2 text-sm font-extrabold uppercase tracking-wide"
-        >
-          RPE &amp; RIR Chart
-        </Link>
-        <Link
-          href="/hr"
-          className="flex min-h-12 items-center justify-center rounded-xl border border-line bg-surface-2 text-sm font-extrabold uppercase tracking-wide"
-        >
-          HR Zones
-        </Link>
-        <Link
-          href="/coach/fights"
-          className="col-span-2 flex min-h-12 items-center justify-center rounded-xl border border-line bg-surface-2 text-sm font-extrabold uppercase tracking-wide"
-        >
-          Competition Tracker
-        </Link>
-      </div>
-
       {pending.length > 0 && (
-        <Section title={`Waiting for approval · ${pending.length}`}>
+        <Section title={`New sign-ups to approve · ${pending.length}`}>
           {pending.map((p) => (
             <AccessRow
               key={p.id}
@@ -146,56 +87,85 @@ export default async function CoachHome() {
         </Section>
       )}
 
-      <section className="mb-8">
-        <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+      <nav className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {main.map(([href, label, icon, badge]) => (
+          <Link
+            key={href}
+            href={href}
+            className="relative flex min-h-24 flex-col items-center justify-center gap-2 rounded-2xl border border-line bg-surface text-center transition-colors hover:border-brand"
+          >
+            <span className="text-brand">{icon}</span>
+            <span className="text-sm font-extrabold uppercase tracking-wide">{label}</span>
+            {badge ? (
+              <span className="absolute right-3 top-3 rounded-full bg-brand px-2 py-0.5 text-xs font-black text-white">{badge}</span>
+            ) : null}
+          </Link>
+        ))}
+      </nav>
+
+      <CoachOverview
+        supabase={supabase}
+        today={today}
+        hidden={((me as unknown as { dashboard_prefs?: { hidden?: string[] } }).dashboard_prefs?.hidden) ?? []}
+        missedCheckins={rows
+          .filter((r) => r.missedLastWeek)
+          .map((r) => ({ id: r.profile.id, name: r.profile.full_name ?? r.profile.email }))}
+      />
+
+      <section className="mb-8" id="clients">
+        <div className="mb-2 flex items-baseline justify-between gap-2">
           <h2 className="text-xs font-semibold uppercase tracking-widest text-muted">
-            Last week · {dayMonth(weeks.lastWeek)} –{" "}
-            {dayMonth(addDays(weeks.lastWeek, 6))}
+            Clients · {sorted.length + noCheckin.length}
           </h2>
-          <p className="text-xs text-muted">
-            vs week of {dayMonth(weeks.prevWeek)} · {counts.red} red ·{" "}
-            {counts.amber} amber · {counts.green} green
-            {notSubmitted ? ` · ${notSubmitted} not submitted` : ""}
-          </p>
+          {sorted.length > 0 && (
+            <p className="text-xs text-muted">
+              Week of {dayMonth(weeks.lastWeek)} · {counts.red} red · {counts.amber} amber · {counts.green} green
+            </p>
+          )}
         </div>
-        {sorted.length === 0 ? (
-          <p className="text-sm text-muted">
-            {noCheckin.length
-              ? "No athletes with the weekly check-in switched on."
-              : "No active athletes yet."}
+        {sorted.length + noCheckin.length === 0 ? (
+          <p className="rounded-2xl border border-line bg-surface p-4 text-sm text-muted">
+            No active clients yet. Share your sign-up link, then approve them above.
           </p>
         ) : (
-          <div className="space-y-3">
+          <div className="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-surface">
             {sorted.map((r) => (
-              <AthleteCard key={r.profile.id} r={r} today={today} />
+              <ClientRow key={r.profile.id} r={r} today={today} />
+            ))}
+            {noCheckin.map((p) => (
+              <Link key={p.id} href={`/coach/athlete/${p.id}`} className="flex min-h-14 items-center justify-between gap-3 px-4 hover:bg-surface-2">
+                <span className="truncate font-bold">{p.full_name ?? p.email}</span>
+                <span className="text-muted" aria-hidden>›</span>
+              </Link>
             ))}
           </div>
         )}
       </section>
 
-      {noCheckin.length > 0 && (
-        <Section title={`Check-in switched off · ${noCheckin.length}`}>
-          {noCheckin.map((p) => (
-            <Link key={p.id} href={`/coach/athlete/${p.id}`} className="block">
-              <Card className="flex items-center justify-between !p-4 hover:border-muted">
-                <p className="truncate font-extrabold">
-                  {p.full_name ?? p.email}
-                </p>
-                <span className="text-xl text-muted" aria-hidden>
-                  →
-                </span>
-              </Card>
-            </Link>
+      <details className="mb-4 overflow-hidden rounded-2xl border border-line bg-surface" open={false}>
+        <summary className="flex min-h-14 cursor-pointer items-center justify-between px-4 font-extrabold uppercase tracking-wide">
+          More <span className="text-sm font-semibold normal-case text-muted">Library, messages, invites, tools…</span>
+        </summary>
+        <div className="grid gap-4 border-t border-line p-4 sm:grid-cols-3">
+          {more.map(([title, links]) => (
+            <div key={title}>
+              <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-muted">{title}</p>
+              {links.map(([href, label]) => (
+                <Link key={href} href={href} className="flex min-h-11 items-center justify-between rounded-lg px-2 font-semibold hover:bg-surface-2">
+                  {label} <span className="text-muted" aria-hidden>›</span>
+                </Link>
+              ))}
+            </div>
           ))}
-        </Section>
-      )}
+        </div>
+      </details>
 
       {activity.length > 0 && (
-        <details className="mb-8 rounded-xl border border-line bg-surface">
-          <summary className="flex min-h-12 cursor-pointer items-center justify-between px-4 text-sm font-extrabold">
-            <span>App use</span>
-            <span className="font-semibold text-muted">
-              {activeWeek} of {activity.length} opened it in the last 7 days
+        <details className="mb-4 overflow-hidden rounded-2xl border border-line bg-surface">
+          <summary className="flex min-h-14 cursor-pointer items-center justify-between px-4 font-extrabold uppercase tracking-wide">
+            <span>Last time clients opened the app</span>
+            <span className="text-sm font-semibold normal-case text-muted">
+              {activeWeek} of {activity.length} this week
             </span>
           </summary>
           <ul className="divide-y divide-line border-t border-line">
@@ -203,16 +173,9 @@ export default async function CoachHome() {
               const tone = activityTone(a.last_seen_at, now);
               return (
                 <li key={a.id}>
-                  <Link
-                    href={`/coach/athlete/${a.id}`}
-                    className="flex min-h-11 items-center justify-between gap-3 px-4 text-sm"
-                  >
-                    <span className="truncate font-bold">
-                      {a.full_name ?? "Unnamed"}
-                    </span>
-                    <span
-                      className={`shrink-0 ${tone === "ok" ? "text-ok" : tone === "warn" ? "text-warn" : "text-brand"}`}
-                    >
+                  <Link href={`/coach/athlete/${a.id}`} className="flex min-h-11 items-center justify-between gap-3 px-4 text-sm">
+                    <span className="truncate font-bold">{a.full_name ?? "Unnamed"}</span>
+                    <span className={`shrink-0 ${tone === "ok" ? "text-ok" : tone === "warn" ? "text-warn" : "text-brand"}`}>
                       {lastSeenLabel(a.last_seen_at, now)}
                     </span>
                   </Link>
@@ -220,25 +183,17 @@ export default async function CoachHome() {
               );
             })}
           </ul>
-          <p className="border-t border-line px-4 py-2 text-xs text-muted">
-            Last time each client opened the app. Green: this week · amber: 1–3
-            weeks · red: longer or never.
-          </p>
         </details>
       )}
 
       {inactive.length > 0 && (
         <details className="mb-8">
-          <summary className="mb-3 cursor-pointer text-xs font-semibold uppercase tracking-widest text-muted">
-            Deactivated · {inactive.length}
+          <summary className="mb-3 cursor-pointer px-1 text-xs font-semibold uppercase tracking-widest text-muted">
+            Deactivated clients · {inactive.length}
           </summary>
           <div className="space-y-3">
             {inactive.map((p) => (
-              <AccessRow
-                key={p.id}
-                p={p}
-                actions={[{ label: "Reactivate", status: "active" }]}
-              />
+              <AccessRow key={p.id} p={p} actions={[{ label: "Reactivate", status: "active" }]} />
             ))}
           </div>
         </details>
@@ -264,121 +219,27 @@ function Section({
   );
 }
 
-function Stat({
-  label,
-  value,
-  sub,
-}: {
-  label: string;
-  value: React.ReactNode;
-  sub?: React.ReactNode;
-}) {
-  return (
-    <div>
-      <p className="text-[11px] uppercase tracking-widest text-muted">
-        {label}
-      </p>
-      <p className="text-lg font-black leading-tight">{value}</p>
-      {sub && <p className="text-xs text-muted">{sub}</p>}
-    </div>
-  );
-}
-
-function AthleteCard({ r, today }: { r: DashboardRow; today: string }) {
+function ClientRow({ r, today }: { r: DashboardRow; today: string }) {
   const p = r.profile;
   const fight = fightCountdown(p.next_fight_date, today);
-  const limit =
-    p.weight_class_limit_kg != null ? Number(p.weight_class_limit_kg) : null;
-  const over =
-    r.latestBodyweight != null && limit != null
-      ? Math.round((r.latestBodyweight - limit) * 10) / 10
-      : null;
-
+  const flags = [...r.reasons, ...(r.missedLastWeek ? ["Check-in missed"] : [])];
+  const summary = flags.length
+    ? flags.slice(0, 2).join(" · ")
+    : [
+        `Load ${r.lastWeek.load} (${formatChange(r.changePct)})`,
+        r.lastCheckin ? `wellness ${r.lastCheckin.wellness}/10` : null,
+        fight && !fight.past ? `fight ${fight.label.replace(" out", "")}` : null,
+      ]
+        .filter(Boolean)
+        .join(" · ");
   return (
-    <Link href={`/coach/athlete/${p.id}`} className="block">
-      <Card className="!p-4 hover:border-muted">
-        <div className="mb-3 flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <p className="truncate text-lg font-extrabold">
-              {p.full_name ?? p.email}
-            </p>
-            <p className="truncate text-sm text-muted">
-              {[p.discipline?.name, p.weight_class]
-                .filter(Boolean)
-                .join(" · ") || "—"}
-            </p>
-          </div>
-          <TrafficLight level={r.light} />
-        </div>
-
-        {(r.reasons.length > 0 || r.missedLastWeek) && (
-          <div className="mb-3 flex flex-wrap gap-1.5">
-            {r.reasons.map((x) => (
-              <span
-                key={x}
-                className="rounded-md bg-surface-2 px-2 py-0.5 text-xs font-semibold"
-              >
-                {x}
-              </span>
-            ))}
-            {r.missedLastWeek && (
-              <span className="rounded-md bg-surface-2 px-2 py-0.5 text-xs text-muted">
-                Last week not submitted
-              </span>
-            )}
-          </div>
-        )}
-        {r.latestCheckin?.niggle && r.latestCheckin.niggle_note && (
-          <p className="mb-3 text-sm">
-            <span className="text-muted">Niggle: </span>
-            {r.latestCheckin.niggle_note}
-          </p>
-        )}
-
-        <div className="grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-5">
-          <Stat
-            label="Last week"
-            value={r.lastWeek.load}
-            sub={`${formatChange(r.changePct)} vs prev (${r.prevWeek.load})`}
-          />
-          <Stat
-            label="This week"
-            value={r.thisWeek.load}
-            sub={`${r.thisWeek.count} session${r.thisWeek.count === 1 ? "" : "s"} so far`}
-          />
-          <Stat
-            label="Wellness"
-            value={r.lastCheckin ? `${r.lastCheckin.wellness}/10` : "–"}
-            sub="last week"
-          />
-          <Stat
-            label="Bodyweight"
-            value={
-              r.latestBodyweight != null ? `${r.latestBodyweight} kg` : "–"
-            }
-            sub={
-              over != null
-                ? over > 0
-                  ? `${over} kg over limit`
-                  : `${Math.abs(over)} kg under`
-                : limit
-                  ? `limit ${limit} kg`
-                  : undefined
-            }
-          />
-          <Stat
-            label="Fight"
-            value={
-              fight
-                ? fight.past
-                  ? "Passed"
-                  : fight.label.replace(" out", "")
-                : "–"
-            }
-            sub={p.next_fight_date ? formatDate(p.next_fight_date) : undefined}
-          />
-        </div>
-      </Card>
+    <Link href={`/coach/athlete/${p.id}`} className="flex min-h-16 items-center gap-3 px-4 py-2 hover:bg-surface-2">
+      <div className="min-w-0 flex-1">
+        <p className="truncate font-extrabold">{p.full_name ?? p.email}</p>
+        <p className={`truncate text-sm ${flags.length ? "text-text" : "text-muted"}`}>{summary}</p>
+      </div>
+      <TrafficLight level={r.light} />
+      <span className="text-muted" aria-hidden>›</span>
     </Link>
   );
 }

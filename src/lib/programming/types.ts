@@ -32,7 +32,7 @@ export interface Exercise {
   fields?: string[] | null;
   weight_unit?: "kg" | "lb";
   distance_unit?: "m" | "km" | "mi";
-  speed_unit?: "kmh" | "mph";
+  speed_unit?: "ms" | "kmh" | "mph";
 }
 
 export interface Program {

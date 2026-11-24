@@ -18,7 +18,7 @@ import {
   Trophy,
   Wrench,
 } from "lucide-react";
-import { toolsFor, toolsSummary } from "@/lib/tools";
+import { toolsFor } from "@/lib/tools";
 import { welcomeSteps } from "@/lib/tutorial";
 import { WelcomeTour } from "@/components/WelcomeTour";
 import { formatDate, todayISO } from "@/lib/dates";
@@ -26,7 +26,6 @@ import { fightCountdown } from "@/lib/fight";
 import { addDays, mondayOf } from "@/lib/week";
 import {
   Card,
-  FeatureLink,
   Logo,
   Screen,
   SignOutButton,
@@ -121,9 +120,9 @@ export default async function AthleteHome() {
       {!profile.tutorial_done_at && (
         <WelcomeTour steps={welcomeSteps(profile)} />
       )}
-      <header className="mb-6 flex items-center justify-between">
+      <header className="mb-5 flex items-center justify-between">
         <Logo size={40} />
-        <SignOutButton />
+        <Link href="/profile" className="text-sm text-muted underline underline-offset-4">My profile</Link>
       </header>
 
       <h1 className="text-2xl font-black uppercase tracking-tight">
@@ -141,7 +140,7 @@ export default async function AthleteHome() {
           href={todayWorkouts.length === 1 ? `/train/${todayWorkouts[0].id}` : "/train"}
           className="mb-4 block"
         >
-          <Card className="border-brand/60 hover:border-brand">
+          <Card className="border-brand bg-brand/10 hover:border-brand">
             <p className="text-xs font-semibold uppercase tracking-widest text-brand">
               Today&apos;s training
             </p>
@@ -155,8 +154,8 @@ export default async function AthleteHome() {
             ) : (
               <p className="mt-1 text-lg font-black uppercase leading-tight tracking-tight">Rest day</p>
             )}
-            <p className="mt-3 font-extrabold text-brand">
-              {todayWorkouts.length && !todayWorkouts.every((w) => doneIds.has(w.id)) ? "Start workout →" : "See my program →"}
+            <p className="mt-4 flex min-h-12 items-center justify-center rounded-xl bg-brand font-extrabold uppercase tracking-wide text-white">
+              {todayWorkouts.length && !todayWorkouts.every((w) => doneIds.has(w.id)) ? "Start workout" : "See my program"}
             </p>
           </Card>
         </Link>
@@ -220,115 +219,50 @@ export default async function AthleteHome() {
         <NextFightCard fights={plannedFights} today={today} />
       )}
 
-      {chatOn && (
-        <FeatureLink
-          href="/chat"
-          title={unreadChat ? `Chat · ${unreadChat} new` : "Chat"}
-          description="Message your coach"
-          icon={<MessageCircle size={22} strokeWidth={2.25} />}
-        />
-      )}
-
-      {programOn && (
-        <FeatureLink
-          href="/train/history"
-          title="My Progress"
-          description="Exercise history, PBs and leaderboards"
-          icon={<TrendingUp size={22} strokeWidth={2.25} />}
-        />
-      )}
-
-      {hasFeature(profile, "bodyweight") && (
-        <FeatureLink
-          href="/bodyweight"
-          title="Bodyweight"
-          description="Daily weigh-in and 7-day trend"
-          icon={<Scale size={22} strokeWidth={2.25} />}
-        />
-      )}
-
-      {hasFeature(profile, "habits") && (
-        <FeatureLink href="/habits" title="Habits" description="Tick off today's habits" icon={<ListChecks size={22} strokeWidth={2.25} />} />
-      )}
-      {hasFeature(profile, "macros") && (
-        <FeatureLink href="/macros" title="Macros" description="Log today's totals against your targets" icon={<Utensils size={22} strokeWidth={2.25} />} />
-      )}
-      {hasFeature(profile, "mealplan") && (
-        <FeatureLink href="/meal-plan" title="Meal Plan" description="Your targets and a sample day of eating" icon={<Salad size={22} strokeWidth={2.25} />} />
-      )}
-      {hasFeature(profile, "photos") && (
-        <FeatureLink href="/photos" title="Progress Photos" description="Private front, side and back photos" icon={<Camera size={22} strokeWidth={2.25} />} />
-      )}
-
-      {on.testing && (
-        <FeatureLink
-          href="/tests"
-          title="Testing"
-          description="Videos, instructions & your results"
-          icon={<ClipboardList size={22} strokeWidth={2.25} />}
-        />
-      )}
-
-      {on.mobility && (
-        <FeatureLink
-          href="/mobility"
-          title="Mobility"
-          description="Your range of motion vs healthy norms"
-          icon={<PersonStanding size={22} strokeWidth={2.25} />}
-        />
-      )}
-
-      {tools.length > 0 && (
-        <FeatureLink
-          href="/tools"
-          title="Training Tools"
-          description={toolsSummary(tools)}
-          icon={<Wrench size={22} strokeWidth={2.25} />}
-        />
-      )}
-
-      {on.fights && (
-        <FeatureLink
-          href="/fights"
-          title="Competition Tracker"
-          description="Log your fights and track them year by year"
-          icon={<Trophy size={22} strokeWidth={2.25} />}
-        />
-      )}
-
-      {!on.checkin &&
-        !programOn &&
-        !on.testing &&
-        tools.length === 0 &&
-        !on.fights &&
-        !on.mobility && (
+      {(() => {
+        const tiles: [boolean, string, string, React.ReactNode, number?][] = [
+          [chatOn, "/chat", "Chat", <MessageCircle key="c" size={28} />, unreadChat ?? 0],
+          [programOn, "/train/history", "Progress", <TrendingUp key="p" size={28} />],
+          [hasFeature(profile, "bodyweight"), "/bodyweight", "Weigh-in", <Scale key="b" size={28} />],
+          [hasFeature(profile, "habits"), "/habits", "Habits", <ListChecks key="h" size={28} />],
+          [hasFeature(profile, "macros"), "/macros", "Macros", <Utensils key="m" size={28} />],
+          [hasFeature(profile, "mealplan"), "/meal-plan", "Meal Plan", <Salad key="mp" size={28} />],
+          [hasFeature(profile, "photos"), "/photos", "Photos", <Camera key="ph" size={28} />],
+          [on.testing, "/tests", "Testing", <ClipboardList key="t" size={28} />],
+          [on.mobility, "/mobility", "Mobility", <PersonStanding key="mo" size={28} />],
+          [tools.length > 0, "/tools", "Tools", <Wrench key="w" size={28} />],
+          [on.fights, "/fights", "My Fights", <Trophy key="f" size={28} />],
+        ];
+        const shown = tiles.filter((t) => t[0]);
+        return shown.length ? (
+          <nav className="mb-6 mt-2 grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {shown.map(([, href, label, icon, badge]) => (
+              <Link
+                key={href}
+                href={href}
+                className="relative flex min-h-28 flex-col items-center justify-center gap-2 rounded-2xl border border-line bg-surface-2 text-center transition-colors hover:border-brand active:bg-surface"
+              >
+                <span className="text-brand">{icon}</span>
+                <span className="text-base font-extrabold">{label}</span>
+                {badge ? (
+                  <span className="absolute right-3 top-3 rounded-full bg-brand px-2 py-0.5 text-xs font-black text-white">{badge} new</span>
+                ) : null}
+              </Link>
+            ))}
+          </nav>
+        ) : !on.checkin && !programOn ? (
           <Card className="mb-4">
-            <p className="text-muted">
-              Your coach hasn&apos;t switched on any features for you yet.
-            </p>
+            <p className="text-muted">Your coach hasn&apos;t switched on any features for you yet.</p>
           </Card>
-        )}
+        ) : null;
+      })()}
 
-      <FeatureLink
-        href="/notifications"
-        title="Notifications"
-        description="Phone alerts for messages, workouts and reminders"
-        icon={<Bell size={22} strokeWidth={2.25} />}
-      />
-
-      <FeatureLink
-        href="/faq"
-        title="FAQ"
-        description="Training, niggles and food: quick answers"
-        icon={<CircleHelp size={22} strokeWidth={2.25} />}
-      />
-
-      <Link
-        href="/profile"
-        className="text-sm text-muted underline underline-offset-4"
-      >
-        Edit my profile
-      </Link>
+      <footer className="mt-8 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 border-t border-line pt-5 text-sm text-muted">
+        <Link href="/notifications" className="inline-flex min-h-11 items-center gap-1.5"><Bell size={16} /> Notifications</Link>
+        <Link href="/faq" className="inline-flex min-h-11 items-center gap-1.5"><CircleHelp size={16} /> Help</Link>
+        <Link href="/profile" className="inline-flex min-h-11 items-center">My profile</Link>
+        <SignOutButton />
+      </footer>
     </Screen>
   );
 }

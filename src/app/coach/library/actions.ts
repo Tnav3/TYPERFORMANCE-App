@@ -40,13 +40,13 @@ function fields(fd: FormData) {
   if (fieldsPicked.length > 4) return { error: "Pick up to 4 things to record." };
   const wu = String(fd.get("weight_unit") ?? "kg");
   const du = String(fd.get("distance_unit") ?? "m");
-  const su = String(fd.get("speed_unit") ?? "kmh");
+  const su = String(fd.get("speed_unit") ?? "ms");
   return {
     row: {
       fields: fieldsPicked.length ? FIELD_KEYS.filter((k) => fieldsPicked.includes(k)) : null,
       weight_unit: wu === "lb" ? "lb" : "kg",
       distance_unit: ["m", "km", "mi"].includes(du) ? du : "m",
-      speed_unit: su === "mph" ? "mph" : "kmh",
+      speed_unit: su === "mph" ? "mph" : su === "kmh" ? "kmh" : "ms",
       name,
       category,
       measure,

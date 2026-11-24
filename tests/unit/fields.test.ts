@@ -28,6 +28,9 @@ describe("exercise fields", () => {
     expect(toCanonical("distance", "3.1", mi)).toBe(4989);
     expect(toCanonical("speed", "10", mi)).toBe(16.09);
     expect(fromCanonical("speed", 16.09, mi)).toBe("10");
+    expect(toCanonical("speed", "5", DEFAULT_UNITS)).toBe(18); // m/s default
+    expect(fromCanonical("speed", 18, DEFAULT_UNITS)).toBe("5");
+    expect(fromCanonical("speed", 18, { ...DEFAULT_UNITS, speed_unit: "kmh" })).toBe("18");
     expect(toCanonical("time", "1:30", DEFAULT_UNITS)).toBe(90);
     expect(toCanonical("reps", "", DEFAULT_UNITS)).toBeNull();
     expect(toCanonical("watts", "-5", DEFAULT_UNITS)).toBeNull();

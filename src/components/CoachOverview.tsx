@@ -149,119 +149,159 @@ export async function CoachOverview({
   });
   const pbs = newPBs(pbRows, weekAgo).slice(0, 12);
 
-  const Card = ({ k, count, tone = "brand", children }: { k: OverviewCard; count: number | string; tone?: "brand" | "warn" | "ok"; children: ReactNode }) =>
-    show(k) ? (
-      <section className="rounded-2xl border border-line bg-surface p-4">
-        <div className="mb-2 flex items-center justify-between">
-          <h3 className="text-xs font-semibold uppercase tracking-widest text-muted">
-            {OVERVIEW_CARDS.find((c) => c[0] === k)![1]}
-          </h3>
-          <span className={`text-lg font-black ${tone === "ok" ? "text-ok" : tone === "warn" ? "text-warn" : "text-brand"}`}>{count}</span>
-        </div>
-        <div className="max-h-56 overflow-y-auto text-sm">{children}</div>
-      </section>
-    ) : null;
   const Person = ({ id, children, href }: { id: string; children?: ReactNode; href?: string }) => (
-    <Link href={href ?? `/coach/athlete/${id}`} className="flex items-center justify-between gap-2 rounded-lg px-1 py-1 hover:bg-surface-2">
+    <Link href={href ?? `/coach/athlete/${id}`} className="flex min-h-11 items-center justify-between gap-3 rounded-lg px-2 hover:bg-surface-2">
       <span className="truncate font-semibold">{name.get(id) ?? "Client"}</span>
       <span className="shrink-0 text-xs text-muted">{children}</span>
     </Link>
   );
-  const none = <p className="text-muted">All clear.</p>;
+
+  const dueFollow = (follow ?? []).filter((f) => f.due_on <= today);
+  const soon = expiring.filter((r) => r.daysLeft! <= 7);
+  type Item = { k: OverviewCard; label: string; count: number; win?: boolean; body: ReactNode };
+  const items: Item[] = [
+    {
+      k: "followups",
+      label: "Follow-ups due",
+      count: dueFollow.length,
+      body: (follow ?? []).map((f) => (
+        <div key={f.id} className="flex items-center justify-between gap-2 px-2 py-1.5">
+          <Link href={`/coach/athlete/${f.athlete_id}`} className="min-w-0">
+            <span className="block font-semibold">{name.get(f.athlete_id) ?? "Client"}</span>
+            <span className={`block text-xs ${f.due_on < today ? "text-brand" : "text-muted"}`}>
+              {f.due_on < today ? "Overdue · " : f.due_on === today ? "Today · " : `${formatDate(f.due_on)} · `}
+              {f.note}
+            </span>
+          </Link>
+          <form action={clearFollowUp}>
+            <input type="hidden" name="id" value={f.id} />
+            <button className="min-h-10 rounded-lg border border-line px-3 text-xs font-bold">Done</button>
+          </form>
+        </div>
+      )),
+    },
+    {
+      k: "expired",
+      label: "Program finished – nothing scheduled",
+      count: expired.length,
+      body: expired.map((id) => <Person key={id} id={id} href={`/coach/athlete/${id}/program`}>Assign program →</Person>),
+    },
+    {
+      k: "expiring",
+      label: "Program ends within 7 days",
+      count: soon.length,
+      body: expiring.map((r) => (
+        <Person key={r.id} id={r.id} href={`/coach/athlete/${r.id}/program`}>
+          <span className={r.daysLeft! <= 7 ? "text-brand" : "text-warn"}>
+            {r.daysLeft} days left · {formatDate(r.lastDate!)}
+          </span>
+        </Person>
+      )),
+    },
+    {
+      k: "setup",
+      label: "Setup not finished",
+      count: setup.length,
+      body: setup.map((x) => <Person key={x.id} id={x.id}>{x.why}</Person>),
+    },
+    {
+      k: "checkins",
+      label: "Missed last week's check-in",
+      count: missedCheckins.length,
+      body: missedCheckins.map((c) => <Person key={c.id} id={c.id}>Open →</Person>),
+    },
+    {
+      k: "inactive",
+      label: "Haven't opened the app in 7+ days",
+      count: inactive.length,
+      body: inactive.map((c) => <Person key={c.id} id={c.id}>{c.last ? `last ${formatDate(c.last.slice(0, 10))}` : "never opened"}</Person>),
+    },
+    {
+      k: "pbs",
+      label: "New personal bests",
+      count: pbs.length,
+      win: true,
+      body: pbs.map((p) => {
+        const [athlete, ex] = p.key.split("|");
+        return (
+          <Person key={p.key} id={athlete} href={`/coach/athlete/${athlete}/progress/${ex}`}>
+            {exName.get(ex)} {p.reps}×{p.kg} kg
+          </Person>
+        );
+      }),
+    },
+  ].filter((i) => show(i.k as OverviewCard)) as Item[];
+  const todo = items.filter((i) => i.count > 0 && !i.win);
+  const wins = items.filter((i) => i.count > 0 && i.win);
+
+  const pctTone = (n: number | null) => (n == null || n >= 80 ? "text-ok" : n >= 60 ? "text-warn" : "text-brand");
+  const Row = ({ i }: { i: Item }) => (
+    <details className="group">
+      <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-3 px-4 [&::-webkit-details-marker]:hidden">
+        <span className="font-bold">{i.label}</span>
+        <span className="flex items-center gap-2">
+          <span className={`min-w-8 rounded-full px-2.5 py-0.5 text-center text-sm font-black ${i.win ? "bg-ok/15 text-ok" : "bg-brand/15 text-brand"}`}>{i.count}</span>
+          <span className="text-muted transition-transform group-open:rotate-90" aria-hidden>›</span>
+        </span>
+      </summary>
+      <div className="max-h-72 overflow-y-auto border-t border-line px-2 py-2 text-sm">{i.body}</div>
+    </details>
+  );
 
   return (
-    <div className="mb-6">
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        <Card k="setup" count={setup.length} tone={setup.length ? "brand" : "ok"}>
-          {setup.length ? setup.map((s) => <Person key={s.id} id={s.id}>{s.why}</Person>) : none}
-        </Card>
-        <Card k="checkins" count={missedCheckins.length} tone={missedCheckins.length ? "warn" : "ok"}>
-          {missedCheckins.length ? missedCheckins.map((c) => <Person key={c.id} id={c.id}>last week</Person>) : none}
-        </Card>
-        <Card k="inactive" count={inactive.length} tone={inactive.length ? "warn" : "ok"}>
-          {inactive.length
-            ? inactive.map((c) => <Person key={c.id} id={c.id}>{c.last ? `last ${formatDate(c.last.slice(0, 10))}` : "never opened"}</Person>)
-            : none}
-        </Card>
-        <Card k="followups" count={(follow ?? []).length} tone={(follow ?? []).some((f) => f.due_on <= today) ? "brand" : "ok"}>
-          {(follow ?? []).length
-            ? (follow ?? []).map((f) => (
-                <div key={f.id} className="flex items-start justify-between gap-2 py-1">
-                  <Link href={`/coach/athlete/${f.athlete_id}`} className="min-w-0">
-                    <span className="block font-semibold">{name.get(f.athlete_id) ?? "Client"}</span>
-                    <span className={`block text-xs ${f.due_on < today ? "text-brand" : "text-muted"}`}>
-                      {f.due_on < today ? "Overdue · " : f.due_on === today ? "Today · " : `${formatDate(f.due_on)} · `}
-                      {f.note}
-                    </span>
-                  </Link>
-                  <form action={clearFollowUp}>
-                    <input type="hidden" name="id" value={f.id} />
-                    <button className="min-h-9 rounded-lg border border-line px-2 text-xs font-bold">Done</button>
-                  </form>
-                </div>
-              ))
-            : <p className="text-muted">Nothing due. Add follow-ups from a client&apos;s profile.</p>}
-        </Card>
-        <Card k="pbs" count={pbs.length} tone="ok">
-          {pbs.length
-            ? pbs.map((p) => {
-                const [athlete, ex] = p.key.split("|");
-                return (
-                  <Person key={p.key} id={athlete} href={`/coach/athlete/${athlete}/progress/${ex}`}>
-                    {exName.get(ex)} {p.reps}×{p.kg}kg (e1RM {p.e1rm}, +{Math.round((p.e1rm - p.previous) * 10) / 10})
-                  </Person>
-                );
-              })
-            : <p className="text-muted">None this week yet.</p>}
-        </Card>
-        <Card k="expiring" count={expiring.filter((r) => r.daysLeft! <= 7).length} tone={expiring.length ? "brand" : "ok"}>
-          {expiring.length
-            ? expiring.map((r) => (
-                <Person key={r.id} id={r.id} href={`/coach/athlete/${r.id}/program`}>
-                  <span className={r.daysLeft! <= 7 ? "text-brand" : "text-warn"}>
-                    last {formatDate(r.lastDate!)} ({r.daysLeft}d)
-                  </span>
-                </Person>
-              ))
-            : none}
-        </Card>
-        <Card k="expired" count={expired.length} tone={expired.length ? "brand" : "ok"}>
-          {expired.length
-            ? expired.map((id) => <Person key={id} id={id} href={`/coach/athlete/${id}/program`}>nothing scheduled</Person>)
-            : none}
-        </Card>
-        <Card k="compliance" count={comp.average == null ? "—" : `${comp.average}%`} tone={comp.average == null || comp.average >= 80 ? "ok" : comp.average >= 60 ? "warn" : "brand"}>
-          <p className="mb-1 text-xs text-muted">
-            Workouts completed, last 7 days
-            {nutritionAvg != null && (
-              <>
-                {" "}· Nutrition: <span className="font-bold text-text">{nutritionAvg}%</span> of days logged ({macroClients.length} on macros)
-              </>
-            )}
-          </p>
-          {comp.per
-            .filter((p) => p.pct != null)
-            .sort((a, b) => a.pct! - b.pct!)
-            .map((p) => (
-              <Person key={p.id} id={p.id} href={`/coach/athlete/${p.id}/program`}>
-                <span className={p.pct! >= 80 ? "text-ok" : p.pct! >= 60 ? "text-warn" : "text-brand"}>
-                  {p.done}/{p.total} · {p.pct}%
-                </span>
-              </Person>
-            ))}
-        </Card>
-        <Card k="signin" count={`${sign.pctActive}%`} tone={sign.pctActive >= 70 ? "ok" : "warn"}>
-          <p>
-            <span className="font-bold">{sign.pctActive}%</span> of active clients opened the app in the last 7 days.
-          </p>
-          <p className="mt-1">
-            Average <span className="font-bold">{sign.avgDays}</span> active days per client this week.
-          </p>
-        </Card>
-      </div>
+    <div className="mb-8">
+      {(show("compliance") || show("signin")) && (
+        <div className="mb-4 grid grid-cols-2 gap-2">
+          {show("compliance") && (
+            <div className="rounded-2xl border border-line bg-surface p-4">
+              <p className="text-xs font-semibold uppercase tracking-widest text-muted">Workouts done</p>
+              <p className={`text-3xl font-black ${pctTone(comp.average)}`}>{comp.average == null ? "—" : `${comp.average}%`}</p>
+              <p className="text-xs text-muted">
+                last 7 days{nutritionAvg != null ? ` · food logged ${nutritionAvg}%` : ""}
+              </p>
+            </div>
+          )}
+          {show("signin") && (
+            <div className="rounded-2xl border border-line bg-surface p-4">
+              <p className="text-xs font-semibold uppercase tracking-widest text-muted">Using the app</p>
+              <p className={`text-3xl font-black ${sign.pctActive >= 70 ? "text-ok" : "text-warn"}`}>{sign.pctActive}%</p>
+              <p className="text-xs text-muted">opened it this week</p>
+            </div>
+          )}
+        </div>
+      )}
 
-      <details className="mt-3">
-        <summary className="cursor-pointer text-sm text-muted">Customise cards</summary>
+      <h2 className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted">Needs your attention</h2>
+      {todo.length ? (
+        <div className="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-surface">
+          {todo.map((i) => <Row key={i.k} i={i} />)}
+        </div>
+      ) : (
+        <div className="rounded-2xl border border-ok/40 bg-ok/10 px-4 py-4 font-bold text-ok">All clear. Nothing needs you right now.</div>
+      )}
+      {wins.length > 0 && (
+        <div className="mt-2 divide-y divide-line overflow-hidden rounded-2xl border border-line bg-surface">
+          {wins.map((i) => <Row key={i.k} i={i} />)}
+        </div>
+      )}
+      {show("compliance") && comp.per.some((p) => p.pct != null) && (
+        <details className="mt-2 overflow-hidden rounded-2xl border border-line bg-surface">
+          <summary className="flex min-h-12 cursor-pointer items-center px-4 text-sm font-bold text-muted">Workouts done per client</summary>
+          <div className="border-t border-line px-2 py-2 text-sm">
+            {comp.per
+              .filter((p) => p.pct != null)
+              .sort((a, b) => a.pct! - b.pct!)
+              .map((p) => (
+                <Person key={p.id} id={p.id} href={`/coach/athlete/${p.id}/program`}>
+                  <span className={pctTone(p.pct)}>{p.done} of {p.total}</span>
+                </Person>
+              ))}
+          </div>
+        </details>
+      )}
+
+      <details className="mt-2">
+        <summary className="cursor-pointer px-1 text-xs text-muted">Choose what shows here</summary>
         <form action={saveDashboardPrefs} className="mt-2 grid gap-1 rounded-xl border border-line bg-surface p-3 sm:grid-cols-3">
           {OVERVIEW_CARDS.map(([k, label]) => (
             <label key={k} className="flex min-h-11 items-center gap-3 text-sm">
