@@ -63,7 +63,8 @@ export async function CoachOverview({
       show("pbs")
         ? supabase
             .from("set_logs")
-            .select("reps, load_kg, workout_items!inner(exercise_id, exercises(name)), workout_logs!inner(workout_date, athlete_id)")
+            .select("reps, load_kg, exercise_id, exercises(name), workout_logs!inner(workout_date, athlete_id)")
+            .not("exercise_id", "is", null)
             .eq("done", true)
             .gt("load_kg", 0)
             .limit(20000)
@@ -145,12 +146,13 @@ export async function CoachOverview({
   const pbRows = ((setRows ?? []) as unknown as {
     reps: number | null;
     load_kg: string | null;
-    workout_items: { exercise_id: string; exercises: { name: string } | null };
+    exercise_id: string;
+    exercises: { name: string } | null;
     workout_logs: { workout_date: string; athlete_id: string };
   }[]).map((r) => {
-    exName.set(r.workout_items.exercise_id, r.workout_items.exercises?.name ?? "Exercise");
+    exName.set(r.exercise_id, r.exercises?.name ?? "Exercise");
     return {
-      key: `${r.workout_logs.athlete_id}|${r.workout_items.exercise_id}`,
+      key: `${r.workout_logs.athlete_id}|${r.exercise_id}`,
       date: r.workout_logs.workout_date,
       reps: r.reps,
       kg: r.load_kg == null ? null : Number(r.load_kg),

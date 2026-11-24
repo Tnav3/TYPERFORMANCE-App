@@ -1,4 +1,6 @@
 "use server";
+import { SWAP_REASONS } from "@/lib/programming/types";
+const SWAP_KEYS: string[] = SWAP_REASONS.map((r) => r[0]);
 // Workout logging. Each set/note saves on its own (TrainHeroic-style), so
 // nothing is lost if the app is closed mid-session.
 import { revalidatePath } from "next/cache";
@@ -125,6 +127,35 @@ export async function saveItemLog(input: {
   const { error: e } = await ctx.supabase
     .from("item_logs")
     .upsert({ log_id: log.id, item_id: input.itemId, done, comment }, { onConflict: "log_id,item_id" });
+  return e ? { ok: false, error: friendly(e.message) } : { ok: true };
+}
+
+/** Swap the programmed exercise for another (or undo with exerciseId null). Sets already logged move with it. */
+export async function swapExercise(input: {
+  workoutId: string;
+  athleteId?: string;
+  itemId: string;
+  exerciseId: string | null;
+  reason?: string | null;
+  note?: string | null;
+}): Promise<Result> {
+  if (!UUID.test(input.workoutId) || !UUID.test(input.itemId) || (input.exerciseId && !UUID.test(input.exerciseId))) return { ok: false, error: "Not found." };
+  const reason = input.exerciseId && SWAP_KEYS.includes(input.reason ?? "") ? input.reason! : null;
+  if (input.exerciseId && !reason) return { ok: false, error: "Pick a reason for the swap." };
+  const ctx = await signedIn();
+  const { log, error } = await ensureLog(ctx, input.workoutId, whoFor(ctx, input.athleteId));
+  if (!log) return { ok: false, error: friendly(error ?? undefined) };
+  const { error: e } = await ctx.supabase.from("item_logs").upsert(
+    {
+      log_id: log.id,
+      item_id: input.itemId,
+      swap_exercise_id: input.exerciseId,
+      swap_reason: reason,
+      swap_note: input.exerciseId ? input.note?.trim().slice(0, 300) || null : null,
+      swapped_at: input.exerciseId ? new Date().toISOString() : null,
+    },
+    { onConflict: "log_id,item_id" },
+  );
   return e ? { ok: false, error: friendly(e.message) } : { ok: true };
 }
 

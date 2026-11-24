@@ -5,7 +5,10 @@ import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from
 import { useRouter } from "next/navigation";
 import { Check, ChevronLeft, ChevronRight, List, RotateCcw, Timer, X } from "lucide-react";
 import { ExerciseSheet } from "@/components/ExerciseSheet";
-import { Info, PlayCircle } from "lucide-react";
+import { SwapSheet } from "@/components/SwapSheet";
+import { swapExercise } from "@/app/train/actions";
+import { SWAP_REASONS } from "@/lib/programming/types";
+import { ArrowLeftRight, Info, PlayCircle } from "lucide-react";
 import {
   finishWorkout,
   logSet,
@@ -47,6 +50,10 @@ export interface LoggerItem {
   sets: LoggerSet[];
   comment: string;
   done: boolean;
+  /** Set when the client swapped the programmed exercise. */
+  swap: { fromName: string; reason: string | null; note: string | null } | null;
+  plannedId: string | null;
+  category: string | null;
 }
 
 export interface LoggerBlock {
@@ -107,6 +114,10 @@ export function WorkoutLogger({
   const [timersOpen, setTimersOpen] = useState(false);
   const [clock, setClock] = useState<{ kind: "stopwatch" | "interval"; start: number; work?: number; off?: number; rounds?: number; label: string } | null>(null);
   const closeSheet = useCallback(() => setSheet(null), []);
+  const [swapFor, setSwapFor] = useState<LoggerItem | null>(null);
+  const closeSwap = useCallback(() => setSwapFor(null), []);
+  // A swap (or undo) reloads the workout from the server
+  useEffect(() => setBlocks(initial), [initial]);
   const [now, setNow] = useState(() => Date.now());
   const [comment, setComment] = useState(initialComment);
   const [finishOpen, setFinishOpen] = useState(false);
@@ -349,6 +360,31 @@ export function WorkoutLogger({
                         {it.videoUrl ? <PlayCircle size={16} /> : <Info size={16} />}
                         {it.videoUrl ? "Demo, how-to & my history" : "How-to & my history"}
                       </button>
+                    )}
+                    {it.swap ? (
+                      <p className="mt-1 flex flex-wrap items-center gap-x-2 text-xs text-muted">
+                        <span className="rounded-md bg-warn/15 px-1.5 py-0.5 font-bold text-warn">Swapped</span>
+                        <span>
+                          for {it.swap.fromName}
+                          {it.swap.reason && ` · ${SWAP_REASONS.find((r) => r[0] === it.swap!.reason)?.[1] ?? ""}`}
+                          {it.swap.note && ` · “${it.swap.note}”`}
+                        </span>
+                        {!readOnly && (
+                          <button
+                            type="button"
+                            onClick={() => start(async () => { const r = await swapExercise({ workoutId, athleteId, itemId: it.id, exerciseId: null }); if (r.ok) router.refresh(); })}
+                            className="min-h-9 font-bold text-brand underline underline-offset-4"
+                          >
+                            Undo
+                          </button>
+                        )}
+                      </p>
+                    ) : (
+                      it.exerciseId && !readOnly && (
+                        <button type="button" onClick={() => setSwapFor(it)} className="ml-3 mt-1 inline-flex min-h-9 items-center gap-1.5 text-sm font-bold text-muted hover:text-text">
+                          <ArrowLeftRight size={15} /> Swap
+                        </button>
+                      )
                     )}
                     {it.prev && (
                       <p className="mt-1 inline-flex rounded-lg bg-surface-2 px-2.5 py-1 text-xs">
@@ -645,6 +681,20 @@ export function WorkoutLogger({
             </button>
           </div>
         </div>
+      )}
+      {swapFor && swapFor.exerciseId && (
+        <SwapSheet
+          workoutId={workoutId}
+          athleteId={athleteId}
+          itemId={swapFor.id}
+          exerciseId={swapFor.plannedId ?? swapFor.exerciseId}
+          name={swapFor.name}
+          onClose={closeSwap}
+          onDone={() => {
+            setSwapFor(null);
+            router.refresh();
+          }}
+        />
       )}
       {sheet && <ExerciseSheet exerciseId={sheet.id} name={sheet.name} historyHref={`/train/history/${sheet.id}`} onClose={closeSheet} />}
     </div>

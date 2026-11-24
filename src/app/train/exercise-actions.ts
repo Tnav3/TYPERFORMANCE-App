@@ -3,6 +3,8 @@
 import { signedIn, UUID } from "@/lib/programming/server";
 import { loggedSets } from "@/lib/programming/history-data";
 import { sessions } from "@/lib/programming/history";
+import { rankSimilar, type SimilarInput } from "@/lib/programming/similar";
+import { subLabel } from "@/lib/programming/types";
 
 export interface ExerciseCard {
   name: string;
@@ -53,6 +55,36 @@ export async function exerciseCard(exerciseId: string, athleteId?: string): Prom
       bestSet,
       recent,
       totalSessions: list.length,
+    },
+  };
+}
+
+export interface SwapOption {
+  id: string;
+  name: string;
+  sub: string | null;
+  hasVideo: boolean;
+}
+
+/** Swap suggestions: same movement pattern, closest first. With a search, any exercise by name. */
+export async function swapOptions(exerciseId: string, reason?: string | null, search?: string): Promise<{ error?: string; data?: { suggested: SwapOption[]; results: SwapOption[] } }> {
+  if (!UUID.test(exerciseId)) return { error: "Not found." };
+  const { supabase } = await signedIn();
+  const cols = "id, name, category, subcategory, tags, measure, video_url";
+  const { data: ex } = await supabase.from("exercises").select(cols).eq("id", exerciseId).maybeSingle();
+  if (!ex) return { error: "Exercise not found." };
+  const term = (search ?? "").trim().slice(0, 60).replace(/[%_,()]/g, " ");
+  const [{ data: pool }, { data: found }] = await Promise.all([
+    supabase.from("exercises").select(cols).eq("category", ex.category).eq("active", true).limit(400),
+    term.length >= 2
+      ? supabase.from("exercises").select(cols).eq("active", true).ilike("name", `%${term}%`).order("name").limit(20)
+      : Promise.resolve({ data: [] }),
+  ]);
+  const opt = (e: SimilarInput): SwapOption => ({ id: e.id, name: e.name, sub: subLabel(e.category, e.subcategory), hasVideo: !!e.video_url });
+  return {
+    data: {
+      suggested: rankSimilar(ex as SimilarInput, (pool ?? []) as SimilarInput[], reason).map(opt),
+      results: ((found ?? []) as SimilarInput[]).filter((e) => e.id !== exerciseId).map(opt),
     },
   };
 }

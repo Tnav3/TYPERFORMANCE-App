@@ -48,6 +48,17 @@ export async function loadLoggerData(supabase: SupabaseClient, workoutId: string
     latestBodyweight(supabase, athleteId),
   ]);
   const items = (itemRows ?? []) as unknown as ItemFields[];
+  const lastFor = (ids: string[]) =>
+    ids.length
+      ? supabase
+          .from("set_logs")
+          .select("reps, load_kg, value, metrics, exercise_id, workout_items!inner(workout_id), workout_logs!inner(workout_date, athlete_id)")
+          .eq("workout_logs.athlete_id", athleteId)
+          .in("exercise_id", ids)
+          .neq("workout_items.workout_id", workoutId)
+          .order("workout_date", { referencedTable: "workout_logs", ascending: false })
+          .limit(300)
+      : Promise.resolve({ data: [] });
   const exIds = [...new Set(items.map((i) => i.exercise_id).filter(Boolean))] as string[];
   const [{ data: exRows }, { data: setRows }, { data: itemLogRows }, { data: lastRows }] = await Promise.all([
     exIds.length
@@ -55,34 +66,32 @@ export async function loadLoggerData(supabase: SupabaseClient, workoutId: string
       : Promise.resolve({ data: [] }),
     log ? supabase.from("set_logs").select("*").eq("log_id", log.id) : Promise.resolve({ data: [] }),
     log ? supabase.from("item_logs").select("*").eq("log_id", log.id) : Promise.resolve({ data: [] }),
-    exIds.length
-      ? supabase
-          .from("set_logs")
-          .select("reps, load_kg, value, metrics, workout_items!inner(exercise_id, workout_id), workout_logs!inner(workout_date, athlete_id)")
-          .eq("workout_logs.athlete_id", athleteId)
-          .in("workout_items.exercise_id", exIds)
-          .neq("workout_items.workout_id", workoutId)
-          .order("workout_date", { referencedTable: "workout_logs", ascending: false })
-          .limit(300)
-      : Promise.resolve({ data: [] }),
+    lastFor(exIds),
   ]);
   const exercises = new Map(((exRows ?? []) as Exercise[]).map((e) => [e.id, e]));
+  const itemLogs = new Map(((itemLogRows ?? []) as ItemLog[]).map((l) => [l.item_id, l]));
+  // Swapped-in exercises the client chose mid-workout
+  const swapIds = [...new Set([...itemLogs.values()].map((l) => l.swap_exercise_id).filter((x): x is string => !!x && !exercises.has(x)))];
+  const [{ data: swapRows }, { data: swapLast }] = await Promise.all([
+    swapIds.length ? supabase.from("exercises").select("*").in("id", swapIds) : Promise.resolve({ data: [] }),
+    lastFor(swapIds),
+  ]);
+  for (const e of (swapRows ?? []) as Exercise[]) exercises.set(e.id, e);
   const liftMap = new Map(lifts.map((l) => [l.key, l]));
   const latest = latestByLift(maxes);
   const sets = (setRows ?? []) as SetLog[];
-  const itemLogs = new Map(((itemLogRows ?? []) as ItemLog[]).map((l) => [l.item_id, l]));
 
   // Most recent previous session per exercise: "5 × 100 kg, 5 × 100 kg…"
   const last = new Map<string, { date: string; sets: { reps: number | null; load_kg: number | null; value: number | null; metrics: Record<string, number | null> }[] }>();
-  for (const r of (lastRows ?? []) as unknown as {
+  for (const r of [...(lastRows ?? []), ...(swapLast ?? [])] as unknown as {
     reps: number | null;
     load_kg: string | null;
     value: string | null;
     metrics: Record<string, number | null> | null;
-    workout_items: { exercise_id: string };
+    exercise_id: string;
     workout_logs: { workout_date: string };
   }[]) {
-    const ex = r.workout_items.exercise_id;
+    const ex = r.exercise_id;
     const date = r.workout_logs.workout_date;
     const cur = last.get(ex);
     if (cur && cur.date !== date) continue;
@@ -101,14 +110,16 @@ export async function loadLoggerData(supabase: SupabaseClient, workoutId: string
     title: blockTitle(list),
     superset: list.length > 1,
     items: list.map((it): LoggerItem => {
-      const ex = it.exercise_id ? exercises.get(it.exercise_id) : null;
       const il = itemLogs.get(it.id);
+      const planned = it.exercise_id ? exercises.get(it.exercise_id) : null;
+      const swapped = il?.swap_exercise_id ? exercises.get(il.swap_exercise_id) : null;
+      const ex = swapped ?? planned;
       const label = itemLabel(it, list.length);
       if (it.kind === "text" || !ex)
         return {
           id: it.id, kind: "text", label, name: it.title ?? "Notes", exerciseId: null, rx: "", meta: "",
           notes: it.notes, cues: null, videoUrl: null, loadChip: null, warn: null, prev: null,
-          fields: [], restSec: null, sets: [], comment: il?.comment ?? "", done: !!il?.done,
+          fields: [], restSec: null, sets: [], comment: il?.comment ?? "", done: !!il?.done, swap: null, plannedId: null, category: null,
         };
       const base = baseFor(ex.lift_key, liftMap, latest);
       const load = lineLoad(it, base, bodyweight);
@@ -141,7 +152,9 @@ export async function loadLoggerData(supabase: SupabaseClient, workoutId: string
         videoUrl: ex.video_url,
         loadChip: load ? `${load.addedToBodyweight ? "+" : "~"}${suggestedDisplayWeight(load.kg, units)} ${units.weight_unit}` : null,
         warn:
-          it.load_type === "percent" && !base
+          it.load_type === "percent" && !base && swapped
+            ? "Swapped exercise: pick a weight that feels as hard as planned."
+            : it.load_type === "percent" && !base
             ? "Save a 1RM in the calculator to see your load."
             : it.load_type === "percent" && base?.bodyweightLift && bodyweight == null
               ? "Add your bodyweight in a check-in to see your load."
@@ -183,6 +196,9 @@ export async function loadLoggerData(supabase: SupabaseClient, workoutId: string
         }),
         comment: il?.comment ?? "",
         done: !!il?.done,
+        swap: swapped && planned ? { fromName: planned.name, reason: il?.swap_reason ?? null, note: il?.swap_note ?? null } : null,
+        plannedId: planned?.id ?? null,
+        category: planned?.category ?? ex.category,
       };
     }),
   }));

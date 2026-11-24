@@ -9,21 +9,21 @@ export async function loggedSets(
 ): Promise<(LoggedSet & { key: string })[]> {
   let q = supabase
     .from("set_logs")
-    .select("reps, load_kg, value, workout_items!inner(exercise_id), workout_logs!inner(workout_date, athlete_id)")
+    .select("reps, load_kg, value, exercise_id, workout_logs!inner(workout_date, athlete_id)")
     .eq("workout_logs.athlete_id", athleteId)
     .eq("done", true)
-    .not("workout_items.exercise_id", "is", null)
+    .not("exercise_id", "is", null)
     .limit(5000);
-  if (exerciseId) q = q.eq("workout_items.exercise_id", exerciseId);
+  if (exerciseId) q = q.eq("exercise_id", exerciseId);
   const { data } = await q;
   return ((data ?? []) as unknown as {
     reps: number | null;
     load_kg: string | null;
     value: string | null;
-    workout_items: { exercise_id: string };
+    exercise_id: string;
     workout_logs: { workout_date: string };
   }[]).map((r) => ({
-    key: r.workout_items.exercise_id,
+    key: r.exercise_id,
     date: r.workout_logs.workout_date,
     reps: r.reps,
     kg: r.load_kg == null ? null : Number(r.load_kg),

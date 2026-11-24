@@ -160,7 +160,19 @@ export interface ItemLog {
   item_id: string;
   done: boolean;
   comment: string | null;
+  swap_exercise_id?: string | null;
+  swap_reason?: SwapReason | null;
+  swap_note?: string | null;
 }
+export const SWAP_REASONS = [
+  ["equipment", "No equipment / taken"],
+  ["pain", "Pain or niggle"],
+  ["too_hard", "Too hard right now"],
+  ["too_easy", "Too easy"],
+  ["preference", "Prefer another"],
+  ["other", "Other"],
+] as const;
+export type SwapReason = (typeof SWAP_REASONS)[number][0];
 
 /** Groups items by block letter, keeping order: [["A", [A1, A2]], ["B", [B]]] */
 export function byBlock<T extends { block: string; position: number; slot: number }>(
