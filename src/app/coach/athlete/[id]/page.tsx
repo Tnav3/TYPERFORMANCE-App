@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireState } from "@/lib/session";
+import { addFollowUp, clearFollowUp } from "@/app/coach/overview-actions";
 import { formatDate, todayISO } from "@/lib/dates";
 import { fightCountdown } from "@/lib/fight";
 import { addDays, dayMonth, formatTime, mondayOf, weekDays } from "@/lib/week";
@@ -45,6 +46,12 @@ export default async function AthleteDetail({
 }) {
   const { supabase } = await requireState(["coach"]);
   const { id } = await params;
+  const { data: followUps } = await supabase
+    .from("follow_ups")
+    .select("id, due_on, note")
+    .eq("athlete_id", id)
+    .is("done_at", null)
+    .order("due_on");
   const { error: pageError } = await searchParams;
   if (!UUID.test(id)) notFound();
   const today = todayISO();
@@ -185,7 +192,39 @@ export default async function AthleteDetail({
         >
           Progress
         </Link>
+        <Link
+          href={`/coach/chat/${id}`}
+          className="col-span-2 flex min-h-12 items-center justify-center rounded-xl border border-line bg-surface-2 px-3 text-sm font-extrabold uppercase"
+        >
+          Chat
+        </Link>
       </div>
+      <details className="-mt-3 mb-6 rounded-xl border border-line bg-surface p-3" open={(followUps ?? []).length > 0}>
+        <summary className="cursor-pointer text-sm font-bold">
+          Follow-ups{(followUps ?? []).length ? ` · ${(followUps ?? []).length}` : ""}
+        </summary>
+        <ul className="mt-2 space-y-1 text-sm">
+          {(followUps ?? []).map((f) => (
+            <li key={f.id} className="flex items-center justify-between gap-2">
+              <span>
+                <span className="text-muted">{f.due_on}</span> · {f.note}
+              </span>
+              <form action={clearFollowUp}>
+                <input type="hidden" name="id" value={f.id} />
+                <input type="hidden" name="back" value={`/coach/athlete/${id}`} />
+                <button className="min-h-9 rounded-lg border border-line px-2 text-xs font-bold">Done</button>
+              </form>
+            </li>
+          ))}
+        </ul>
+        <form action={addFollowUp} className="mt-2 grid grid-cols-[9.5rem_1fr_auto] gap-2">
+          <input type="hidden" name="athlete_id" value={id} />
+          <input type="hidden" name="back" value={`/coach/athlete/${id}`} />
+          <input type="date" name="due_on" required className="min-h-11 rounded-xl border border-line bg-surface-2 px-2 text-text" aria-label="Follow up on" />
+          <input name="note" required maxLength={500} placeholder="e.g. Check shoulder after sparring" className="min-h-11 min-w-0 rounded-xl border border-line bg-surface-2 px-3 text-text" aria-label="Note" />
+          <button className="min-h-11 rounded-xl border border-line bg-surface-2 px-3 text-sm font-bold">Add</button>
+        </form>
+      </details>
       <Link
         href={`/coach/athlete/${id}/tests`}
         className="mb-6 flex min-h-12 items-center justify-between rounded-xl border border-line bg-surface-2 px-4 font-extrabold"

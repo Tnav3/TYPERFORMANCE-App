@@ -8,12 +8,12 @@ import { dayMonth, addDays } from "@/lib/week";
 import type { AccountStatus, Profile } from "@/lib/types";
 import { Card, Logo, Screen, SignOutButton } from "@/components/ui";
 import { TrafficLight } from "@/components/TrafficLight";
-import { NeedsProgramPanel } from "@/components/NeedsProgramPanel";
+import { CoachOverview } from "@/components/CoachOverview";
 import { setAthleteStatus } from "./actions";
 import { activityTone, byLeastRecent, lastSeenLabel } from "@/lib/activity";
 
 export default async function CoachHome() {
-  const { supabase } = await requireState(["coach"]);
+  const { supabase, profile: me } = await requireState(["coach"]);
   const today = todayISO();
   const { rows, noCheckin, pending, inactive, weeks } = await getDashboard(
     supabase,
@@ -75,7 +75,14 @@ export default async function CoachHome() {
         ))}
       </div>
 
-      <NeedsProgramPanel supabase={supabase} today={today} />
+      <CoachOverview
+        supabase={supabase}
+        today={today}
+        hidden={((me as unknown as { dashboard_prefs?: { hidden?: string[] } }).dashboard_prefs?.hidden) ?? []}
+        missedCheckins={rows
+          .filter((r) => r.missedLastWeek)
+          .map((r) => ({ id: r.profile.id, name: r.profile.full_name ?? r.profile.email }))}
+      />
 
       <div className="mb-6 grid grid-cols-2 gap-2">
         <Link

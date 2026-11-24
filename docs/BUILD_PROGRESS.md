@@ -17,11 +17,11 @@ Migrations for this module start at `029_`. They are tested locally with PGlite 
 | H GHL payments | Not started |
 | I Trainerize move | Not started |
 | J Periodisation | Not started |
+| K Coach overview dashboard | Done: 9 cards, show/hide, follow-ups on client page |
 | Scheduled/recurring messages (part of F) | Done (in-app, pg_cron every minute) |
 | Test database loaded | Not started |
 
 ## Backlog from Tyrell (add when able)
-- K Coach overview dashboard (spec Segment K): incomplete setups, missed check-ins, inactive, follow-ups due, new PBs, programs expiring ≤7d / expired, compliance (toggle), average sign-in (toggle)
 - Notifications centre
 - Group options (beyond membership)
 - Announcements (in-app, to all / group)
