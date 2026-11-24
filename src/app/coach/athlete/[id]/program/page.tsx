@@ -1,3 +1,4 @@
+import { folderOptions, type Folder } from "@/lib/programming/folders";
 import { Fragment } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -59,9 +60,11 @@ export default async function ClientProgramPage({
     ]);
   if (!client) notFound();
   const wl = (workouts ?? []) as Workout[];
+  const { data: folderRows } = await supabase.from("program_folders").select("id, name, parent_id, sort_order");
+  const folderLabel = new Map(folderOptions((folderRows ?? []) as Folder[]).map((o) => [o.id, o.label]));
   const [{ data: exList }, { data: progs }, { data: items }] = await Promise.all([
     supabase.from("exercises").select("id, name").eq("active", true).order("name"),
-    supabase.from("programs").select("id, name, weeks, is_master").eq("archived", false).order("is_master", { ascending: false }).order("name"),
+    supabase.from("programs").select("id, name, weeks, is_master, folder_id").eq("archived", false).order("is_master", { ascending: false }).order("name"),
     view === "week" && wl.length
       ? supabase
           .from("workout_items")
@@ -130,7 +133,7 @@ export default async function ClientProgramPage({
         month={view === "month" ? monthKey : undefined}
         today={today}
         workouts={planWorkouts}
-        programs={(progs ?? []).map((p) => ({ id: p.id, name: p.name, weeks: p.weeks, master: !!p.is_master }))}
+        programs={(progs ?? []).map((p) => ({ id: p.id, name: p.name, weeks: p.weeks, master: !!p.is_master, folder: p.folder_id ? folderLabel.get(p.folder_id) ?? null : null }))}
         back={back}
         nav={nav}
       />

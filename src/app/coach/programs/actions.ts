@@ -23,6 +23,52 @@ function go(path: string, error?: string): never {
   redirect(`${base}${sep}error=${encodeURIComponent(error)}${hash ? `#${hash}` : ""}`);
 }
 
+const folderOf = (fd: FormData) => {
+  const f = String(fd.get("folder_id") ?? "");
+  return UUID.test(f) ? f : null;
+};
+const inFolder = (f: string | null) => (f ? `${LIST}?f=${f}` : LIST);
+
+// ---------------- Folders ----------------
+export async function createFolder(fd: FormData) {
+  const supabase = await coachOnly();
+  const parent = folderOf(fd);
+  const name = str(fd.get("name"), 60);
+  if (!name) go(inFolder(parent), "Enter a folder name.");
+  const { error } = await supabase.from("program_folders").insert({ name, parent_id: parent });
+  go(inFolder(parent), error ? friendly(error.message) : undefined);
+}
+
+export async function renameFolder(fd: FormData) {
+  const supabase = await coachOnly();
+  const id = String(fd.get("id") ?? "");
+  const name = str(fd.get("name"), 60);
+  const back = inFolder(folderOf(fd));
+  if (!UUID.test(id) || !name) go(back, "Enter a folder name.");
+  const { error } = await supabase.from("program_folders").update({ name }).eq("id", id);
+  go(back, error ? friendly(error.message) : undefined);
+}
+
+/** Subfolders go too; programs inside are kept and move to the top level. */
+export async function deleteFolder(fd: FormData) {
+  const supabase = await coachOnly();
+  const id = String(fd.get("id") ?? "");
+  const back = inFolder(folderOf(fd));
+  if (!UUID.test(id)) go(back);
+  const { error } = await supabase.from("program_folders").delete().eq("id", id);
+  go(back, error ? friendly(error.message) : undefined);
+}
+
+export async function moveProgram(fd: FormData) {
+  const supabase = await coachOnly();
+  const id = String(fd.get("id") ?? "");
+  const to = String(fd.get("to") ?? "");
+  const back = inFolder(folderOf(fd));
+  if (!UUID.test(id)) go(back);
+  const { error } = await supabase.from("programs").update({ folder_id: UUID.test(to) ? to : null }).eq("id", id);
+  go(back, error ? friendly(error.message) : undefined);
+}
+
 export async function createProgram(fd: FormData) {
   const supabase = await coachOnly();
   const name = str(fd.get("name"), 80);
@@ -33,12 +79,12 @@ export async function createProgram(fd: FormData) {
   if (UUID.test(master)) {
     const { data: copy, error: e } = await supabase.rpc("duplicate_program", { p_program: master, p_name: name });
     if (e) go(LIST, friendly(e.message));
-    await supabase.from("programs").update({ is_master: false, tag: str(fd.get("tag"), 40) }).eq("id", copy);
+    await supabase.from("programs").update({ is_master: false, tag: str(fd.get("tag"), 40), folder_id: folderOf(fd) }).eq("id", copy);
     go(progPath(String(copy)));
   }
   const { data, error } = await supabase
     .from("programs")
-    .insert({ name, weeks, tag: str(fd.get("tag"), 40) })
+    .insert({ name, weeks, tag: str(fd.get("tag"), 40), folder_id: folderOf(fd) })
     .select("id")
     .single();
   if (error) go(LIST, friendly(error.message));

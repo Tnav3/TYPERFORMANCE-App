@@ -24,6 +24,8 @@ export interface PlanProgram {
   name: string;
   weeks: number;
   master: boolean;
+  /** "Combat sports › Peaking" */
+  folder?: string | null;
 }
 
 const DOT: Record<CalStatus, string> = { done: "bg-ok", partial: "bg-warn", missed: "bg-brand", planned: "bg-muted/50" };
@@ -62,6 +64,9 @@ export function PlanCalendar({
   const [showProgs, setShowProgs] = useState(false);
   const [toDelete, setToDelete] = useState<PlanProgram | null>(null);
   const [renaming, setRenaming] = useState<{ id: string; name: string } | null>(null);
+  const [folderPick, setFolderPick] = useState("");
+  const folderList = [...new Set(programs.map((p) => p.folder).filter((x): x is string => !!x))].sort();
+  const shownPrograms = folderPick ? programs.filter((p) => (folderPick === "-" ? !p.folder : (p.folder ?? "").startsWith(folderPick))) : programs;
 
   const byDate = new Map<string, PlanWorkout[]>();
   for (const w of workouts) byDate.set(w.date, [...(byDate.get(w.date) ?? []), w]);
@@ -207,8 +212,15 @@ export function PlanCalendar({
               <Link href="/coach/programs" className="shrink-0 text-xs font-bold text-brand">Build a new one →</Link>
             </div>
             {programs.length === 0 && <p className="text-sm text-muted">No programs yet.</p>}
+            {folderList.length > 0 && (
+              <select value={folderPick} onChange={(e) => setFolderPick(e.target.value)} className="mb-2 h-10 w-full rounded-lg border border-line bg-surface-2 px-2 text-sm text-text sm:w-72" aria-label="Folder">
+                <option value="">All folders</option>
+                {folderList.map((f) => <option key={f} value={f}>{f}</option>)}
+                <option value="-">Not in a folder</option>
+              </select>
+            )}
             <div className="grid max-h-72 gap-2 overflow-y-auto sm:grid-cols-2 xl:grid-cols-3">
-              {programs.map((p) => (
+              {shownPrograms.map((p) => (
                 <div
                   key={p.id}
                   {...drag("p", p.id)}
@@ -242,7 +254,7 @@ export function PlanCalendar({
                     <GripVertical size={14} className="shrink-0 text-muted" aria-hidden />
                     <span className="min-w-0">
                       <span className="block truncate text-sm font-bold">{p.name}</span>
-                      <span className="block text-[11px] text-muted">{p.weeks} wk{p.master ? " · template" : ""}</span>
+                      <span className="block truncate text-[11px] text-muted">{p.weeks} wk{p.master ? " · template" : ""}{p.folder ? ` · ${p.folder}` : ""}</span>
                     </span>
                   </button>
                   )}
