@@ -27,6 +27,13 @@ export default async function TrainPage() {
     .gte("end_date", today)
     .limit(1);
   const phase = phaseRows?.[0];
+  const { data: programNotes } = await supabase
+    .from("assignments")
+    .select("id, program_name, instructions, start_date")
+    .not("instructions", "is", null)
+    .gte("start_date", addDays(today, -120))
+    .order("start_date", { ascending: false })
+    .limit(3);
   const list = (workouts ?? []) as Workout[];
   const logBy = new Map((logs ?? []).map((l) => [l.workout_id, l]));
   const todays = list.filter((w) => w.workout_date === today);
@@ -75,6 +82,13 @@ export default async function TrainPage() {
           {phase.goal && <p className="text-muted">{phase.goal}</p>}
         </div>
       )}
+
+      {(programNotes ?? []).map((a) => (
+        <details key={a.id} className="mb-3 rounded-xl border border-line bg-surface p-3 text-sm">
+          <summary className="cursor-pointer font-bold">{a.program_name}: instructions</summary>
+          <p className="mt-2 whitespace-pre-line">{a.instructions}</p>
+        </details>
+      ))}
 
       <section className="mb-6 space-y-2">
         <h2 className="text-xs font-semibold uppercase tracking-widest text-muted">Today</h2>

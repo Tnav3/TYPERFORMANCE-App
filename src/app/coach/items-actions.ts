@@ -183,3 +183,17 @@ export async function reletterItems(fd: FormData) {
   );
   done(back);
 }
+
+/** Label a block (e.g. "Power", "Finisher"). Applies to every item in that block. */
+export async function setBlockTitle(fd: FormData) {
+  const supabase = await coachOnly();
+  const { table, parentCol, parent, back } = target(fd);
+  const block = String(fd.get("block") ?? "");
+  if (!UUID.test(parent) || !/^[A-Z]$/.test(block)) done(back);
+  const { error } = await supabase
+    .from(table)
+    .update({ block_title: str(fd.get("block_title"), 60) })
+    .eq(parentCol, parent)
+    .eq("block", block);
+  done(back, error ? friendly(error.message) : undefined);
+}

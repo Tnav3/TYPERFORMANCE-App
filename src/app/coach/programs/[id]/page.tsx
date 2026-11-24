@@ -225,6 +225,15 @@ export default async function ProgramPage({
             </label>
           </div>
           <textarea name="description" defaultValue={program.description ?? ""} rows={3} maxLength={2000} placeholder="Description (coach only)" className={`${input} py-2`} />
+          <label className="block text-sm text-muted">
+            Instructions for clients (optional): how to run it, warm-up, picking loads, missed sessions
+            <textarea name="instructions" defaultValue={(program as Program & { instructions?: string | null }).instructions ?? ""} rows={5} maxLength={5000} className={`${input} py-2`} />
+          </label>
+          <label className="flex min-h-11 items-center gap-3 text-sm">
+            <input type="checkbox" name="reveal_weekly" defaultChecked={(program as Program & { reveal_weekly?: boolean }).reveal_weekly} className="h-5 w-5 accent-[var(--color-brand)]" />
+            Clients only see one week at a time (the current Monday–Sunday)
+          </label>
+          <p className="text-xs text-muted">Both are copied when you assign, so set them before assigning.</p>
           <p className="text-xs text-muted">Reducing weeks deletes the days past the new end.</p>
           <button className={smallBtn}>Save details</button>
         </form>

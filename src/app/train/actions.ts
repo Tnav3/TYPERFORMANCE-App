@@ -198,3 +198,32 @@ async function linkTrainingSession(
   if (session)
     await supabase.from("workout_logs").update({ training_session_id: session.id }).eq("id", log.id);
 }
+
+/** Today's readiness check (one per day; answering again replaces it). */
+export async function saveReadiness(input: {
+  sleep: number;
+  energy: number;
+  soreness: number;
+  stress: number;
+  motivation: number;
+  sleepHours?: number | null;
+}): Promise<Result> {
+  const vals = [input.sleep, input.energy, input.soreness, input.stress, input.motivation];
+  if (!vals.every((v) => Number.isInteger(v) && v >= 1 && v <= 5)) return { ok: false, error: "Answer each question." };
+  const hours = input.sleepHours == null || Number.isNaN(input.sleepHours) ? null : Math.min(16, Math.max(0, Math.round(input.sleepHours * 2) / 2));
+  const { supabase, user } = await signedIn();
+  const { error } = await supabase.from("readiness").upsert(
+    {
+      athlete_id: user.id,
+      checked_on: todayISO(),
+      sleep: input.sleep,
+      energy: input.energy,
+      soreness: input.soreness,
+      stress: input.stress,
+      motivation: input.motivation,
+      sleep_hours: hours,
+    },
+    { onConflict: "athlete_id,checked_on" },
+  );
+  return error ? { ok: false, error: friendly(error.message) } : { ok: true };
+}

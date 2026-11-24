@@ -45,6 +45,7 @@ export interface LoggerItem {
 
 export interface LoggerBlock {
   letter: string;
+  title: string | null;
   superset: boolean;
   items: LoggerItem[];
 }
@@ -198,7 +199,7 @@ export function WorkoutLogger({
       if (!r.ok) setFinishErr(r.error);
       else {
         setFinishOpen(false);
-        router.refresh();
+        router.push(`/train/${workoutId}/summary`);
       }
     });
   }
@@ -226,9 +227,11 @@ export function WorkoutLogger({
       <div className="space-y-4">
         {blocks.map((b) => (
           <section key={b.letter} className={`rounded-2xl border bg-surface p-3 ${b.superset ? "border-brand/40" : "border-line"}`}>
-            {b.superset && (
+            {(b.superset || b.title) && (
               <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-brand">
-                Superset {b.letter}: alternate between these
+                {b.title ? `${b.letter}: ${b.title}` : `Superset ${b.letter}`}
+                {b.superset && b.title && " · superset"}
+                {b.superset && <span className="ml-1 font-normal normal-case tracking-normal text-muted">alternate between these</span>}
               </p>
             )}
             <div className="space-y-5">
@@ -287,6 +290,20 @@ export function WorkoutLogger({
                     )}
                     <ExerciseVideo url={it.videoUrl} name={it.name} />
                     {it.prev && <p className="text-xs text-muted">Last time: {it.prev}</p>}
+                    {!readOnly && (
+                      <div className="mt-1 flex flex-wrap gap-2">
+                        {(it.restSec ? [it.restSec] : [60, 90, 120]).map((sec) => (
+                          <button
+                            key={sec}
+                            type="button"
+                            onClick={() => setRest({ until: Date.now() + sec * 1000, total: sec })}
+                            className="inline-flex min-h-9 items-center gap-1 rounded-full border border-line px-3 text-xs font-bold text-muted"
+                          >
+                            <Timer size={14} /> Rest {sec >= 60 ? `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")}` : `${sec}s`}
+                          </button>
+                        ))}
+                      </div>
+                    )}
 
                     <div className="mt-2 space-y-1.5">
                       {it.sets.map((s) => {
@@ -301,6 +318,13 @@ export function WorkoutLogger({
                             <span className="text-center text-sm font-bold text-muted">{s.setNo}</span>
                             {timed ? (
                               <label className="col-span-2 flex items-center gap-2">
+                                {it.measure === "time" && !readOnly && (
+                                  <Stopwatch
+                                    onStop={(sec) => {
+                                      editSet(it, s.setNo, "value", String(sec));
+                                    }}
+                                  />
+                                )}
                                 <input
                                   value={s.value}
                                   onChange={(e) => editSet(it, s.setNo, "value", e.target.value)}
@@ -513,5 +537,37 @@ function ItemNote({ workoutId, item, readOnly }: { workoutId: string; item: Logg
         aria-label="Note for your coach"
       />
     </details>
+  );
+}
+
+/** Tap to start, tap to stop; fills the set's seconds. */
+function Stopwatch({ onStop }: { onStop: (sec: number) => void }) {
+  const [start, setStart] = useState<number | null>(null);
+  const [now, setNow] = useState(0);
+  useEffect(() => {
+    if (start == null) return;
+    const t = setInterval(() => setNow(Date.now()), 200);
+    return () => clearInterval(t);
+  }, [start]);
+  const sec = start == null ? 0 : Math.max(0, Math.floor((now - start) / 1000));
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        if (start == null) {
+          const t = Date.now();
+          setStart(t);
+          setNow(t);
+        } else {
+          onStop(Math.max(1, Math.round((Date.now() - start) / 1000)));
+          setStart(null);
+        }
+      }}
+      className={`flex h-11 min-w-16 shrink-0 items-center justify-center gap-1 rounded-lg border px-2 text-sm font-bold tabular-nums ${start != null ? "border-brand bg-brand text-white" : "border-line text-muted"}`}
+      aria-label={start != null ? "Stop stopwatch" : "Start stopwatch"}
+    >
+      <Timer size={16} />
+      {start != null ? `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")}` : "Go"}
+    </button>
   );
 }

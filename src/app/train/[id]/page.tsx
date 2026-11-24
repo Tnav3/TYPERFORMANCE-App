@@ -6,6 +6,7 @@ import { getLifts, getMaxes, latestBodyweight } from "@/lib/lift-data";
 import { formatPrescription, formatRest, itemLabel, setCount, targetReps } from "@/lib/prescription";
 import { baseFor, latestByLift, lineLoad } from "@/lib/programming/loads";
 import {
+  blockTitle,
   byBlock,
   ITEM_COLUMNS,
   type Exercise,
@@ -15,6 +16,9 @@ import {
   type Workout,
   type WorkoutLog,
 } from "@/lib/programming/types";
+import Link from "next/link";
+import { ReadinessCheck } from "@/components/ReadinessCheck";
+import { readinessAdvice, readinessTone } from "@/lib/programming/rewards";
 import { WorkoutLogger, type LoggerBlock, type LoggerItem } from "@/components/WorkoutLogger";
 import { Alert, BackLink, Heading, Screen } from "@/components/ui";
 
@@ -33,6 +37,15 @@ export default async function WorkoutLogPage({
 
   const { data: workout } = await supabase.from("workouts").select("*").eq("id", id).maybeSingle<Workout>();
   if (!workout) notFound();
+  const { data: assignment } = workout.assignment_id
+    ? await supabase.from("assignments").select("program_name, instructions").eq("id", workout.assignment_id).maybeSingle()
+    : { data: null };
+  const { data: ready } = await supabase
+    .from("readiness")
+    .select("score")
+    .eq("athlete_id", user!.id)
+    .eq("checked_on", todayISO())
+    .maybeSingle();
   const [{ data: itemRows }, { data: log }, lifts, maxes, bodyweight] = await Promise.all([
     supabase.from("workout_items").select(ITEM_COLUMNS).eq("workout_id", id).order("position"),
     supabase.from("workout_logs").select("*").eq("workout_id", id).eq("athlete_id", user!.id).maybeSingle<WorkoutLog>(),
@@ -90,6 +103,7 @@ export default async function WorkoutLogPage({
 
   const blocks: LoggerBlock[] = byBlock(items).map(([letter, list]) => ({
     letter,
+    title: blockTitle(list),
     superset: list.length > 1,
     items: list.map((it): LoggerItem => {
       const ex = it.exercise_id ? exercises.get(it.exercise_id) : null;
@@ -165,7 +179,24 @@ export default async function WorkoutLogPage({
       <Heading sub={formatDate(workout.workout_date)}>{workout.title}</Heading>
       {locked && <Alert tone="info">This week is locked (older than 4 weeks), so it&apos;s view only.</Alert>}
       {early && <Alert tone="info">This is for {formatDate(workout.workout_date)}. You can log it from the day before.</Alert>}
+      {assignment?.instructions && (
+        <details className="mb-3 rounded-xl border border-line bg-surface p-3 text-sm">
+          <summary className="cursor-pointer font-bold">{assignment.program_name}: instructions</summary>
+          <p className="mt-2 whitespace-pre-line">{assignment.instructions}</p>
+        </details>
+      )}
       {workout.notes && <p className="mb-4 whitespace-pre-line rounded-xl bg-surface-2 p-3 text-sm">{workout.notes}</p>}
+      {!ready && !finished && !locked && workout.workout_date === today && items.length > 0 && <ReadinessCheck />}
+      {ready && !finished && (
+        <p className={`mb-4 rounded-xl border px-3 py-2 text-sm ${readinessTone(ready.score) === "ok" ? "border-ok/50" : readinessTone(ready.score) === "warn" ? "border-warn/50" : "border-brand/50"}`}>
+          <span className="font-black">Readiness {ready.score}</span> · {readinessAdvice(ready.score)}
+        </p>
+      )}
+      {finished && (
+        <Link href={`/train/${workout.id}/summary`} className="mb-4 block rounded-xl border border-ok/50 bg-ok/10 px-3 py-2 text-sm font-bold">
+          Session summary →
+        </Link>
+      )}
       {items.length === 0 && <p className="text-muted">Nothing prescribed for this day.</p>}
       <WorkoutLogger
         workoutId={workout.id}

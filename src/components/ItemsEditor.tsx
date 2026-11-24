@@ -1,12 +1,13 @@
 // Coach editor for a day's prescription lines (program day or dated workout).
 import { ChevronDown, ChevronUp, Trash2 } from "lucide-react";
 import { formatPrescription, itemLabel } from "@/lib/prescription";
-import { byBlock, type ItemFields } from "@/lib/programming/types";
+import { blockTitle, byBlock, type ItemFields } from "@/lib/programming/types";
 import {
   addItem,
   deleteItem,
   moveItem,
   reletterItems,
+  setBlockTitle,
   updateItem,
 } from "@/app/coach/items-actions";
 
@@ -79,11 +80,25 @@ export function ItemsEditor({
       <div className="space-y-4">
         {blocks.map(([letter, list]) => (
           <section key={letter} className="rounded-2xl border border-line bg-surface p-3">
-            {list.length > 1 && (
-              <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-brand">
-                Superset {letter}
-              </p>
-            )}
+            <details className="mb-2">
+              <summary className="cursor-pointer list-none text-xs font-semibold uppercase tracking-widest text-brand">
+                {blockTitle(list) ? `${letter}: ${blockTitle(list)}` : list.length > 1 ? `Superset ${letter}` : `Block ${letter}`}
+                <span className="ml-2 font-normal normal-case tracking-normal text-muted">· label</span>
+              </summary>
+              <form action={setBlockTitle} className="mt-2 flex gap-2">
+                {hidden}
+                <input type="hidden" name="block" value={letter} />
+                <input
+                  name="block_title"
+                  defaultValue={blockTitle(list) ?? ""}
+                  maxLength={60}
+                  placeholder="Block label, e.g. Power, Finisher"
+                  className={input}
+                  aria-label="Block label"
+                />
+                <button className={smallBtn}>Save</button>
+              </form>
+            </details>
             <div className="space-y-2">
               {list.map((i) => (
                 <details

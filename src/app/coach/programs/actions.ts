@@ -53,6 +53,8 @@ export async function updateProgram(fd: FormData) {
       weeks,
       tag: str(fd.get("tag"), 40),
       description: str(fd.get("description"), 2000),
+      instructions: str(fd.get("instructions"), 5000),
+      reveal_weekly: fd.get("reveal_weekly") === "on",
     })
     .eq("id", id);
   go(progPath(id), error ? friendly(error.message) : undefined);
@@ -153,7 +155,7 @@ export async function copyDay(fd: FormData) {
     go(back, "Pick a week and day.");
   const { data: src } = await supabase
     .from("program_days")
-    .select("title, notes, program_items(position, kind, exercise_id, block, slot, sets, reps, load_type, percent, rpe, load_kg, tempo, rest_sec, title, notes)")
+    .select("title, notes, program_items(position, kind, exercise_id, block, slot, sets, reps, load_type, percent, rpe, load_kg, tempo, rest_sec, title, notes, block_title)")
     .eq("id", id)
     .single();
   if (!src) go(back, "Day not found.");

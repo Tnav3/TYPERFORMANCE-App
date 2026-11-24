@@ -27,9 +27,13 @@ Principles
 
 ## Segment B: Program builder
 - `programs`: name, description, tag (e.g. "Fight camp", "Fat loss"), number of weeks, archived.
+- **Program instructions** (optional, shown to clients): how to run the program, warm-up routine, how to pick loads, what to do if a session is missed. Copied onto each assignment so later template edits don't change what a client already has (the coach can edit an assignment's instructions separately). Clients see them on their Training screen and from every workout in that program.
 - `program_days`: week number, day number (1 = start day, 7 = six days later), title, notes. Empty days are rest days.
+- **One week at a time** (toggle per program, copied on assign): clients only see workouts up to the end of the current Monday–Sunday week; later weeks unlock automatically each Monday. Enforced in the database, so hidden weeks can't be opened by link. The coach always sees everything.
 - `program_items` (ordered within a day): either an **exercise** or a **text block** (warm-up, ESD conditioning, finisher).
   - Exercise fields: block label (A, B, C) + slot (A1, A2 = superset), sets, reps (text: `5`, `8-10`, `AMRAP`, `30s`), load type (`percent`, `rpe`, `kg`, `bodyweight`, `none`), percent, RPE, kg, tempo, rest (seconds), notes.
+  - **Block label** (optional): name any block, e.g. "A: Power", "Finisher"; shown to the client above the block.
+  - **Timers for the client**: a tap-to-start rest timer on every exercise (uses the prescribed rest, or 60/90/120 s quick picks), auto-start after ticking a set, and a **stopwatch** on timed exercises that fills the set's seconds when stopped.
 - **One-line entry**: typing `4x5 @ 80%`, `3x8 RPE 7`, `3x10 @ 40kg`, `3x8-10`, `3xAMRAP`, `5x3 @ 80% tempo 30X1 rest 3m` fills the fields. Unparseable text is kept as notes (never lost).
 - Tools: copy a day, copy a week to another week, **progress a week** (+2.5% / +5%, +1 set, +0.5 RPE) into the next week, duplicate a whole program.
 - Coach screens: `/coach/programs` (list), `/coach/programs/[id]` (week grid → day editor).
