@@ -170,35 +170,6 @@ export function MasCalculator({
             })}
           </div>
 
-          <div className="mb-4">
-            <div className="flex gap-2">
-              <input
-                value={customText}
-                onChange={(e) => {
-                  setCustomText(e.target.value);
-                  setCustomErr(null);
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    addCustom();
-                  }
-                }}
-                inputMode="text"
-                placeholder="Other: 2:30 or 150"
-                aria-label="Other rep length, in seconds or minutes:seconds"
-                className={`${inputCls} min-h-11`}
-              />
-              <button
-                type="button"
-                onClick={addCustom}
-                className="min-h-11 shrink-0 rounded-xl border border-line bg-surface-2 px-4 text-sm font-extrabold uppercase"
-              >
-                Add
-              </button>
-            </div>
-            {customErr && <p className="mt-1 text-sm text-brand">{customErr}</p>}
-          </div>
 
           <table className="w-full text-left">
             <thead className="text-xs uppercase tracking-wide text-muted">
@@ -254,8 +225,9 @@ export function MasCalculator({
               })}
             </tbody>
           </table>
-          <div className="mt-3">
-            <div className="flex gap-2">
+          <details className="mt-3">
+            <summary className="cursor-pointer text-sm font-bold text-brand">+ Add your own % or rep length</summary>
+            <div className="mt-2 flex gap-2">
               <input
                 value={pctText}
                 onChange={(e) => {
@@ -282,8 +254,39 @@ export function MasCalculator({
               </button>
             </div>
             {pctErr && <p className="mt-1 text-sm text-brand">{pctErr}</p>}
+          <div className="mt-2">
+            <div className="flex gap-2">
+              <input
+                value={customText}
+                onChange={(e) => {
+                  setCustomText(e.target.value);
+                  setCustomErr(null);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    addCustom();
+                  }
+                }}
+                inputMode="text"
+                placeholder="Other: 2:30 or 150"
+                aria-label="Other rep length, in seconds or minutes:seconds"
+                className={`${inputCls} min-h-11`}
+              />
+              <button
+                type="button"
+                onClick={addCustom}
+                className="min-h-11 shrink-0 rounded-xl border border-line bg-surface-2 px-4 text-sm font-extrabold uppercase"
+              >
+                Add
+              </button>
+            </div>
+            {customErr && <p className="mt-1 text-sm text-brand">{customErr}</p>}
           </div>
+          </details>
 
+          <details className="mt-3 text-xs text-muted">
+            <summary className="cursor-pointer font-semibold">How this works</summary>
           {cols.some((d) => d >= LONG_REP) && (
             <p className="mt-3 text-xs text-muted">
               Greyed out: reps of 2 min or longer above 100% MAS. MAS is roughly the pace you can hold for 4–8 minutes,
@@ -293,6 +296,7 @@ export function MasCalculator({
           <p className="mt-3 text-xs text-muted">
             {NOTE[mode]} Targets from one machine or mode can&apos;t be swapped with another.
           </p>
+          </details>
 
           {canSave && !fromSaved && (
             <a

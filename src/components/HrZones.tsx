@@ -40,7 +40,7 @@ export function HrZones() {
 
   return (
     <div>
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-3 gap-3 rounded-2xl border border-line bg-surface p-4">
         <label className="block">
           <span className="mb-1.5 block text-sm font-semibold">Age</span>
           <input
@@ -72,10 +72,12 @@ export function HrZones() {
           />
         </label>
       </div>
-      <p className="mt-2 text-xs text-muted">
-        Measured max HR beats the age estimate. Resting HR: take it on waking,
-        before getting up.
-      </p>
+      <p className="mt-2 text-xs text-muted">Only age is needed. Add a measured max or resting HR for more accurate zones.</p>
+      {!touched && (
+        <div className="mt-6 rounded-2xl border border-dashed border-line p-6 text-center text-muted">
+          Enter your age to see your 5 training zones.
+        </div>
+      )}
       {touched &&
         Object.values(errors).map((m) => (
           <p key={m} className="mt-2 text-sm text-brand">

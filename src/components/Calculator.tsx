@@ -113,6 +113,7 @@ export function Calculator({
 
   return (
     <div>
+      <div className="mb-4 rounded-2xl border border-line bg-surface p-4">
       <label className="mb-4 block">
         <span className="mb-1.5 block text-sm font-semibold">Lift</span>
         <select
@@ -174,7 +175,7 @@ export function Calculator({
           )}
         </div>
       ) : (
-        <form onSubmit={onSave} noValidate className="mb-4">
+        <form onSubmit={onSave} noValidate>
           <input type="hidden" name="lift_key" value={lift.key} />
           <div className="grid grid-cols-2 gap-3">
             <label className="block">
@@ -267,55 +268,80 @@ export function Calculator({
         </form>
       )}
 
+      </div>
+
       {base && (
         <section aria-label="Percentage chart">
-          <p className="mb-2 text-sm text-muted">{base.label}. All loads are estimates, rounded to 2.5 kg.</p>
-          <table className="w-full text-left">
-            <thead className="text-xs uppercase tracking-wide text-muted">
-              <tr className="border-b border-line">
-                <th className="py-2 pr-2 font-semibold">%</th>
-                <th className="py-2 pr-2 font-semibold">{isBw ? "Added" : "Load"}</th>
-                {lift.bar_weight_input && <th className="py-2 pr-2 font-semibold">Plates / side</th>}
-                {vMeta && (
-                  <th className="py-2 font-semibold">
-                    Speed guide <span className="normal-case">({vMeta.measure}, m/s)</span>
-                  </th>
-                )}
-              </tr>
-            </thead>
-            <tbody>
+          {!result && (
+            <div className="mb-4 rounded-2xl border border-line bg-surface p-4">
+              <p className="text-xs font-semibold uppercase tracking-widest text-muted">{isJump ? "Based on" : "Your 1RM"}</p>
+              <p className="text-3xl font-black">{kg(base.e1rm)}</p>
+              <p className="text-xs text-muted">{base.label}</p>
+            </div>
+          )}
+          <h2 className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted">
+            {isBw ? "Added weight by %" : "Weight by %"}
+          </h2>
+          {!lift.bar_weight_input && !vMeta ? (
+            <div className="grid grid-cols-2 gap-2">
               {rows.map((r) => {
-                const inRange =
-                  lift.parent_key === "bench" && isJump && r.pct >= BENCH_THROW_RANGE[0] && r.pct <= BENCH_THROW_RANGE[1];
+                const inRange = lift.parent_key === "bench" && isJump && r.pct >= BENCH_THROW_RANGE[0] && r.pct <= BENCH_THROW_RANGE[1];
                 return (
-                  <tr key={r.pct} className={`border-b border-line/60 ${inRange ? "bg-surface-2" : ""}`}>
-                    <td className="py-2.5 pr-2 font-bold">{r.pct}%</td>
-                    <td className="py-2.5 pr-2 text-lg font-black">
-                      {isBw ? (r.added! <= 0 ? <span className="text-base font-bold text-muted">Bodyweight</span> : `+${kg(r.added!)}`) : kg(r.load)}
-                    </td>
-                    {lift.bar_weight_input && (
-                      <td className="py-2.5 pr-2">{r.load < (barOk ? barNum : 0) ? <span className="text-muted">Bar only</span> : kg(r.perSide ?? 0)}</td>
-                    )}
-                    {vMeta && <td className="py-2.5 text-muted">{r.velocity != null ? `~${r.velocity.toFixed(2)}` : "—"}</td>}
-                  </tr>
+                  <div
+                    key={r.pct}
+                    className={`flex items-baseline justify-between rounded-xl border px-3 py-2.5 ${
+                      r.pct === 100 ? "border-brand/60 bg-brand/10" : inRange ? "border-line bg-surface-2" : "border-line bg-surface"
+                    }`}
+                  >
+                    <span className="text-sm font-bold text-muted">{r.pct}%</span>
+                    <span className="text-lg font-black">
+                      {isBw ? (r.added! <= 0 ? <span className="text-sm font-bold text-muted">BW</span> : `+${kg(r.added!)}`) : kg(r.load)}
+                    </span>
+                  </div>
                 );
               })}
-            </tbody>
-          </table>
-          {vMeta && (
-            <p className="mt-3 text-xs text-muted">
-              Speed guide: group averages from research, not your personal target ({vMeta.source}). Move the bar as fast as
-              you can every rep.
-              {vMeta.measure === "MPV" &&
-                " The Metric VBT app shows mean velocity, which reads a little lower than this at light loads."}
-              {lift.velocity_model === "squat" && " Only the values confirmed in the research are shown."}
-            </p>
+            </div>
+          ) : (
+            <table className="w-full text-left">
+              <thead className="text-xs uppercase tracking-wide text-muted">
+                <tr className="border-b border-line">
+                  <th className="py-2 pr-2 font-semibold">%</th>
+                  <th className="py-2 pr-2 font-semibold">{isBw ? "Added" : "Load"}</th>
+                  {lift.bar_weight_input && <th className="py-2 pr-2 font-semibold">Plates / side</th>}
+                  {vMeta && <th className="py-2 font-semibold">Bar speed <span className="normal-case">(m/s)</span></th>}
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((r) => {
+                  const inRange = lift.parent_key === "bench" && isJump && r.pct >= BENCH_THROW_RANGE[0] && r.pct <= BENCH_THROW_RANGE[1];
+                  return (
+                    <tr key={r.pct} className={`border-b border-line/60 ${inRange ? "bg-surface-2" : ""}`}>
+                      <td className="py-2.5 pr-2 font-bold">{r.pct}%</td>
+                      <td className="py-2.5 pr-2 text-lg font-black">
+                        {isBw ? (r.added! <= 0 ? <span className="text-base font-bold text-muted">Bodyweight</span> : `+${kg(r.added!)}`) : kg(r.load)}
+                      </td>
+                      {lift.bar_weight_input && (
+                        <td className="py-2.5 pr-2">{r.load < (barOk ? barNum : 0) ? <span className="text-muted">Bar only</span> : kg(r.perSide ?? 0)}</td>
+                      )}
+                      {vMeta && <td className="py-2.5 text-muted">{r.velocity != null ? `~${r.velocity.toFixed(2)}` : "—"}</td>}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           )}
-          {isBw && (
-            <p className="mt-3 text-xs text-muted">
-              % is of bodyweight + added load. &ldquo;Bodyweight&rdquo; means no added weight at that %.
-            </p>
-          )}
+          <details className="mt-4 text-xs text-muted">
+            <summary className="cursor-pointer font-semibold">How this works</summary>
+            <p className="mt-2">All loads are estimates, rounded to 2.5 kg.</p>
+            {vMeta && (
+              <p className="mt-2">
+                Bar speed: group averages from research, not your personal target ({vMeta.source}). Move the bar as fast as you can every rep.
+                {vMeta.measure === "MPV" && " The Metric VBT app shows mean velocity, which reads a little lower than this at light loads."}
+                {lift.velocity_model === "squat" && " Only the values confirmed in the research are shown."}
+              </p>
+            )}
+            {isBw && <p className="mt-2">% is of bodyweight + added load. &ldquo;BW&rdquo; means no added weight at that %.</p>}
+          </details>
         </section>
       )}
     </div>

@@ -46,9 +46,9 @@ export function RpeChart() {
       >
         {(
           [
-            ["scale", "1. RPE ↔ RIR"],
-            ["pct", "2. Set my weight"],
-            ["est", "3. Find my 1RM"],
+            ["scale", "Effort scale"],
+            ["pct", "Pick my weight"],
+            ["est", "Find my 1RM"],
           ] as const
         ).map(([k, label]) => (
           <button
@@ -68,10 +68,9 @@ export function RpeChart() {
 
       {tab === "scale" && (
         <>
-          <div className="mb-5 rounded-2xl border border-line bg-surface p-4 text-sm">
-            <p className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-muted">
-              How to use
-            </p>
+          <details className="mb-5 rounded-2xl border border-line bg-surface p-4 text-sm">
+            <summary className="cursor-pointer text-xs font-semibold uppercase tracking-widest text-muted">How to use</summary>
+            <div className="mt-2">
             <p>
               RPE is how hard a set was. RIR is how many more good reps you had
               left (Reps In Reserve).
@@ -84,7 +83,8 @@ export function RpeChart() {
               2 more = <b>RPE 8</b>. 1 more = <b>RPE 9</b>. None = <b>RPE 10</b>
               .
             </p>
-          </div>
+            </div>
+          </details>
           <table className="w-full text-left">
             <thead className="text-xs uppercase tracking-wide text-muted">
               <tr className="border-b border-line">
@@ -103,20 +103,18 @@ export function RpeChart() {
               ))}
             </tbody>
           </table>
-          <p className="mt-3 text-xs text-muted">
-            Zourdos et al. 2016 (J Strength Cond Res); half steps from
-            Tuchscherer&apos;s RTS scale. Rate the set right after the last rep:
-            how many more could you have done with good form?
-          </p>
+          <details className="mt-3 text-xs text-muted">
+            <summary className="cursor-pointer font-semibold">Source</summary>
+            <p className="mt-1">Zourdos et al. 2016 (J Strength Cond Res); half steps from Tuchscherer&apos;s RTS scale.</p>
+          </details>
         </>
       )}
 
       {tab === "pct" && (
         <>
-          <div className="mb-5 rounded-2xl border border-line bg-surface p-4 text-sm">
-            <p className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-muted">
-              How to use
-            </p>
+          <details className="mb-5 rounded-2xl border border-line bg-surface p-4 text-sm">
+            <summary className="cursor-pointer text-xs font-semibold uppercase tracking-widest text-muted">How to use</summary>
+            <div className="mt-2">
             <ol className="list-decimal space-y-1 pl-5">
               <li>Enter your 1RM (optional) to see kilos.</li>
               <li>Tap the number of reps in your set.</li>
@@ -125,7 +123,8 @@ export function RpeChart() {
             <p className="mt-1.5 text-muted">
               Example: 5 reps @ RPE 8 = 81.1% of your 1RM.
             </p>
-          </div>
+            </div>
+          </details>
           <label className="mb-4 block">
             <span className="mb-1.5 block text-sm font-semibold">
               Your 1RM{" "}
@@ -253,10 +252,9 @@ export function RpeChart() {
 
       {tab === "est" && (
         <>
-          <div className="mb-5 rounded-2xl border border-line bg-surface p-4 text-sm">
-            <p className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-muted">
-              How to use
-            </p>
+          <details className="mb-5 rounded-2xl border border-line bg-surface p-4 text-sm">
+            <summary className="cursor-pointer text-xs font-semibold uppercase tracking-widest text-muted">How to use</summary>
+            <div className="mt-2">
             <p>
               Enter a set you did today: weight, reps and its RPE. The app works
               out the 1RM that set points to.
@@ -264,7 +262,8 @@ export function RpeChart() {
             <p className="mt-1.5 text-muted">
               Most accurate with heavy sets (1–5 reps, RPE 8 or above).
             </p>
-          </div>
+            </div>
+          </details>
           <div className="grid grid-cols-3 gap-3">
             <label className="block">
               <span className="mb-1.5 block text-sm font-semibold">Weight</span>
