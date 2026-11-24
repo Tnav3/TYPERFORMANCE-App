@@ -42,9 +42,11 @@ Principles
 - Coach can also add a one-off workout on any date without a program.
 - Calendar: coach sees month/week per client or group, with completion dots (done, partial, missed), and can move a workout to another date or delete it. Removing an assignment deletes its future, unlogged workouts.
 
+- **"Needs a program" panel** on the coach dashboard: every active client and group whose last scheduled workout is within 7 days (red) or 14 days (amber), or who has nothing scheduled, sorted by most urgent. Group workouts count for their members.
+
 ## Segment D: Client workout view, logging and comments
 - Home shows **Today**: the workout(s) for today plus the next 6 days.
-- Each exercise shows the prescription, video, cues, and the **calculated load**: percent × the client's latest e1RM for the linked lift, rounded to 2.5 kg (shown as "~kg"; editable).
+- Each exercise shows the prescription, cues, an **in-app video player** (YouTube/Vimeo links play embedded, privacy-enhanced mode; other links open in a new tab), and the **calculated load**: percent × the client's latest e1RM for the linked lift, rounded to 2.5 kg (shown as "~kg"; editable).
 - Logging per set: reps, kg, done tick (pre-filled from the prescription, one tap to confirm). Text blocks get a done tick.
 - **Comments**: one on the whole workout, plus one per exercise.
 - Finish: session RPE (1–10) + duration. If the client has Weekly Check-In on, this also logs an S&C session automatically, so training load charts stay correct with no double entry.
@@ -61,7 +63,16 @@ Principles
 - One thread per client with the coach (`messages`). Text only in v1, 2,000 characters.
 - Unread badge for both sides; coach inbox sorted by latest message.
 - Live updates via Supabase Realtime, with a refresh fallback.
+- **Scheduled messages**: write now, send at a set date and time (Sydney).
+- **Recurring messages**: weekly (pick weekdays + time) or every N days, to one client, a group, or everyone. Pause/resume/delete. Sent by Supabase's scheduler (pg_cron) every minute, so they arrive within ~1 minute.
 - Notifications: v1 = unread badge + optional email digest via GHL. Web push (home-screen install required on iPhone) is a later add-on.
+
+## Segment J: Periodisation (season planner)
+- Per client or group: a **season** with phases on a timeline (e.g. GPP → Max Strength → Power → Peak → Taper → Deload).
+- Each phase: name, start/end dates, goal, emphasis (strength, power, hypertrophy, conditioning, skill, recovery), weekly targets (sessions, sets per week, intensity range %1RM, conditioning minutes), notes.
+- Fight dates from the competition tracker appear on the timeline automatically, with weeks-out markers.
+- Each phase can link to the program assigned for it; the timeline shows assigned vs planned so gaps are obvious.
+- Mesocycle week pattern per phase (e.g. 3:1 load:deload), shown as weekly bars.
 
 ## Segment G: General-population tools
 - **Habits**: coach sets habits per client (e.g. "8k steps", "3 L water"); client ticks daily; coach sees a 4-week grid.

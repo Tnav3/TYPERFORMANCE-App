@@ -172,6 +172,20 @@ export default async function AthleteDetail({
           </span>
         </div>
       </header>
+      <div className="mb-6 grid grid-cols-2 gap-2">
+        <Link
+          href={`/coach/athlete/${id}/program`}
+          className="flex min-h-12 items-center justify-center rounded-xl bg-brand px-3 text-sm font-extrabold uppercase text-white"
+        >
+          Program
+        </Link>
+        <Link
+          href={`/coach/athlete/${id}/progress`}
+          className="flex min-h-12 items-center justify-center rounded-xl bg-brand px-3 text-sm font-extrabold uppercase text-white"
+        >
+          Progress
+        </Link>
+      </div>
       <Link
         href={`/coach/athlete/${id}/tests`}
         className="mb-6 flex min-h-12 items-center justify-between rounded-xl border border-line bg-surface-2 px-4 font-extrabold"

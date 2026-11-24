@@ -7,13 +7,15 @@ Migrations for this module start at `029_`. They are tested locally with PGlite 
 | Segment | Status |
 |---|---|
 | Spec | Done (docs/PROGRAMMING_SPEC.md) |
-| A Exercise library | In progress |
-| B Program builder | Not started |
-| C Groups, assignment, calendar | Not started |
+| A Exercise library | Done |
+| B Program builder | Done |
+| C Groups, assignment, calendar | Done (needs-a-program panel pending) |
 | D Workout logging + comments | Not started |
 | E Progress tracking | Not started |
 | F Chat | Not started |
 | G Habits, macros, photos | Not started |
 | H GHL payments | Not started |
 | I Trainerize move | Not started |
+| J Periodisation | Not started |
+| Scheduled/recurring messages (part of F) | Not started |
 | Test database loaded | Not started |
