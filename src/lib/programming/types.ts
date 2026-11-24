@@ -1,15 +1,35 @@
 import type { LoadType } from "@/lib/prescription";
 
+// Movement patterns (migration 056). Keep in step with exercises_category_check / exercises_subcategory_check.
 export const EXERCISE_CATEGORIES = [
-  ["strength", "Strength"],
-  ["power", "Power"],
-  ["plyometric", "Plyometric"],
-  ["conditioning", "Conditioning"],
+  ["knee", "Knee dominant"],
+  ["hip", "Hip dominant"],
+  ["h_press", "Horizontal press"],
+  ["v_press", "Vertical press"],
+  ["h_pull", "Horizontal pull"],
+  ["v_pull", "Vertical pull"],
+  ["ballistic", "Ballistics"],
   ["core", "Core"],
   ["accessory", "Accessory"],
-  ["mobility", "Mobility"],
+  ["cond_mob", "Conditioning & mobility"],
 ] as const;
 export type ExerciseCategory = (typeof EXERCISE_CATEGORIES)[number][0];
+
+export const SUBCATEGORIES: Record<ExerciseCategory, [string, string][]> = {
+  knee: [["squat", "Squat"], ["lunge", "Lunge / split squat"], ["step_up", "Step-up"], ["single_leg", "Single-leg"]],
+  hip: [["hinge", "Hinge / deadlift"], ["thrust", "Bridge / thrust"], ["curl", "Hamstring curl"], ["single_leg", "Single-leg"]],
+  h_press: [["barbell", "Barbell"], ["dumbbell", "Dumbbell & cable"], ["push_up", "Push-up & dip"]],
+  v_press: [["barbell", "Barbell"], ["dumbbell", "Dumbbell & kettlebell"], ["landmine", "Landmine"]],
+  h_pull: [["rows", "Rows"]],
+  v_pull: [["pull_up", "Pull-up / chin-up"], ["pulldown", "Pulldown"]],
+  ballistic: [["jumps", "Jumps"], ["bounds", "Bounds & hops"], ["throw_rot", "Throws: rotation"], ["throw_oh", "Throws: overhead & slam"], ["throw_chest", "Throws: chest"], ["olympic", "Olympic lifts"], ["upper", "Upper-body plyo"]],
+  core: [["anti_ext", "Anti-extension"], ["anti_rot", "Anti-rotation"], ["rotation", "Rotation"], ["lateral", "Lateral"], ["flexion", "Flexion"]],
+  accessory: [["arms", "Arms"], ["shoulders", "Shoulders"], ["calves", "Calves & feet"], ["neck", "Neck"], ["grip", "Grip & carries"], ["hips", "Hips & adductors"]],
+  cond_mob: [["conditioning", "Conditioning"], ["stretch", "Stretch"], ["soft_tissue", "Soft tissue"], ["activation", "Activation & mobility"]],
+};
+export const isCategory = (v: string): v is ExerciseCategory => EXERCISE_CATEGORIES.some(([c]) => c === v);
+export const subLabel = (cat: string, sub: string | null | undefined) =>
+  (sub && isCategory(cat) && SUBCATEGORIES[cat].find(([k]) => k === sub)?.[1]) || null;
 
 export const MEASURES = [
   ["load", "Weight × reps"],
@@ -24,6 +44,7 @@ export interface Exercise {
   id: string;
   name: string;
   category: ExerciseCategory;
+  subcategory: string | null;
   measure: Measure;
   lift_key: string | null;
   video_url: string | null;

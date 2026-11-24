@@ -4,6 +4,8 @@ import { getLifts } from "@/lib/lift-data";
 import {
   EXERCISE_CATEGORIES,
   MEASURES,
+  SUBCATEGORIES,
+  subLabel,
   type Exercise,
 } from "@/lib/programming/types";
 import { Alert, Heading, Screen } from "@/components/ui";
@@ -16,6 +18,21 @@ const input =
   "min-h-11 w-full min-w-0 rounded-xl border border-line bg-surface-2 px-3 text-text placeholder:text-muted/60 focus:border-brand focus:outline-none";
 const smallBtn =
   "min-h-11 shrink-0 rounded-xl border border-line bg-surface-2 px-3 text-sm font-bold";
+
+function PatternSelect({ name, value, form }: { name: string; value: string; form?: string }) {
+  return (
+    <select name={name} form={form} defaultValue={value} className={input} aria-label="Category">
+      {EXERCISE_CATEGORIES.map(([c, l]) => (
+        <optgroup key={c} label={l}>
+          <option value={`${c}.`}>{l} (general)</option>
+          {SUBCATEGORIES[c].map(([k, sl]) => (
+            <option key={k} value={`${c}.${k}`}>{l} › {sl}</option>
+          ))}
+        </optgroup>
+      ))}
+    </select>
+  );
+}
 
 function ExerciseFields({
   e,
@@ -36,18 +53,7 @@ function ExerciseFields({
         aria-label="Exercise name"
       />
       <div className="grid grid-cols-2 gap-2">
-        <select
-          name="category"
-          defaultValue={e?.category ?? "accessory"}
-          className={input}
-          aria-label="Category"
-        >
-          {EXERCISE_CATEGORIES.map(([v, l]) => (
-            <option key={v} value={v}>
-              {l}
-            </option>
-          ))}
-        </select>
+        <PatternSelect name="pattern" value={e ? `${e.category}.${e.subcategory ?? ""}` : "accessory."} />
         <select
           name="measure"
           defaultValue={e?.measure ?? "load"}
@@ -150,10 +156,10 @@ function ExerciseFields({
 export default async function LibraryPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; q?: string; cat?: string; hidden?: string; tag?: string; novideo?: string }>;
+  searchParams: Promise<{ error?: string; q?: string; cat?: string; sub?: string; hidden?: string; tag?: string; novideo?: string }>;
 }) {
   const { supabase } = await requireState(["coach"]);
-  const { error, q = "", cat = "", hidden, tag = "", novideo } = await searchParams;
+  const { error, q = "", cat = "", sub = "", hidden, tag = "", novideo } = await searchParams;
   const [{ data }, lifts] = await Promise.all([
     supabase.from("exercises").select("*").order("name"),
     getLifts(supabase),
@@ -164,6 +170,7 @@ export default async function LibraryPage({
   const shown = pool.filter(
     (e) =>
       (!cat || e.category === cat) &&
+      (!sub || (sub === "none" ? !e.subcategory : e.subcategory === sub)) &&
       (!tag || (e.tags ?? []).includes(tag)) &&
       (!novideo || !e.video_url) &&
       (!needle || e.name.toLowerCase().includes(needle) || (e.tags ?? []).some((t) => t.includes(needle)) || (e.cues ?? "").toLowerCase().includes(needle)),
@@ -181,7 +188,7 @@ export default async function LibraryPage({
   const noVideo = pool.filter((e) => !e.video_url).length;
   const link = (over: Record<string, string | undefined>) => {
     const p = new URLSearchParams();
-    const cur: Record<string, string | undefined> = { q: q || undefined, cat: cat || undefined, tag: tag || undefined, novideo, hidden, ...over };
+    const cur: Record<string, string | undefined> = { q: q || undefined, cat: cat || undefined, sub: sub || undefined, tag: tag || undefined, novideo, hidden, ...over };
     for (const [k, v] of Object.entries(cur)) if (v) p.set(k, v);
     const s = p.toString();
     return `/coach/library${s ? `?${s}` : ""}`;
@@ -225,11 +232,28 @@ export default async function LibraryPage({
       <div className="mb-2 flex flex-wrap gap-1.5">
         <Link href={link({ cat: undefined })} className={chip(!cat)}>All <span className="opacity-70">{pool.length}</span></Link>
         {EXERCISE_CATEGORIES.map(([v, l]) => (
-          <Link key={v} href={link({ cat: cat === v ? undefined : v })} className={chip(cat === v)}>
+          <Link key={v} href={link({ cat: cat === v ? undefined : v, sub: undefined })} className={chip(cat === v)}>
             {l} <span className="opacity-70">{catCount.get(v) ?? 0}</span>
           </Link>
         ))}
       </div>
+      {cat && (cat as string) in SUBCATEGORIES && (
+        <div className="mb-2 flex flex-wrap gap-1.5 border-l-2 border-brand pl-2">
+          {SUBCATEGORIES[cat as keyof typeof SUBCATEGORIES].map(([k, l]) => {
+            const n = pool.filter((e) => e.category === cat && e.subcategory === k).length;
+            return (
+              <Link key={k} href={link({ sub: sub === k ? undefined : k })} className={`${chip(sub === k)} !min-h-8 !text-xs`}>
+                {l} <span className="opacity-70">{n}</span>
+              </Link>
+            );
+          })}
+          {pool.some((e) => e.category === cat && !e.subcategory) && (
+            <Link href={link({ sub: sub === "none" ? undefined : "none" })} className={`${chip(sub === "none")} !min-h-8 !text-xs`}>
+              Not sorted <span className="opacity-70">{pool.filter((e) => e.category === cat && !e.subcategory).length}</span>
+            </Link>
+          )}
+        </div>
+      )}
       {/* Tag + status filters */}
       <div className="mb-5 flex flex-wrap items-center gap-1.5 text-xs">
         <Link href={link({ novideo: novideo ? undefined : "1" })} className={`${chip(!!novideo)} !min-h-8 !text-xs`}>No video ({noVideo})</Link>
@@ -253,9 +277,9 @@ export default async function LibraryPage({
           <option value="archive">Archive</option>
           <option value="restore">Restore</option>
         </select>
-        <input name="value" list="bulk-values" placeholder="Category or tag" className={`${input} !w-48`} aria-label="Category or tag" />
+        <div className="w-56"><PatternSelect name="pattern" value={cat ? `${cat}.${sub && sub !== "none" ? sub : ""}` : "accessory."} /></div>
+        <input name="value" list="bulk-values" placeholder="Tag (for tag actions)" className={`${input} !w-44`} aria-label="Tag" />
         <datalist id="bulk-values">
-          {EXERCISE_CATEGORIES.map(([v]) => <option key={v} value={v} />)}
           {topTags.map(([t]) => <option key={t} value={t} />)}
         </datalist>
         <button className={smallBtn}>Apply</button>
@@ -277,6 +301,7 @@ export default async function LibraryPage({
                       <span className="min-w-0">
                         <span className="block font-bold">{e.name}</span>
                         <span className="mt-1 flex flex-wrap gap-1 text-[11px]">
+                          {subLabel(e.category, e.subcategory) && <span className="rounded-md bg-brand/10 px-1.5 py-0.5 font-bold text-brand">{subLabel(e.category, e.subcategory)}</span>}
                           {e.video_url ? (
                             <span className="rounded-md bg-ok/15 px-1.5 py-0.5 font-bold text-ok">▶ video</span>
                           ) : (

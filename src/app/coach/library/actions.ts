@@ -6,12 +6,19 @@ import { coachOnly, friendly, str, UUID } from "@/lib/programming/server";
 import { FIELD_KEYS } from "@/lib/programming/fields";
 import {
   cleanVideoUrl,
-  EXERCISE_CATEGORIES,
+  isCategory,
   MEASURES,
+  SUBCATEGORIES,
 } from "@/lib/programming/types";
 
 const PATH = "/coach/library";
-const CATS = EXERCISE_CATEGORIES.map((c) => c[0]) as string[];
+/** "knee.squat" or "knee" → { category, subcategory } (null if not a real pair). */
+function pattern(v: string): { category: string; subcategory: string | null } | null {
+  const [c, sub] = v.split(".");
+  if (!isCategory(c)) return null;
+  if (!sub) return { category: c, subcategory: null };
+  return SUBCATEGORIES[c].some(([k]) => k === sub) ? { category: c, subcategory: sub } : null;
+}
 const MEAS = MEASURES.map((m) => m[0]) as string[];
 const KEY = /^[a-z0-9_]{2,40}$/;
 
@@ -70,13 +77,13 @@ function defaults(fd: FormData):
 function fields(fd: FormData) {
   const raw = str(fd.get("name"), 80)?.replace(/\s+/g, " ");
   const name = raw ? titleCase(raw) : null;
-  const category = String(fd.get("category") ?? "");
+  const pat = pattern(String(fd.get("pattern") ?? ""));
   const measure = String(fd.get("measure") ?? "load");
   const lift = String(fd.get("lift_key") ?? "");
   const videoRaw = str(fd.get("video_url"), 300);
   const video_url = cleanVideoUrl(videoRaw);
   if (!name || name.length < 2) return { error: "Enter a name (2–80 characters)." };
-  if (!CATS.includes(category)) return { error: "Pick a category." };
+  if (!pat) return { error: "Pick a category." };
   if (!MEAS.includes(measure)) return { error: "Pick how it's measured." };
   if (videoRaw && !video_url) return { error: "Video link must start with https://" };
   const fieldsPicked = fd.getAll("fields").map(String).filter((f) => (FIELD_KEYS as readonly string[]).includes(f));
@@ -93,7 +100,7 @@ function fields(fd: FormData) {
       distance_unit: ["m", "km", "mi"].includes(du) ? du : "m",
       speed_unit: su === "mph" ? "mph" : su === "kmh" ? "kmh" : "ms",
       name,
-      category,
+      ...pat,
       measure,
       lift_key: KEY.test(lift) ? lift : null,
       video_url,
@@ -145,8 +152,9 @@ export async function bulkExercises(fd: FormData) {
   const q = String(fd.get("q") ?? "");
   if (!ids.length) back("Tick some exercises first.", undefined, q);
   if (op === "category") {
-    if (!CATS.includes(value)) back("Pick a category to move them to.", undefined, q);
-    const { error } = await supabase.from("exercises").update({ category: value }).in("id", ids);
+    const pat = pattern(String(fd.get("pattern") ?? ""));
+    if (!pat) back("Pick a category to move them to.", undefined, q);
+    const { error } = await supabase.from("exercises").update(pat!).in("id", ids);
     if (error) back(friendly(error.message), undefined, q);
   } else if (op === "archive" || op === "restore") {
     const { error } = await supabase.from("exercises").update({ active: op === "restore" }).in("id", ids);

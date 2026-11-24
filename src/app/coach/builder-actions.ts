@@ -3,7 +3,7 @@
 // so the list can update in place. Shared by program days and dated workouts.
 import { revalidatePath } from "next/cache";
 import { FIELD_KEYS } from "@/lib/programming/fields";
-import { ITEM_COLUMNS, type ItemFields } from "@/lib/programming/types";
+import { ITEM_COLUMNS, isCategory, type ItemFields } from "@/lib/programming/types";
 import { coachOnly, friendly, UUID } from "@/lib/programming/server";
 
 const TABLES = { program_items: "day_id", workout_items: "workout_id" } as const;
@@ -265,12 +265,12 @@ export async function builderOrder(
 export async function quickAddExercise(name: string, category: string): Promise<Res<{ id: string; name: string }>> {
   const clean = name.trim().replace(/\s+/g, " ");
   if (clean.length < 2 || clean.length > 80) return { error: "Exercise name must be 2–80 characters." };
-  const cats = ["strength", "power", "plyometric", "conditioning", "mobility", "core", "accessory"];
-  const cat = cats.includes(category) ? category : "accessory";
+  // Unknown → let the database sort it from the name.
+  const cat = isCategory(category) ? category : "auto";
   const supabase = await coachOnly();
   const existing = await findExercise(supabase, clean);
   if (existing) return { data: existing };
-  const measure = cat === "conditioning" || cat === "mobility" ? "time" : "load";
+  const measure = cat === "cond_mob" ? "time" : "load";
   const { data, error } = await supabase
     .from("exercises")
     .insert({ name: clean, category: cat, measure })

@@ -4,7 +4,7 @@
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { ArrowDown, ArrowUp, BookmarkPlus, ChevronDown, Copy, GripVertical, Link2, Plus, Trash2, Unlink, X } from "lucide-react";
 import { itemLabel } from "@/lib/prescription";
-import type { ItemFields } from "@/lib/programming/types";
+import { EXERCISE_CATEGORIES, type ItemFields } from "@/lib/programming/types";
 import { FIELD_KEYS, FIELD_LABEL, type FieldKey } from "@/lib/programming/fields";
 import {
   builderAdd,
@@ -31,7 +31,7 @@ const LOADS: [string, string][] = [
   ["bodyweight", "BW"],
   ["velocity", "m/s"],
 ];
-const CATS = ["strength", "power", "plyometric", "conditioning", "core", "mobility", "accessory"];
+const CATS = EXERCISE_CATEGORIES;
 
 function loadValue(i: ItemFields) {
   const v = i.load_type === "percent" ? i.percent : i.load_type === "rpe" ? i.rpe : i.load_type === "kg" ? i.load_kg : i.load_type === "velocity" ? i.velocity : null;
@@ -614,7 +614,7 @@ function Row({
 
 function QuickAdd({ name, onCancel, onAdd }: { name: string; onCancel: () => void; onAdd: (name: string, cat: string) => void }) {
   const [n, setN] = useState(name);
-  const [cat, setCat] = useState("strength");
+  const [cat, setCat] = useState("auto");
   return (
     <div className="mt-3 rounded-2xl border border-warn/60 bg-warn/10 p-3">
       <p className="mb-2 text-sm">
@@ -622,9 +622,10 @@ function QuickAdd({ name, onCancel, onAdd }: { name: string; onCancel: () => voi
       </p>
       <div className="flex flex-wrap gap-2">
         <input value={n} onChange={(e) => setN(e.target.value)} className={`${box} min-w-40 flex-1`} aria-label="Exercise name" />
-        <select value={cat} onChange={(e) => setCat(e.target.value)} className={`${box} !w-36 capitalize`} aria-label="Category">
-          {CATS.map((c) => (
-            <option key={c} value={c}>{c}</option>
+        <select value={cat} onChange={(e) => setCat(e.target.value)} className={`${box} !w-44`} aria-label="Category">
+          <option value="auto">Sort it for me</option>
+          {CATS.map(([c, l]) => (
+            <option key={c} value={c}>{l}</option>
           ))}
         </select>
         <button onClick={() => onAdd(n, cat)} className="h-10 rounded-lg bg-brand px-4 text-sm font-extrabold uppercase text-white">Add & use</button>
