@@ -82,6 +82,19 @@ export default async function AthleteHome() {
     mobility: hasFeature(profile, "mobility"),
   };
   const tools = toolsFor(profile);
+  const programOn = hasFeature(profile, "program");
+  const { data: todays } = programOn
+    ? await supabase.rpc("my_workouts", { p_from: today, p_to: today })
+    : { data: null };
+  const todayWorkouts = (todays ?? []) as { id: string; title: string }[];
+  const { data: todayLogs } = todayWorkouts.length
+    ? await supabase
+        .from("workout_logs")
+        .select("workout_id, completed_at")
+        .eq("athlete_id", user!.id)
+        .in("workout_id", todayWorkouts.map((w) => w.id))
+    : { data: [] };
+  const doneIds = new Set((todayLogs ?? []).filter((l) => l.completed_at).map((l) => l.workout_id));
   // Their planned fight date has passed: ask how it went
   const fightToLog =
     on.fights && profile.next_fight_date && profile.next_fight_date < today;
@@ -105,6 +118,32 @@ export default async function AthleteHome() {
           ? ` · ${profile.weight_class} (${Number(profile.weight_class_limit_kg)} kg)`
           : ""}
       </p>
+
+      {programOn && (
+        <Link
+          href={todayWorkouts.length === 1 ? `/train/${todayWorkouts[0].id}` : "/train"}
+          className="mb-4 block"
+        >
+          <Card className="border-brand/60 hover:border-brand">
+            <p className="text-xs font-semibold uppercase tracking-widest text-brand">
+              Today&apos;s training
+            </p>
+            {todayWorkouts.length ? (
+              todayWorkouts.map((w) => (
+                <p key={w.id} className="mt-1 flex items-center justify-between text-lg font-black uppercase leading-tight tracking-tight">
+                  {w.title}
+                  {doneIds.has(w.id) && <span className="rounded-full bg-ok/15 px-3 py-1 text-xs font-bold normal-case text-ok">Done</span>}
+                </p>
+              ))
+            ) : (
+              <p className="mt-1 text-lg font-black uppercase leading-tight tracking-tight">Rest day</p>
+            )}
+            <p className="mt-3 font-extrabold text-brand">
+              {todayWorkouts.length && !todayWorkouts.every((w) => doneIds.has(w.id)) ? "Start workout →" : "See my program →"}
+            </p>
+          </Card>
+        </Link>
+      )}
 
       {/* Only nag about last week if they had an account before it ended */}
       {on.checkin &&
@@ -201,6 +240,7 @@ export default async function AthleteHome() {
       )}
 
       {!on.checkin &&
+        !programOn &&
         !on.testing &&
         tools.length === 0 &&
         !on.fights &&

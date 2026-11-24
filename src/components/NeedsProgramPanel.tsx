@@ -35,7 +35,7 @@ export async function NeedsProgramPanel({
       </p>
     );
   const label = { none: "Nothing scheduled", week: "Runs out this week", fortnight: "Runs out next week" };
-  const tone = { none: "bg-brand", week: "bg-brand", fortnight: "bg-amber-400" };
+  const tone = { none: "bg-brand", week: "bg-brand", fortnight: "bg-warn" };
 
   return (
     <section className="mb-6 rounded-2xl border border-line bg-surface p-4">

@@ -14,7 +14,7 @@ export interface CalWorkout {
 
 const DOT: Record<CalStatus, string> = {
   done: "bg-ok",
-  partial: "bg-amber-400",
+  partial: "bg-warn",
   missed: "bg-brand",
   planned: "bg-line",
 };
