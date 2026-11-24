@@ -12,7 +12,7 @@ import { ClientTabs } from "@/components/ClientTabs";
 import { formatPrescription, itemLabel } from "@/lib/prescription";
 import { SeasonList } from "@/components/SeasonList";
 import { Alert, Card, Screen } from "@/components/ui";
-import { swapInAssignment, unassign } from "@/app/coach/workouts/actions";
+import { shiftAssignment, swapInAssignment, unassign } from "@/app/coach/workouts/actions";
 
 export const dynamic = "force-dynamic";
 
@@ -26,7 +26,7 @@ export default async function ClientProgramPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ from?: string; d?: string; view?: string; error?: string; removed?: string; swapped?: string }>;
+  searchParams: Promise<{ from?: string; d?: string; view?: string; error?: string; removed?: string; swapped?: string; shifted?: string }>;
 }) {
   const { supabase } = await requireState(["coach"]);
   const { id } = await params;
@@ -116,6 +116,7 @@ export default async function ClientProgramPage({
       <ClientTabs id={id} name={name} active="program" />
       {sp.error && <Alert>{sp.error}</Alert>}
       {sp.swapped && <Alert tone="ok">Swapped on {sp.swapped} upcoming line{sp.swapped === "1" ? "" : "s"}.</Alert>}
+      {sp.shifted && <Alert tone="ok">Moved {sp.shifted} upcoming workout{sp.shifted === "1" ? "" : "s"}. Logged ones stayed put.</Alert>}
       {sp.removed && <Alert tone="ok">Removed {sp.removed} upcoming workouts. Past and logged ones are kept.</Alert>}
 
       <div className="mb-4">
@@ -150,6 +151,18 @@ export default async function ClientProgramPage({
                   <input type="hidden" name="back" value={back} />
                   <button className="text-xs text-muted underline underline-offset-4">Remove upcoming</button>
                 </form>
+              </li>
+              <li className="flex flex-wrap items-center gap-1.5 text-xs">
+                <span className="text-muted">Move what&apos;s left:</span>
+                {[[-7, "−1 week"], [-1, "−1 day"], [1, "+1 day"], [7, "+1 week"]].map(([d, l]) => (
+                  <form key={d} action={shiftAssignment}>
+                    <input type="hidden" name="assignment_id" value={a.id} />
+                    <input type="hidden" name="back" value={back} />
+                    <input type="hidden" name="from" value={today} />
+                    <input type="hidden" name="days" value={d} />
+                    <button className="min-h-9 rounded-lg border border-line bg-surface-2 px-2.5 font-bold">{l}</button>
+                  </form>
+                ))}
               </li>
               <li>
                 <details className="text-xs">

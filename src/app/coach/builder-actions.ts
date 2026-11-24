@@ -22,7 +22,7 @@ const letter = (n: number) => String.fromCharCode(65 + Math.min(25, n));
 async function findExercise(supabase: Supa, name: string) {
   const { data } = await supabase
     .from("exercises")
-    .select("id, name")
+    .select("id, name, default_sets, default_reps, default_load_type, default_load_value, default_rest_sec")
     .ilike("name", name.replace(/[%_\\]/g, (c) => `\\${c}`))
     .limit(1)
     .maybeSingle();
@@ -168,6 +168,17 @@ export async function builderAdd(
     const ex = await findExercise(supabase, name);
     if (!ex) return { error: `"${name}" isn't in your exercise library.` };
     row.exercise_id = ex.id;
+    const blank = !input.sets?.trim() && !input.reps?.trim() && (!input.load_type || input.load_type === "none") && !input.rest?.trim();
+    if (blank) {
+      const d = toRow({
+        sets: ex.default_sets != null ? String(ex.default_sets) : "",
+        reps: ex.default_reps ?? "",
+        load_type: ex.default_load_type ?? "none",
+        load_value: ex.default_load_value != null ? String(ex.default_load_value) : "",
+        rest: ex.default_rest_sec != null ? String(ex.default_rest_sec) : "",
+      });
+      if (d.data) Object.assign(row, d.data);
+    }
   } else if (!row.title && !row.notes) row.title = "Notes";
   const { error } = await supabase.from(table).insert(row);
   if (error) return { error: friendly(error.message) };
@@ -268,4 +279,162 @@ export async function quickAddExercise(name: string, category: string): Promise<
   if (error) return { error: friendly(error.message) };
   revalidatePath("/coach/library");
   return { data: data! };
+}
+
+const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
+const r2 = (v: number) => Math.round(v * 100) / 100;
+
+/**
+ * Program days only: copy this line to the same day in every later week, with an optional
+ * weekly progression. Matching lines (same exercise, same day) are updated; missing ones are added.
+ */
+export async function builderApplyWeeks(
+  dayId: string,
+  itemId: string,
+  opts: { mode: "same" | "load" | "reps" | "sets"; step: string; skipLast: boolean },
+  back: string,
+): Promise<Res<{ weeks: number[] }>> {
+  if (!UUID.test(dayId) || !UUID.test(itemId)) return { error: "Not found." };
+  const step = Number(String(opts.step).replace(",", ".")) || 0;
+  const supabase = await coachOnly();
+  const { data: day } = await supabase.from("program_days").select("id, program_id, week_no, day_no, title").eq("id", dayId).maybeSingle();
+  const { data: src } = await supabase.from("program_items").select("*").eq("id", itemId).eq("day_id", dayId).maybeSingle();
+  if (!day || !src) return { error: "Not found." };
+  if (src.kind !== "exercise") return { error: "Only exercise lines can be pushed to other weeks." };
+  const { data: prog } = await supabase.from("programs").select("weeks").eq("id", day.program_id).maybeSingle();
+  const last = (prog?.weeks ?? day.week_no) - (opts.skipLast ? 1 : 0);
+  const done: number[] = [];
+  for (let w = day.week_no + 1; w <= last; w++) {
+    const n = w - day.week_no;
+    const p = {
+      sets: src.sets as number | null,
+      reps: src.reps as string | null,
+      load_type: src.load_type,
+      percent: src.percent == null ? null : Number(src.percent),
+      rpe: src.rpe == null ? null : Number(src.rpe),
+      load_kg: src.load_kg == null ? null : Number(src.load_kg),
+      velocity: src.velocity == null ? null : Number(src.velocity),
+      tempo: src.tempo,
+      rest_sec: src.rest_sec,
+      notes: src.notes,
+      fields: src.fields,
+    };
+    if (opts.mode === "load") {
+      if (p.load_type === "percent" && p.percent != null) p.percent = r2(clamp(p.percent + step * n, 1, 120));
+      else if (p.load_type === "kg" && p.load_kg != null) p.load_kg = r2(clamp(p.load_kg + step * n, 0, 600));
+      else if (p.load_type === "rpe" && p.rpe != null) p.rpe = r2(clamp(p.rpe + step * n, 1, 10));
+      else if (p.load_type === "velocity" && p.velocity != null) p.velocity = r2(clamp(p.velocity - Math.abs(step) * n, 0.1, 3));
+    } else if (opts.mode === "reps" && p.reps && /^\d+$/.test(p.reps.trim())) {
+      p.reps = String(clamp(Number(p.reps) + Math.round(step) * n, 1, 100));
+    } else if (opts.mode === "sets" && p.sets != null) {
+      p.sets = clamp(p.sets + Math.round(step) * n, 1, 20);
+    }
+    // the same day in week w
+    let { data: target } = await supabase
+      .from("program_days")
+      .select("id")
+      .eq("program_id", day.program_id)
+      .eq("week_no", w)
+      .eq("day_no", day.day_no)
+      .maybeSingle();
+    if (!target) {
+      const ins = await supabase
+        .from("program_days")
+        .insert({ program_id: day.program_id, week_no: w, day_no: day.day_no, title: day.title })
+        .select("id")
+        .single();
+      if (ins.error) return { error: friendly(ins.error.message) };
+      target = ins.data;
+    }
+    const { data: match } = await supabase
+      .from("program_items")
+      .select("id")
+      .eq("day_id", target!.id)
+      .eq("exercise_id", src.exercise_id)
+      .order("position")
+      .limit(1)
+      .maybeSingle();
+    if (match) {
+      const { error } = await supabase.from("program_items").update(p).eq("id", match.id);
+      if (error) return { error: friendly(error.message) };
+    } else {
+      const list = await fresh(supabase, "program_items", target!.id);
+      const blocks = new Set(list.map((i) => i.block)).size;
+      const { error } = await supabase.from("program_items").insert({
+        ...p,
+        day_id: target!.id,
+        kind: "exercise",
+        exercise_id: src.exercise_id,
+        position: (list[list.length - 1]?.position ?? 0) + 1,
+        block: letter(blocks),
+        slot: 1,
+        block_title: src.block_title,
+      });
+      if (error) return { error: friendly(error.message) };
+    }
+    done.push(w);
+  }
+  revalidatePath(`/coach/programs/${day.program_id}`);
+  touch(back);
+  return { data: { weeks: done } };
+}
+
+const BLOCK_COLS = ["kind", "exercise_id", "sets", "reps", "load_type", "percent", "rpe", "load_kg", "velocity", "tempo", "rest_sec", "title", "notes", "block_title", "fields"] as const;
+
+export async function listSavedBlocks(): Promise<Res<{ id: string; name: string; count: number }[]>> {
+  const supabase = await coachOnly();
+  const { data, error } = await supabase.from("saved_blocks").select("id, name, items").order("name");
+  if (error) return { error: friendly(error.message) };
+  return { data: (data ?? []).map((b) => ({ id: b.id, name: b.name, count: (b.items as unknown[]).length })) };
+}
+
+/** Save the ticked rows (in order, keeping supersets) as a reusable block. */
+export async function saveBlock(table: string, parent: string, ids: string[], name: string): Promise<Res<{ id: string; name: string; count: number }>> {
+  if (!check(table, parent) || !ids.length || !ids.every((i) => UUID.test(i))) return { error: "Tick the rows to save first." };
+  const clean = name.trim();
+  if (clean.length < 2 || clean.length > 60) return { error: "Name the block (2–60 characters)." };
+  const supabase = await coachOnly();
+  const list = (await fresh(supabase, table, parent)).filter((i) => ids.includes(i.id));
+  const items = list.map((i, k) => {
+    const o: Record<string, unknown> = { join: k > 0 && i.block === list[k - 1].block };
+    for (const c of BLOCK_COLS) o[c] = (i as unknown as Record<string, unknown>)[c] ?? null;
+    return o;
+  });
+  const { data, error } = await supabase.from("saved_blocks").insert({ name: clean, items }).select("id, name").single();
+  if (error) return { error: friendly(error.message) };
+  return { data: { id: data!.id, name: data!.name, count: items.length } };
+}
+
+/** Append a saved block to the end of this day. */
+export async function insertBlock(table: string, parent: string, blockId: string, back: string): Promise<Res<ItemFields[]>> {
+  if (!check(table, parent) || !UUID.test(blockId)) return { error: "Not found." };
+  const supabase = await coachOnly();
+  const { data: b } = await supabase.from("saved_blocks").select("items").eq("id", blockId).maybeSingle();
+  if (!b) return { error: "Saved block not found." };
+  const list = await fresh(supabase, table, parent);
+  let pos = list[list.length - 1]?.position ?? 0;
+  let bi = new Set(list.map((i) => i.block)).size - 1;
+  let slot = 0;
+  const rows = (b.items as Record<string, unknown>[]).map((it, k) => {
+    if (k === 0 || !it.join || slot >= 9) {
+      bi++;
+      slot = 1;
+    } else slot++;
+    const row: Record<string, unknown> = { [TABLES[table]]: parent, position: ++pos, block: letter(bi), slot };
+    for (const c of BLOCK_COLS) row[c] = it[c] ?? null;
+    if (row.kind !== "exercise") row.kind = "text";
+    if (!row.load_type) row.load_type = "none";
+    return row;
+  });
+  const { error } = await supabase.from(table).insert(rows);
+  if (error) return { error: friendly(error.message) };
+  touch(back);
+  return { data: await fresh(supabase, table, parent) };
+}
+
+export async function deleteSavedBlock(id: string): Promise<Res> {
+  if (!UUID.test(id)) return { error: "Not found." };
+  const supabase = await coachOnly();
+  const { error } = await supabase.from("saved_blocks").delete().eq("id", id);
+  return error ? { error: friendly(error.message) } : {};
 }

@@ -86,3 +86,28 @@ export async function deleteProgramQuick(programId: string, athleteId: string): 
   revalidatePath("/coach/programs");
   return {};
 }
+
+/** Copy this client's own workouts from one week to the next (group workouts are skipped). */
+export async function copyWeekForward(athleteId: string, monday: string): Promise<Result & { count?: number }> {
+  if (!UUID.test(athleteId) || !ISO_DATE.test(monday)) return { error: "Couldn't copy that week." };
+  const supabase = await coachOnly();
+  const end = new Date(Date.parse(monday + "T00:00:00Z") + 6 * 86400000).toISOString().slice(0, 10);
+  const { data: ws, error } = await supabase
+    .from("workouts")
+    .select("id, workout_date")
+    .eq("athlete_id", athleteId)
+    .is("group_id", null)
+    .gte("workout_date", monday)
+    .lte("workout_date", end)
+    .order("workout_date")
+    .order("position");
+  if (error) return { error: friendly(error.message) };
+  if (!ws?.length) return { error: "Nothing to copy: this week has no workouts of their own." };
+  for (const w of ws) {
+    const to = new Date(Date.parse(w.workout_date + "T00:00:00Z") + 7 * 86400000).toISOString().slice(0, 10);
+    const r = await copyWorkout(athleteId, w.id, to);
+    if (r.error) return r;
+  }
+  revalidatePath(`/coach/athlete/${athleteId}/program`);
+  return { count: ws.length };
+}

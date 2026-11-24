@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { Copy, GripVertical, Pencil, Plus, Trash2 } from "lucide-react";
 import { addWorkout } from "@/app/coach/workouts/actions";
-import { assignProgramOn, copyWorkout, deleteProgramQuick, duplicateProgramQuick, moveWorkout } from "@/app/coach/athlete/[id]/program/actions";
+import { assignProgramOn, copyWeekForward, copyWorkout, deleteProgramQuick, duplicateProgramQuick, moveWorkout } from "@/app/coach/athlete/[id]/program/actions";
 import type { CalStatus } from "@/components/WorkoutCalendar";
 
 export interface PlanWorkout {
@@ -170,6 +170,17 @@ export function PlanCalendar({
             <Link href={nav.next} className="flex h-11 w-11 items-center justify-center text-lg text-muted hover:text-text" aria-label="Next">›</Link>
           </div>
           <p className="flex-1 font-black uppercase tracking-tight">{nav.label}</p>
+          {view === "week" && (
+            <button
+              onClick={() => {
+                if (window.confirm("Copy this week's workouts into next week? Anything already next week stays as well.")) run(() => copyWeekForward(athleteId, days[0]));
+              }}
+              className="flex min-h-11 items-center gap-1.5 rounded-xl border border-line px-3 text-sm font-bold text-muted hover:text-text"
+              title="Copy this client's workouts from this week into next week"
+            >
+              <Copy size={16} /> Copy to next week
+            </button>
+          )}
           <button
             onClick={() => setShowProgs((v) => !v)}
             className={`flex min-h-11 items-center gap-1.5 rounded-xl border px-3 text-sm font-bold ${showProgs ? "border-brand bg-brand/10 text-text" : "border-line text-muted"}`}

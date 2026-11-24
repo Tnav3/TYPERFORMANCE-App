@@ -1,10 +1,11 @@
+import { formatPrescription, itemLabel } from "@/lib/prescription";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireState } from "@/lib/session";
 import { todayISO } from "@/lib/dates";
 import { addDays } from "@/lib/week";
 import type { Program } from "@/lib/programming/types";
-import { Alert, BackLink, Card, Heading, Screen } from "@/components/ui";
+import { Alert, BackLink, Heading, Screen } from "@/components/ui";
 import {
   assignProgram,
   copyWeek,
@@ -42,7 +43,7 @@ export default async function ProgramPage({
       supabase.from("programs").select("*").eq("id", id).maybeSingle<Program>(),
       supabase
         .from("program_days")
-        .select("id, week_no, day_no, title, program_items(id, kind, exercise_id, title, exercises(name))")
+        .select("id, week_no, day_no, title, program_items(id, position, kind, exercise_id, title, block, slot, sets, reps, load_type, percent, rpe, load_kg, velocity, exercises(name))")
         .eq("program_id", id),
       supabase
         .from("profiles")
@@ -70,10 +71,30 @@ export default async function ProgramPage({
     week_no: number;
     day_no: number;
     title: string | null;
-    program_items: { id: string; kind: string; title: string | null; exercises: { name: string } | null }[];
+    program_items: {
+      id: string;
+      position: number;
+      kind: string;
+      title: string | null;
+      block: string;
+      slot: number;
+      sets: number | null;
+      reps: string | null;
+      load_type: string | null;
+      percent: number | null;
+      rpe: number | null;
+      load_kg: number | null;
+      velocity: number | null;
+      exercises: { name: string } | null;
+    }[];
   };
   const byKey = new Map<string, DayRow>();
-  for (const d of (days ?? []) as unknown as DayRow[]) byKey.set(`${d.week_no}-${d.day_no}`, d);
+  for (const d of (days ?? []) as unknown as DayRow[]) {
+    d.program_items.sort((a, b) => a.position - b.position);
+    byKey.set(`${d.week_no}-${d.day_no}`, d);
+  }
+  const usedDays = [1, 2, 3, 4, 5, 6, 7].filter((d) => [...byKey.keys()].some((k) => k.endsWith(`-${d}`) && byKey.get(k)!.program_items.length));
+  const DAY_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
   const weeks = Array.from({ length: program.weeks }, (_, i) => i + 1);
   const today = todayISO();
 
@@ -88,8 +109,9 @@ export default async function ProgramPage({
       {swapped && <Alert tone="ok">Swapped on {swapped} line{swapped === "1" ? "" : "s"}. Sets, reps and progression kept.</Alert>}
 
       {/* Assign */}
-      <Card className="mb-6 !p-4">
-        <h2 className="mb-3 font-extrabold">Assign</h2>
+      <details className="mb-6 rounded-2xl border border-line bg-surface p-4" open={(assigned ?? []).length === 0}>
+        <summary className="cursor-pointer font-extrabold">Assign to a client or group{(assigned ?? []).length ? ` · used ${(assigned ?? []).length}×` : ""}</summary>
+        <div className="mt-3">
         <form action={assignProgram} className="grid gap-2 sm:grid-cols-[1fr_11rem_auto]">
           <input type="hidden" name="program_id" value={program.id} />
           <select name="target" required defaultValue="" className={input} aria-label="Client or group">
@@ -140,7 +162,12 @@ export default async function ProgramPage({
             })}
           </ul>
         )}
-      </Card>
+        </div>
+      </details>
+
+      <p className="mb-3 text-xs text-muted">
+        Day 1 = the start date (usually a Monday). Tap any day to edit it. {usedDays.length ? `Training days: ${usedDays.map((d) => DAY_NAMES[d - 1]).join(", ")}.` : ""}
+      </p>
 
       {/* Week grid */}
       <div className="space-y-6">
@@ -178,30 +205,41 @@ export default async function ProgramPage({
                 </details>
               )}
             </div>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-7">
+            <div className="-mx-1 overflow-x-auto px-1 pb-1">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:min-w-[1100px] lg:grid-cols-7">
               {[1, 2, 3, 4, 5, 6, 7].map((d) => {
                 const day = byKey.get(`${w}-${d}`);
                 const items = day?.program_items ?? [];
+                const size = new Map<string, number>();
+                for (const i of items) size.set(i.block, (size.get(i.block) ?? 0) + 1);
                 return (
-                  <form key={d} action={openDay}>
+                  <form key={d} action={openDay} className={items.length ? "" : "hidden sm:block"}>
                     <input type="hidden" name="program_id" value={program.id} />
                     <input type="hidden" name="week" value={w} />
                     <input type="hidden" name="day" value={d} />
                     <button
-                      className={`min-h-24 w-full rounded-xl border p-2 text-left text-xs transition ${
-                        items.length ? "border-line bg-surface hover:border-muted" : "border-dashed border-line/60 text-muted hover:border-muted"
+                      className={`h-full min-h-28 w-full rounded-xl border p-2.5 text-left text-xs transition ${
+                        items.length ? "border-line bg-surface hover:border-brand" : "border-dashed border-line/60 text-muted hover:border-muted"
                       }`}
                     >
-                      <span className="block font-bold text-text">Day {d}</span>
+                      <span className="mb-1 flex items-baseline justify-between gap-1">
+                        <span className="font-bold text-text">Day {d} <span className="font-normal text-muted">{DAY_NAMES[d - 1]}</span></span>
+                        <span className="text-[10px] text-muted">Edit</span>
+                      </span>
                       {items.length ? (
                         <>
-                          {day?.title && <span className="block font-semibold text-brand">{day.title}</span>}
-                          {items.slice(0, 4).map((i) => (
-                            <span key={i.id} className="block truncate text-muted">
-                              {i.kind === "text" ? i.title ?? "Notes" : i.exercises?.name}
+                          {day?.title && <span className="mb-1 block font-semibold text-brand">{day.title}</span>}
+                          {items.map((i) => (
+                            <span key={i.id} className="block leading-snug">
+                              <span className="font-bold text-brand">{i.kind === "exercise" ? itemLabel(i, size.get(i.block) ?? 1) : i.block}</span>{" "}
+                              <span className="text-text">{i.kind === "text" ? i.title ?? "Notes" : i.exercises?.name}</span>
+                              {i.kind === "exercise" && (
+                                <span className="block pl-5 text-muted">
+                                  {formatPrescription({ ...i, load_type: (i.load_type ?? "none") as never, percent: i.percent != null ? Number(i.percent) : null, rpe: i.rpe != null ? Number(i.rpe) : null, load_kg: i.load_kg != null ? Number(i.load_kg) : null, velocity: i.velocity != null ? Number(i.velocity) : null })}
+                                </span>
+                              )}
                             </span>
                           ))}
-                          {items.length > 4 && <span className="block text-muted">+{items.length - 4} more</span>}
                         </>
                       ) : (
                         <span className="block">Rest · tap to add</span>
@@ -210,6 +248,7 @@ export default async function ProgramPage({
                   </form>
                 );
               })}
+            </div>
             </div>
           </section>
         ))}

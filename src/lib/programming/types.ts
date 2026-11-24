@@ -33,6 +33,11 @@ export interface Exercise {
   weight_unit?: "kg" | "lb";
   distance_unit?: "m" | "km" | "mi";
   speed_unit?: "ms" | "kmh" | "mph";
+  default_sets?: number | null;
+  default_reps?: string | null;
+  default_load_type?: string | null;
+  default_load_value?: number | string | null;
+  default_rest_sec?: number | null;
 }
 
 export interface Program {

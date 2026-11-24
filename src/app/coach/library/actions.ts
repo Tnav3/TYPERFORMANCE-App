@@ -24,6 +24,39 @@ function back(error?: string, anchor?: string, q?: string): never {
   redirect(`${PATH}${qs ? `?${qs}` : ""}${anchor ? `#${anchor}` : ""}`);
 }
 
+const LOAD_TYPES = ["percent", "rpe", "kg", "bodyweight", "velocity", "none"];
+/** Default prescription filled in when this exercise is added to a day. */
+function defaults(fd: FormData):
+  | { error: string }
+  | { default_sets: number | null; default_reps: string | null; default_load_type: string | null; default_load_value: number | null; default_rest_sec: number | null } {
+  const setsRaw = String(fd.get("default_sets") ?? "").trim();
+  const sets = setsRaw ? Number(setsRaw) : null;
+  if (sets !== null && (!Number.isInteger(sets) || sets < 1 || sets > 20)) return { error: "Default sets must be 1–20." };
+  const reps = str(fd.get("default_reps"), 20);
+  const lt = String(fd.get("default_load_type") ?? "none");
+  const type = LOAD_TYPES.includes(lt) ? lt : "none";
+  const valRaw = String(fd.get("default_load_value") ?? "").trim().replace(",", ".");
+  const val = valRaw && type !== "none" && type !== "bodyweight" ? Number(valRaw) : null;
+  if (val !== null && (!Number.isFinite(val) || val < 0 || val > 600)) return { error: "Default load must be a number." };
+  const restRaw = String(fd.get("default_rest") ?? "").trim().toLowerCase();
+  let rest: number | null = null;
+  if (restRaw) {
+    const mm = restRaw.match(/^(\d+):(\d{1,2})$/);
+    const m = restRaw.match(/^(\d+(?:\.\d+)?)\s*m(in)?s?$/);
+    const sec = restRaw.match(/^(\d+)\s*s?(ec)?s?$/);
+    rest = mm ? Number(mm[1]) * 60 + Number(mm[2]) : m ? Math.round(Number(m[1]) * 60) : sec ? Number(sec[1]) : NaN;
+    if (!Number.isFinite(rest) || rest < 0 || rest > 1800) return { error: "Default rest: try 90s, 2m or 1:30." };
+  }
+  const any = sets !== null || reps || (type !== "none" && (val !== null || type === "bodyweight")) || rest !== null;
+  return {
+    default_sets: sets,
+    default_reps: reps,
+    default_load_type: any ? type : null,
+    default_load_value: val,
+    default_rest_sec: rest,
+  };
+}
+
 function fields(fd: FormData) {
   const raw = str(fd.get("name"), 80)?.replace(/\s+/g, " ");
   const name = raw ? titleCase(raw) : null;
@@ -38,6 +71,8 @@ function fields(fd: FormData) {
   if (videoRaw && !video_url) return { error: "Video link must start with https://" };
   const fieldsPicked = fd.getAll("fields").map(String).filter((f) => (FIELD_KEYS as readonly string[]).includes(f));
   if (fieldsPicked.length > 4) return { error: "Pick up to 4 things to record." };
+  const d = defaults(fd);
+  if ("error" in d) return { error: d.error };
   const wu = String(fd.get("weight_unit") ?? "kg");
   const du = String(fd.get("distance_unit") ?? "m");
   const su = String(fd.get("speed_unit") ?? "ms");
@@ -53,6 +88,7 @@ function fields(fd: FormData) {
       lift_key: KEY.test(lift) ? lift : null,
       video_url,
       cues: str(fd.get("cues"), 1000),
+      ...d,
     },
   };
 }

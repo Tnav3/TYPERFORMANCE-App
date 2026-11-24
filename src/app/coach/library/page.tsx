@@ -104,6 +104,21 @@ function ExerciseFields({
           </label>
         </div>
       </fieldset>
+      <fieldset className="rounded-xl border border-line p-3">
+        <legend className="px-1 text-xs font-semibold uppercase tracking-widest text-muted">Default prescription (optional)</legend>
+        <p className="mb-2 text-xs text-muted">Filled in automatically when you add this exercise to a workout. You can still change it there.</p>
+        <div className="grid grid-cols-2 gap-2 text-xs text-muted sm:grid-cols-5">
+          <label>Sets<input name="default_sets" defaultValue={e?.default_sets ?? ""} inputMode="numeric" className={input} /></label>
+          <label>Reps<input name="default_reps" defaultValue={e?.default_reps ?? ""} placeholder="5, 8-10, 30s" className={input} /></label>
+          <label>Load
+            <select name="default_load_type" defaultValue={e?.default_load_type ?? "none"} className={input}>
+              <option value="none">—</option><option value="percent">%1RM</option><option value="rpe">RPE</option><option value="kg">kg</option><option value="bodyweight">BW</option><option value="velocity">m/s</option>
+            </select>
+          </label>
+          <label>Value<input name="default_load_value" defaultValue={e?.default_load_value ?? ""} inputMode="decimal" className={input} /></label>
+          <label>Rest<input name="default_rest" defaultValue={e?.default_rest_sec != null ? (e.default_rest_sec >= 60 && e.default_rest_sec % 30 === 0 ? `${e.default_rest_sec / 60}m` : `${e.default_rest_sec}s`) : ""} placeholder="90s, 2m" className={input} /></label>
+        </div>
+      </fieldset>
       <input
         name="video_url"
         type="url"

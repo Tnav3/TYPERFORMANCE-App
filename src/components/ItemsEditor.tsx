@@ -1,18 +1,23 @@
 "use client";
 // Spreadsheet-style builder for a day's exercises (program day or dated workout).
 // Tick rows → "Superset". Drag the handle to reorder (arrows on phones). Every box saves when you leave it.
-import { useMemo, useRef, useState, useTransition } from "react";
-import { ArrowDown, ArrowUp, ChevronDown, Copy, GripVertical, Link2, Plus, Trash2, Unlink } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { ArrowDown, ArrowUp, BookmarkPlus, ChevronDown, Copy, GripVertical, Link2, Plus, Trash2, Unlink, X } from "lucide-react";
 import { itemLabel } from "@/lib/prescription";
 import type { ItemFields } from "@/lib/programming/types";
 import { FIELD_KEYS, FIELD_LABEL, type FieldKey } from "@/lib/programming/fields";
 import {
   builderAdd,
+  builderApplyWeeks,
   builderDelete,
   builderDuplicate,
   builderOrder,
   builderUpdate,
+  deleteSavedBlock,
+  insertBlock,
+  listSavedBlocks,
   quickAddExercise,
+  saveBlock,
   type RowPatch,
 } from "@/app/coach/builder-actions";
 
@@ -71,6 +76,12 @@ export function ItemsEditor({
   const [sel, setSel] = useState<Set<string>>(new Set());
   const [open, setOpen] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [saved, setSaved] = useState<{ id: string; name: string; count: number }[]>([]);
+  const [naming, setNaming] = useState<string | null>(null);
+  useEffect(() => {
+    listSavedBlocks().then((r) => r.data && setSaved(r.data));
+  }, []);
   const [missing, setMissing] = useState<{ name: string; then: (name: string) => void } | null>(null);
   const [dragId, setDragId] = useState<string | null>(null);
   const [dropAt, setDropAt] = useState<number | null>(null);
@@ -253,6 +264,23 @@ export function ItemsEditor({
                       onMove={(d) => reorder(moveRow(orderOf(items), k, Math.max(0, Math.min(items.length - 1, k + d))))}
                       onDup={() => run(() => builderDuplicate(table, parentId, i.id, back))}
                       onDelete={() => run(() => builderDelete(table, parentId, [i.id], back))}
+                      onApplyWeeks={
+                        table === "program_items" && i.kind === "exercise"
+                          ? (opts) =>
+                              start(async () => {
+                                setError(null);
+                                setNotice(null);
+                                const r = await builderApplyWeeks(parentId, i.id, opts, back);
+                                if (r.error) setError(r.error);
+                                else
+                                  setNotice(
+                                    r.data!.weeks.length
+                                      ? `Applied to week${r.data!.weeks.length > 1 ? "s" : ""} ${r.data!.weeks.join(", ")}.`
+                                      : "No later weeks to apply to.",
+                                  );
+                              })
+                          : undefined
+                      }
                       dragProps={{
                         draggable: true,
                         onDragStart: (e: React.DragEvent) => {
@@ -282,13 +310,38 @@ export function ItemsEditor({
           <button onClick={split} className="flex min-h-10 items-center gap-1.5 rounded-xl border border-line px-3 text-sm font-bold">
             <Unlink size={16} /> Split
           </button>
+          <button onClick={() => setNaming("")} className="flex min-h-10 items-center gap-1.5 rounded-xl border border-line px-3 text-sm font-bold">
+            <BookmarkPlus size={16} /> Save as block
+          </button>
           <button onClick={removeSelected} className="flex min-h-10 items-center gap-1.5 rounded-xl border border-line px-3 text-sm font-bold text-brand">
             <Trash2 size={16} /> Delete
           </button>
           <button onClick={() => setSel(new Set())} className="ml-auto min-h-10 px-3 text-sm text-muted">Clear</button>
+          {naming !== null && (
+            <form
+              className="flex w-full gap-2"
+              onSubmit={(e) => {
+                e.preventDefault();
+                const ids = items.filter((i) => sel.has(i.id)).map((i) => i.id);
+                start(async () => {
+                  const r = await saveBlock(table, parentId, ids, naming);
+                  if (r.error) return setError(r.error);
+                  setSaved((l) => [...l, r.data!].sort((a, b) => a.name.localeCompare(b.name)));
+                  setNaming(null);
+                  setSel(new Set());
+                  setNotice(`Saved "${r.data!.name}". Insert it from Saved blocks under any workout.`);
+                });
+              }}
+            >
+              <input autoFocus value={naming} onChange={(e) => setNaming(e.target.value)} placeholder="Block name, e.g. Neck circuit" maxLength={60} className={`${box} flex-1`} aria-label="Block name" />
+              <button className="h-10 rounded-lg bg-brand px-3 text-sm font-extrabold text-white">Save</button>
+              <button type="button" onClick={() => setNaming(null)} className="h-10 px-2 text-sm text-muted">Cancel</button>
+            </form>
+          )}
         </div>
       )}
 
+      {notice && <p className="mt-3 rounded-xl border border-ok/50 bg-ok/10 px-3 py-2 text-sm">{notice}</p>}
       {error && <p className="mt-3 rounded-xl border border-brand/50 bg-brand/10 px-3 py-2 text-sm">{error}</p>}
 
       {missing && (
@@ -310,7 +363,7 @@ export function ItemsEditor({
 
       {/* Add row */}
       <div className="mt-4 rounded-2xl border border-line bg-surface p-3">
-        <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted">Add exercise · press Enter to add the next</p>
+        <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted">Add exercise · leave boxes blank to use the exercise’s default · Enter adds the next</p>
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -350,6 +403,31 @@ export function ItemsEditor({
             <Plus size={16} /> Add
           </button>
         </form>
+        {saved.length > 0 && (
+          <div className="mt-3 flex flex-wrap items-center gap-1.5">
+            <span className="text-xs font-semibold uppercase tracking-widest text-muted">Saved blocks</span>
+            {saved.map((b) => (
+              <span key={b.id} className="inline-flex items-center rounded-full border border-line bg-surface-2">
+                <button onClick={() => run(() => insertBlock(table, parentId, b.id, back))} className="min-h-9 pl-3 pr-1 text-xs font-bold hover:text-brand" title="Add to the end of this workout">
+                  + {b.name} <span className="font-normal text-muted">({b.count})</span>
+                </button>
+                <button
+                  onClick={() =>
+                    start(async () => {
+                      const r = await deleteSavedBlock(b.id);
+                      if (r.error) setError(r.error);
+                      else setSaved((l) => l.filter((x) => x.id !== b.id));
+                    })
+                  }
+                  className="flex h-9 w-8 items-center justify-center text-muted hover:text-brand"
+                  aria-label={`Delete saved block ${b.name}`}
+                >
+                  <X size={13} />
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
         <button
           onClick={() => run(() => builderAdd(table, parentId, { kind: "text", title: "Warm-up", notes: "" }, back))}
           className="mt-2 text-sm font-bold text-muted underline underline-offset-4"
@@ -358,7 +436,7 @@ export function ItemsEditor({
         </button>
       </div>
       <p className="mt-2 text-xs text-muted">
-        Tick two or more rows and press <b>Superset</b>. Drag <GripVertical size={12} className="inline" /> to reorder (drop inside a superset to join it). Rest: 90s, 2m or 1:30. Reps can be a range or time: 8-10, 30s, AMRAP.
+        Tick two or more rows and press <b>Superset</b>, or <b>Save as block</b> to reuse them. Drag <GripVertical size={12} className="inline" /> to reorder (drop inside a superset to join it). Rest: 90s, 2m or 1:30. Reps can be a range or time: 8-10, 30s, AMRAP.
       </p>
     </div>
   );
@@ -379,6 +457,7 @@ function Row({
   onMove,
   onDup,
   onDelete,
+  onApplyWeeks,
   dragProps,
   dropProps,
 }: {
@@ -396,6 +475,7 @@ function Row({
   onMove: (d: -1 | 1) => void;
   onDup: () => void;
   onDelete: () => void;
+  onApplyWeeks?: (o: { mode: "same" | "load" | "reps" | "sets"; step: string; skipLast: boolean }) => void;
   dragProps: Record<string, unknown>;
   dropProps: Record<string, unknown>;
 }) {
@@ -520,6 +600,7 @@ function Row({
               </div>
             </fieldset>
           )}
+          {onApplyWeeks && <ApplyWeeks onApply={onApplyWeeks} loadType={i.load_type ?? "none"} />}
           <div className="flex gap-2 md:hidden">
             <button onClick={onDup} className="flex min-h-10 items-center gap-1.5 rounded-lg border border-line px-3 text-sm font-bold"><Copy size={14} /> Duplicate</button>
             <button onClick={onDelete} className="flex min-h-10 items-center gap-1.5 rounded-lg border border-line px-3 text-sm font-bold text-brand"><Trash2 size={14} /> Delete</button>
@@ -547,6 +628,40 @@ function QuickAdd({ name, onCancel, onAdd }: { name: string; onCancel: () => voi
         </select>
         <button onClick={() => onAdd(n, cat)} className="h-10 rounded-lg bg-brand px-4 text-sm font-extrabold uppercase text-white">Add & use</button>
         <button onClick={onCancel} className="h-10 px-3 text-sm text-muted">Cancel</button>
+      </div>
+    </div>
+  );
+}
+
+function ApplyWeeks({ onApply, loadType }: { onApply: (o: { mode: "same" | "load" | "reps" | "sets"; step: string; skipLast: boolean }) => void; loadType: string }) {
+  const def = loadType === "percent" ? "2.5" : loadType === "kg" ? "2.5" : loadType === "rpe" ? "0.5" : loadType === "velocity" ? "0.05" : "1";
+  const [mode, setMode] = useState<"same" | "load" | "reps" | "sets">(loadType === "none" || loadType === "bodyweight" ? "same" : "load");
+  const [step, setStep] = useState(def);
+  const [skipLast, setSkipLast] = useState(false);
+  const unit = mode === "load" ? (loadType === "percent" ? "% / week" : loadType === "kg" ? "kg / week" : loadType === "rpe" ? "RPE / week" : loadType === "velocity" ? "m/s slower / week" : "") : mode === "reps" ? "reps / week" : mode === "sets" ? "sets / week" : "";
+  return (
+    <div className="rounded-xl border border-line bg-surface-2 p-2">
+      <p className="mb-1.5 text-xs font-bold">Copy this line to the same day in later weeks</p>
+      <div className="flex flex-wrap items-center gap-2">
+        <select value={mode} onChange={(e) => setMode(e.target.value as typeof mode)} className={`${box} !w-44`} aria-label="Progression">
+          <option value="same">Same every week</option>
+          <option value="load" disabled={loadType === "none" || loadType === "bodyweight"}>Add load each week</option>
+          <option value="reps">Add reps each week</option>
+          <option value="sets">Add sets each week</option>
+        </select>
+        {mode !== "same" && (
+          <label className="flex items-center gap-1.5 text-xs text-muted">
+            <input value={step} onChange={(e) => setStep(e.target.value)} inputMode="decimal" className={`${box} !w-16`} aria-label="Step" />
+            {unit}
+          </label>
+        )}
+        <label className="flex items-center gap-1.5 text-xs text-muted">
+          <input type="checkbox" checked={skipLast} onChange={(e) => setSkipLast(e.target.checked)} className="h-4 w-4 accent-[var(--color-brand)]" />
+          Leave the last week (deload)
+        </label>
+        <button onClick={() => onApply({ mode, step, skipLast })} className="h-10 rounded-lg bg-brand px-3 text-sm font-extrabold text-white">
+          Apply
+        </button>
       </div>
     </div>
   );

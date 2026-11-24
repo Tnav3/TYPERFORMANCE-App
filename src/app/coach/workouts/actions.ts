@@ -143,3 +143,17 @@ export async function swapInAssignment(fd: FormData) {
   if (error) go(back, friendly(error.message));
   go(`${back}${back.includes("?") ? "&" : "?"}swapped=${Number(data ?? 0)}`);
 }
+
+/** Move the remaining (not logged) workouts of an assigned program by N days. */
+export async function shiftAssignment(fd: FormData) {
+  const supabase = await coachOnly();
+  const id = String(fd.get("assignment_id") ?? "");
+  const back = safePath(fd.get("back"), "/coach");
+  const days = Number(fd.get("days"));
+  const from = String(fd.get("from") ?? "");
+  if (!UUID.test(id) || !Number.isInteger(days) || days === 0 || Math.abs(days) > 365 || !ISO_DATE.test(from))
+    go(back, "Pick how many days to move it.");
+  const { data, error } = await supabase.rpc("shift_assignment", { p_assignment: id, p_days: days, p_from: from });
+  if (error) go(back, friendly(error.message));
+  go(`${back}${back.includes("?") ? "&" : "?"}shifted=${data ?? 0}`);
+}
