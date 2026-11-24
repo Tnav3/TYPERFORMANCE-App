@@ -28,3 +28,14 @@ export async function setHomeTrend(formData: FormData) {
   revalidatePath("/athlete");
   if (error) redirect(`/coach/athlete/${id}?error=widgets`);
 }
+
+export async function setTargetWeight(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  if (!UUID.test(id)) return;
+  const raw = String(formData.get("target") ?? "").trim();
+  const n = Number(raw);
+  const target = raw && Number.isFinite(n) && n >= 30 && n <= 250 ? Math.round(n * 10) / 10 : null;
+  const supabase = await createClient();
+  await supabase.from("profiles").update({ target_weight_kg: target }).eq("id", id);
+  revalidatePath(`/coach/athlete/${id}/profile`);
+}

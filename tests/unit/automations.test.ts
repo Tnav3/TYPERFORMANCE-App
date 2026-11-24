@@ -12,6 +12,6 @@ describe("automation labels", () => {
   });
   it("templates fit their trigger's range", () => {
     for (const t of TEMPLATES) expect(clampThreshold(t.trigger, t.threshold)).toBe(t.threshold);
-    expect(Object.keys(TRIGGERS)).toHaveLength(8);
+    expect(Object.keys(TRIGGERS)).toHaveLength(10);
   });
 });

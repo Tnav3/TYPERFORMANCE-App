@@ -62,3 +62,24 @@ describe("more automations (063)", () => {
     expect(fa.rows).toEqual([{ repeat: "once", active: true }]);
   });
 });
+
+describe("goal automations (064)", () => {
+  it("new PB yesterday and target weight reached", async () => {
+    const ex = (await q(`select id from exercises where category = 'knee' limit 1`)).rows[0].id;
+    for (const [days, kg] of [[10, 100], [1, 105]] as const) {
+      const w = (await q(`insert into workouts (athlete_id, workout_date, title) values ($1, sydney_today() - $2::int, 'Legs') returning id`, [alice, days])).rows[0].id;
+      const it = (await q(`insert into workout_items (workout_id, kind, exercise_id, position, sets, reps) values ($1, 'exercise', $2, 1, 1, '5') returning id`, [w, ex])).rows[0].id;
+      const l = (await q(`insert into workout_logs (workout_id, athlete_id, workout_date) values ($1, $2, sydney_today() - $3::int) returning id`, [w, alice, days])).rows[0].id;
+      await q(`insert into set_logs (log_id, item_id, set_no, reps, load_kg) values ($1, $2, 1, 5, $3)`, [l, it, kg]);
+    }
+    await q(`update profiles set target_weight_kg = 70 where id = $1`, [bob]);
+    await q(`insert into body_metrics (athlete_id, measured_on, weight_kg) values ($1, sydney_today() - 30, 74), ($1, sydney_today(), 69.8)`, [bob]);
+    await asUser(db, coach, async () => {
+      await q(`insert into automations (name, trigger, threshold, body, active) values ('PB', 'new_pb', 0, 'New PB {first_name}!', true), ('Target', 'target_weight', 0, 'Target hit {first_name}!', true)`);
+      await q(`select run_automations(true)`);
+    });
+    const r = await q(`select athlete_id, body from messages order by body`);
+    expect(r.rows).toEqual([{ athlete_id: alice, body: "New PB Alice!" }, { athlete_id: bob, body: "Target hit Bob!" }]);
+    await expect(asUser(db, bob, () => q(`update profiles set target_weight_kg = 60 where id = $1`, [bob]))).rejects.toThrow(/coach/);
+  });
+});
