@@ -3,7 +3,7 @@
 // rest timer starts automatically, progress bar for the session.
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Check, RotateCcw, Timer, X } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, List, RotateCcw, Timer, X } from "lucide-react";
 import { ExerciseSheet } from "@/components/ExerciseSheet";
 import { Info, PlayCircle } from "lucide-react";
 import {
@@ -93,6 +93,10 @@ export function WorkoutLogger({
   const [status, setStatus] = useState<Record<string, SaveState>>({});
   const [rest, setRest] = useState<{ until: number; total: number } | null>(null);
   const [sheet, setSheet] = useState<{ id: string; name: string } | null>(null);
+  const [view, setView] = useState<"focus" | "list">(finished || readOnly ? "list" : "focus");
+  const [idx, setIdx] = useState(0); // current block; blocks.length = wrap-up screen
+  const [timersOpen, setTimersOpen] = useState(false);
+  const [clock, setClock] = useState<{ kind: "stopwatch" | "interval"; start: number; work?: number; off?: number; rounds?: number; label: string } | null>(null);
   const closeSheet = useCallback(() => setSheet(null), []);
   const [now, setNow] = useState(() => Date.now());
   const [comment, setComment] = useState(initialComment);
@@ -103,10 +107,10 @@ export function WorkoutLogger({
 
   // Rest timer tick
   useEffect(() => {
-    if (!rest) return;
+    if (!rest && !clock) return;
     const t = setInterval(() => setNow(Date.now()), 250);
     return () => clearInterval(t);
-  }, [rest]);
+  }, [rest, clock]);
   const restLeft = rest ? Math.max(0, Math.ceil((rest.until - now) / 1000)) : 0;
   useEffect(() => {
     if (rest && restLeft === 0) {
@@ -131,6 +135,29 @@ export function WorkoutLogger({
       }
     return { total, done };
   }, [blocks]);
+
+  const totals = useMemo(() => {
+    let reps = 0;
+    let vol = 0;
+    let unit = "kg";
+    for (const b of blocks)
+      for (const i of b.items)
+        for (const x of i.sets) {
+          if (!x.done) continue;
+          const r = Number((x.v.reps ?? "").trim() || x.hint.reps || 0);
+          const w = Number((x.v.weight ?? "").trim() || x.hint.weight || 0);
+          if (Number.isFinite(r)) reps += r;
+          if (Number.isFinite(r) && Number.isFinite(w)) vol += r * w;
+          const wf = i.fields.find((f) => f.key === "weight");
+          if (wf) unit = wf.unit.replace("+", "");
+        }
+    return { reps, vol: Math.round(vol), unit };
+  }, [blocks]);
+  const blockDone = (b: LoggerBlock) => b.items.every((i) => (i.kind === "text" ? i.done : i.sets.length > 0 && i.sets.every((x) => x.done)));
+  const go = (n: number) => {
+    setIdx(Math.max(0, Math.min(blocks.length, n)));
+    if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   const update = (itemId: string, fn: (i: LoggerItem) => LoggerItem) =>
     setBlocks((bs) => bs.map((b) => ({ ...b, items: b.items.map((i) => (i.id === itemId ? fn(i) : i)) })));
@@ -200,28 +227,48 @@ export function WorkoutLogger({
     });
   }
 
-  const pct = total ? Math.round((done / total) * 100) : 0;
   const elapsedMin = Math.max(5, Math.round((Date.now() - startedAt.current) / 60000));
   const cell =
     "h-11 w-full min-w-0 rounded-lg border border-line bg-surface-2 px-1 text-center text-base text-text focus:border-brand focus:outline-none disabled:opacity-60";
 
   return (
-    <div className="pb-28">
-      {/* Progress */}
-      <div className="sticky top-0 z-10 -mx-5 mb-4 bg-ink/95 px-5 py-2 backdrop-blur">
-        <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-widest text-muted">
-          <span>{finished ? "Completed" : "Progress"}</span>
-          <span>
-            {done}/{total}
-          </span>
+    <div className="pb-44">
+      {/* Progress: one dot per block, running totals */}
+      <div className="sticky top-0 z-10 -mx-5 mb-4 border-b border-line bg-ink/95 px-5 py-2.5 backdrop-blur">
+        <div className="flex items-center gap-3">
+          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
+            {blocks.map((b, k) => (
+              <button
+                key={b.letter}
+                type="button"
+                onClick={() => {
+                  setView("focus");
+                  go(k);
+                }}
+                aria-label={`Go to ${b.letter}`}
+                className={`h-2.5 rounded-full transition-all ${
+                  view === "focus" && k === idx ? "w-6 bg-brand" : blockDone(b) ? "w-2.5 bg-ok" : "w-2.5 bg-line"
+                }`}
+              />
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={() => setView(view === "focus" ? "list" : "focus")}
+            className="flex min-h-9 items-center gap-1 rounded-lg border border-line px-2.5 text-xs font-bold text-muted"
+          >
+            <List size={14} /> {view === "focus" ? "See all" : "One at a time"}
+          </button>
         </div>
-        <div className="mt-1 h-2 overflow-hidden rounded-full bg-surface-2">
-          <div className="h-full rounded-full bg-brand transition-all" style={{ width: `${pct}%` }} />
-        </div>
+        <p className="mt-1.5 flex gap-4 text-sm">
+          <span><b className="font-black">{totals.reps}</b> <span className="text-muted">reps</span></span>
+          {totals.vol > 0 && <span><b className="font-black">{totals.vol.toLocaleString()}</b> <span className="text-muted">{totals.unit} lifted</span></span>}
+          <span className="ml-auto text-muted">{done}/{total} {finished ? "· done" : "sets"}</span>
+        </p>
       </div>
 
       <div className="space-y-4">
-        {blocks.map((b) => (
+        {blocks.map((b, bi) => (view === "focus" && bi !== idx ? null :
           <section key={b.letter} className={`rounded-2xl border bg-surface p-3 ${b.superset ? "border-brand/40" : "border-line"}`}>
             {(b.superset || b.title) && (
               <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-brand">
@@ -292,22 +339,11 @@ export function WorkoutLogger({
                         {it.videoUrl ? "Demo, how-to & my history" : "How-to & my history"}
                       </button>
                     )}
-                    {it.prev && <p className="text-xs text-muted">Last time: {it.prev}</p>}
-                    {!readOnly && (
-                      <div className="mt-1 flex flex-wrap gap-2">
-                        {(it.restSec ? [it.restSec] : [60, 90, 120]).map((sec) => (
-                          <button
-                            key={sec}
-                            type="button"
-                            onClick={() => setRest({ until: Date.now() + sec * 1000, total: sec })}
-                            className="inline-flex min-h-9 items-center gap-1 rounded-full border border-line px-3 text-xs font-bold text-muted"
-                          >
-                            <Timer size={14} /> Rest {sec >= 60 ? `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")}` : `${sec}s`}
-                          </button>
-                        ))}
-                      </div>
+                    {it.prev && (
+                      <p className="mt-1 inline-flex rounded-lg bg-surface-2 px-2.5 py-1 text-xs">
+                        <span className="mr-1.5 font-bold uppercase tracking-wide text-muted">Last</span> {it.prev}
+                      </p>
                     )}
-
                     <div className="mt-2 space-y-1.5">
                       <div
                         className="grid items-end gap-2 px-1 text-[11px] uppercase tracking-wide text-muted"
@@ -394,6 +430,15 @@ export function WorkoutLogger({
         ))}
       </div>
 
+      {(view === "list" || idx >= blocks.length) && (<>
+      {view === "focus" && (
+        <div className="mb-2">
+          <p className="text-2xl font-black uppercase tracking-tight">{done === total ? "Nice work." : "Almost there"}</p>
+          <p className="text-muted">
+            {done}/{total} sets ticked{done < total ? ". You can go back and finish them, or save as is." : "."}
+          </p>
+        </div>
+      )}
       <label className="mt-6 block">
         <span className="mb-1 block text-sm font-semibold">How did it go? (your coach sees this)</span>
         <textarea
@@ -438,6 +483,89 @@ export function WorkoutLogger({
           )}
         </div>
       )}
+
+      </>)}
+
+      {/* Bottom bar: Back · Timers · Next */}
+      {view === "focus" && (
+        <div className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-ink/95 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur">
+          <div className="mx-auto grid max-w-md grid-cols-[1fr_auto_1fr] items-center gap-2">
+            <button type="button" onClick={() => go(idx - 1)} disabled={idx === 0} className="flex min-h-12 items-center gap-1 rounded-xl px-2 font-bold text-muted disabled:opacity-30">
+              <ChevronLeft size={20} /> Back
+            </button>
+            <button
+              type="button"
+              onClick={() => setTimersOpen(true)}
+              disabled={readOnly}
+              className="flex h-12 items-center gap-1.5 rounded-full border border-line bg-surface-2 px-4 text-sm font-bold disabled:opacity-40"
+            >
+              <Timer size={18} className="text-brand" /> Timer
+            </button>
+            {idx < blocks.length ? (
+              <button type="button" onClick={() => go(idx + 1)} className="flex min-h-12 items-center justify-end gap-1 rounded-xl px-2 font-black text-brand">
+                {idx === blocks.length - 1 ? "Wrap up" : "Next"} <ChevronRight size={20} />
+              </button>
+            ) : (
+              <span />
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Timers sheet */}
+      {timersOpen && (
+        <div className="fixed inset-0 z-30 flex items-end justify-center bg-black/60" role="dialog" aria-modal="true" aria-label="Timers">
+          <div className="w-full max-w-md rounded-t-3xl border border-line bg-surface p-5 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+            <div className="mb-3 flex items-center justify-between">
+              <p className="text-lg font-black uppercase">Timers</p>
+              <button type="button" onClick={() => setTimersOpen(false)} aria-label="Close" className="flex h-11 w-11 items-center justify-center text-muted">
+                <X />
+              </button>
+            </div>
+            <p className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-muted">Rest</p>
+            <div className="mb-4 grid grid-cols-4 gap-2">
+              {[60, 90, 120, 180].map((sec) => (
+                <button
+                  key={sec}
+                  type="button"
+                  onClick={() => {
+                    setRest({ until: Date.now() + sec * 1000, total: sec });
+                    setTimersOpen(false);
+                  }}
+                  className="min-h-14 rounded-xl border border-line bg-surface-2 text-lg font-black"
+                >
+                  {sec >= 60 ? `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")}` : `${sec}s`}
+                </button>
+              ))}
+            </div>
+            <p className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-muted">Other</p>
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { label: "Stopwatch", sub: "count up", c: { kind: "stopwatch" as const, label: "Stopwatch" } },
+                { label: "EMOM", sub: "every minute ×10", c: { kind: "interval" as const, work: 60, off: 0, rounds: 10, label: "EMOM" } },
+                { label: "Tabata", sub: "20s on / 10s off ×8", c: { kind: "interval" as const, work: 20, off: 10, rounds: 8, label: "Tabata" } },
+              ].map((t) => (
+                <button
+                  key={t.label}
+                  type="button"
+                  onClick={() => {
+                    setClock({ ...t.c, start: Date.now() });
+                    setNow(Date.now());
+                    setTimersOpen(false);
+                  }}
+                  className="flex min-h-16 flex-col items-center justify-center rounded-xl border border-line bg-surface-2"
+                >
+                  <span className="font-black">{t.label}</span>
+                  <span className="text-[11px] text-muted">{t.sub}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Running stopwatch / interval clock */}
+      {clock && !rest && <ClockBar clock={clock} now={now} raised={view === "focus"} onStop={() => setClock(null)} />}
 
       {/* Finish sheet */}
       {finishOpen && (
@@ -484,7 +612,7 @@ export function WorkoutLogger({
 
       {/* Rest timer */}
       {rest && (
-        <div className="fixed inset-x-0 bottom-0 z-20 flex justify-center px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+        <div className={`fixed inset-x-0 z-20 flex justify-center px-4 ${view === "focus" ? "bottom-[calc(4.5rem+env(safe-area-inset-bottom))]" : "bottom-0 pb-[max(1rem,env(safe-area-inset-bottom))]"}`}>
           <div className="flex w-full max-w-md items-center gap-3 rounded-2xl border border-line bg-surface-2 p-3 shadow-2xl">
             <Timer className="text-brand" />
             <div className="flex-1">
@@ -563,5 +691,52 @@ function Stopwatch({ onStop }: { onStop: (sec: number) => void }) {
       <Timer size={16} />
       {start != null ? `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")}` : "Go"}
     </button>
+  );
+}
+
+function ClockBar({
+  clock,
+  now,
+  onStop,
+  raised,
+}: {
+  raised: boolean;
+  clock: { kind: "stopwatch" | "interval"; start: number; work?: number; off?: number; rounds?: number; label: string };
+  now: number;
+  onStop: () => void;
+}) {
+  const el = Math.max(0, Math.floor((now - clock.start) / 1000));
+  let big = `${Math.floor(el / 60)}:${String(el % 60).padStart(2, "0")}`;
+  let sub = clock.label;
+  let phase: "work" | "rest" | "done" = "work";
+  if (clock.kind === "interval") {
+    const cycle = (clock.work ?? 60) + (clock.off ?? 0);
+    const round = Math.floor(el / cycle) + 1;
+    if (round > (clock.rounds ?? 1)) phase = "done";
+    else {
+      const into = el % cycle;
+      phase = into < (clock.work ?? 60) ? "work" : "rest";
+      const left = phase === "work" ? (clock.work ?? 60) - into : cycle - into;
+      big = `${Math.floor(left / 60)}:${String(left % 60).padStart(2, "0")}`;
+      sub = `${clock.label} · round ${round}/${clock.rounds} · ${phase === "work" ? "GO" : "rest"}`;
+    }
+    if (phase === "done") {
+      big = "Done";
+      sub = clock.label;
+    }
+  }
+  return (
+    <div className={`fixed inset-x-0 z-20 flex justify-center px-4 ${raised ? "bottom-[calc(4.5rem+env(safe-area-inset-bottom))]" : "bottom-0 pb-[max(1rem,env(safe-area-inset-bottom))]"}`}>
+      <div className={`flex w-full max-w-md items-center gap-3 rounded-2xl border p-3 shadow-2xl ${phase === "rest" ? "border-ok bg-ok/15" : "border-line bg-surface-2"}`}>
+        <Timer className="text-brand" />
+        <div className="flex-1">
+          <p className="text-xs uppercase tracking-widest text-muted">{sub}</p>
+          <p className="text-3xl font-black tabular-nums">{big}</p>
+        </div>
+        <button type="button" onClick={onStop} className="min-h-11 rounded-xl border border-line px-4 text-sm font-bold">
+          Stop
+        </button>
+      </div>
+    </div>
   );
 }
