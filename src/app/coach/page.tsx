@@ -8,6 +8,7 @@ import { dayMonth, addDays } from "@/lib/week";
 import type { AccountStatus, Profile } from "@/lib/types";
 import { Card, Logo, Screen, SignOutButton } from "@/components/ui";
 import { TrafficLight } from "@/components/TrafficLight";
+import { NeedsProgramPanel } from "@/components/NeedsProgramPanel";
 import { setAthleteStatus } from "./actions";
 import { activityTone, byLeastRecent, lastSeenLabel } from "@/lib/activity";
 
@@ -71,6 +72,8 @@ export default async function CoachHome() {
           </Link>
         ))}
       </div>
+
+      <NeedsProgramPanel supabase={supabase} today={today} />
 
       <div className="mb-6 grid grid-cols-2 gap-2">
         <Link
