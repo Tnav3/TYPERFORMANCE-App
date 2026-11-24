@@ -36,3 +36,11 @@ Migrations for this module start at `029_`. They are tested locally with PGlite 
 - Habit gamification done (streaks, perfect days, weekly score, badges)
 - VBT done (m/s targets, velocity metric, per-line metric overrides)
 | N Onboarding sequences | Done |
+
+## 2026-11-25 – usability pass
+- Speed fields default to m/s (km/h, mph still selectable); "Velocity" renamed "Bar speed (VBT)". Migration 046.
+- Coach: desktop side panel + phone bottom bar/More sheet (`CoachNav`, `coach/layout.tsx`); new `/coach/clients` list with search.
+- Dashboard: attention list shows only non-empty items; compact client rows.
+- Client pages share one tabbed header (`ClientTabs`): Calendar · Overview · Progress · Habits & food · Testing · Mobility · Fights · Profile.
+- Planner (`PlanCalendar`): week view with exercises per day, month view, "+" to build a workout on any day, drag to move (Alt-drag copies), drag a program onto a day to start it (tap-then-tap on phones), confirm before assigning.
+- Client home: big Start workout button + icon tiles.
