@@ -1,3 +1,4 @@
+import { ViewAsBanner } from "@/components/ViewAsBanner";
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
@@ -28,7 +29,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en-AU">
-      <body className="antialiased">{children}</body>
+      <body className="antialiased">
+        <ViewAsBanner />
+        {children}
+      </body>
     </html>
   );
 }

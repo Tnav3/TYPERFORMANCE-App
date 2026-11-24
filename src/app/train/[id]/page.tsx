@@ -15,7 +15,7 @@ export default async function WorkoutLogPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const { supabase, user, state } = await requireFeature(["athlete", "coach"], "program");
+  const { supabase, user, state, viewAs } = await requireFeature(["athlete", "coach"], "program");
   const { id } = await params;
   if (state === "coach") redirect(`/coach/workouts/${id}`);
   const d = await loadLoggerData(supabase, id, user!.id);
@@ -55,7 +55,7 @@ export default async function WorkoutLogPage({
         rpe={log?.session_rpe ?? null}
         lastRpe={lastRpe}
         duration={log?.duration_min ?? null}
-        readOnly={locked || early}
+        readOnly={locked || early || !!viewAs}
       />
     </Screen>
   );

@@ -1,6 +1,6 @@
 // One header for every client page: name, quick chat, and tabs across the top.
 import Link from "next/link";
-import { MessageCircle, Timer } from "lucide-react";
+import { Eye, MessageCircle, Timer } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Avatar } from "./Avatar";
 
@@ -28,7 +28,13 @@ export async function ClientTabs({ id, name, active, sub }: { id: string; name: 
         <Link href="/coach/clients" className="hidden text-sm text-muted hover:text-text sm:block" aria-label="All clients">
           Clients /
         </Link>
-        <Avatar name={name} path={me?.avatar_path} />
+        {/* Plain link: a route handler sets the view-as cookie */}
+        <a href={`/view-as/${id}`} className="group relative shrink-0" title="See their app" aria-label={`See ${name}'s app`}>
+          <Avatar name={name} path={me?.avatar_path} />
+          <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border-2 border-ink bg-surface-2 text-text group-hover:bg-brand">
+            <Eye size={11} />
+          </span>
+        </a>
         <div className="min-w-0 flex-1">
           <h1 className="truncate text-xl font-black uppercase leading-tight tracking-tight">{name}</h1>
           {line && <p className="truncate text-sm text-muted">{line}</p>}
