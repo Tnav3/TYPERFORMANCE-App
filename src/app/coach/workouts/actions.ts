@@ -87,6 +87,18 @@ export async function unassign(fd: FormData) {
   go(`${back}${sep}removed=${Number(data ?? 0)}`);
 }
 
+/** Rename a block on a client's calendar (the program template keeps its own name). */
+export async function renameAssignment(fd: FormData) {
+  const supabase = await coachOnly();
+  const id = String(fd.get("assignment_id") ?? "");
+  const back = safePath(fd.get("back"), "/coach");
+  const name = str(fd.get("name"), 60);
+  if (!UUID.test(id)) go(back);
+  if (!name || name.length < 2) go(back, "Block names need 2–60 characters.");
+  const { error } = await supabase.from("assignments").update({ program_name: name }).eq("id", id);
+  go(back, error ? friendly(error.message) : undefined);
+}
+
 // ---------------- Groups ----------------
 export async function createGroup(fd: FormData) {
   const supabase = await coachOnly();

@@ -5,9 +5,9 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { Copy, GripVertical, Pencil, Plus, Trash2 } from "lucide-react";
+import { Copy, GripVertical, Pencil, Plus, TextCursorInput, Trash2 } from "lucide-react";
 import { addWorkout } from "@/app/coach/workouts/actions";
-import { assignProgramOn, copyWeekForward, copyWorkout, deleteProgramQuick, duplicateProgramQuick, moveWorkout } from "@/app/coach/athlete/[id]/program/actions";
+import { assignProgramOn, copyWeekForward, copyWorkout, deleteProgramQuick, duplicateProgramQuick, moveWorkout, renameProgramQuick } from "@/app/coach/athlete/[id]/program/actions";
 import type { CalStatus } from "@/components/WorkoutCalendar";
 
 export interface PlanWorkout {
@@ -61,6 +61,7 @@ export function PlanCalendar({
   const [confirm, setConfirm] = useState<{ program: PlanProgram; date: string } | null>(null);
   const [showProgs, setShowProgs] = useState(false);
   const [toDelete, setToDelete] = useState<PlanProgram | null>(null);
+  const [renaming, setRenaming] = useState<{ id: string; name: string } | null>(null);
 
   const byDate = new Map<string, PlanWorkout[]>();
   for (const w of workouts) byDate.set(w.date, [...(byDate.get(w.date) ?? []), w]);
@@ -215,12 +216,38 @@ export function PlanCalendar({
                     picked?.id === p.id ? "border-brand bg-brand/15" : "border-line bg-surface-2 hover:border-muted"
                   }`}
                 >
+                  {renaming?.id === p.id ? (
+                    <form
+                      className="flex min-w-0 flex-1 items-center gap-1"
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        const n = renaming.name;
+                        setRenaming(null);
+                        run(() => renameProgramQuick(p.id, athleteId, n));
+                      }}
+                    >
+                      <input
+                        autoFocus
+                        value={renaming.name}
+                        onChange={(e) => setRenaming({ id: p.id, name: e.target.value })}
+                        onKeyDown={(e) => e.key === "Escape" && setRenaming(null)}
+                        maxLength={60}
+                        className="h-10 min-w-0 flex-1 rounded-lg border border-brand bg-surface px-2 text-sm font-bold text-text focus:outline-none"
+                        aria-label="New name"
+                      />
+                      <button className="h-10 rounded-lg bg-brand px-3 text-xs font-extrabold text-white">Save</button>
+                    </form>
+                  ) : (
                   <button onClick={() => setPicked(picked?.id === p.id ? null : p)} className="flex min-h-10 min-w-0 flex-1 items-center gap-2 text-left">
                     <GripVertical size={14} className="shrink-0 text-muted" aria-hidden />
                     <span className="min-w-0">
                       <span className="block truncate text-sm font-bold">{p.name}</span>
                       <span className="block text-[11px] text-muted">{p.weeks} wk{p.master ? " · template" : ""}</span>
                     </span>
+                  </button>
+                  )}
+                  <button onClick={() => setRenaming({ id: p.id, name: p.name })} className="flex h-9 w-9 items-center justify-center rounded-lg text-muted hover:bg-surface hover:text-text" title="Rename" aria-label={`Rename ${p.name}`}>
+                    <TextCursorInput size={15} />
                   </button>
                   <Link href={`/coach/programs/${p.id}`} className="flex h-9 w-9 items-center justify-center rounded-lg text-muted hover:bg-surface hover:text-text" title="Edit" aria-label={`Edit ${p.name}`}>
                     <Pencil size={15} />

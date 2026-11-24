@@ -12,7 +12,7 @@ import { ClientTabs } from "@/components/ClientTabs";
 import { formatPrescription, itemLabel } from "@/lib/prescription";
 import { SeasonList } from "@/components/SeasonList";
 import { Alert, Card, Screen } from "@/components/ui";
-import { shiftAssignment, swapInAssignment, unassign } from "@/app/coach/workouts/actions";
+import { shiftAssignment, swapInAssignment, unassign, renameAssignment } from "@/app/coach/workouts/actions";
 
 export const dynamic = "force-dynamic";
 
@@ -143,9 +143,18 @@ export default async function ClientProgramPage({
             {(assignments ?? []).map((a) => (
               <Fragment key={a.id}>
               <li className="flex items-center justify-between gap-2">
-                <span>
-                  {a.program_name} <span className="text-muted">from {a.start_date}</span>
-                </span>
+                <details className="min-w-0">
+                  <summary className="cursor-pointer list-none">
+                    <b>{a.program_name}</b> <span className="text-muted">from {a.start_date}</span>{" "}
+                    <span className="text-xs font-bold text-muted underline underline-offset-4">Rename</span>
+                  </summary>
+                  <form action={renameAssignment} className="mt-1 flex gap-1">
+                    <input type="hidden" name="assignment_id" value={a.id} />
+                    <input type="hidden" name="back" value={back} />
+                    <input name="name" defaultValue={a.program_name} required minLength={2} maxLength={60} className={input} aria-label="Block name" />
+                    <button className="min-h-11 shrink-0 rounded-xl bg-brand px-3 text-xs font-extrabold text-white">Save</button>
+                  </form>
+                </details>
                 <form action={unassign}>
                   <input type="hidden" name="assignment_id" value={a.id} />
                   <input type="hidden" name="back" value={back} />

@@ -76,6 +76,19 @@ export async function duplicateProgramQuick(programId: string, athleteId: string
   return {};
 }
 
+/** Rename a program from the calendar's side panel. */
+export async function renameProgramQuick(programId: string, athleteId: string, name: string): Promise<Result> {
+  if (!UUID.test(programId) || !UUID.test(athleteId)) return { error: "Not found." };
+  const clean = name.trim().replace(/\s+/g, " ").slice(0, 60);
+  if (clean.length < 2) return { error: "Names need 2–60 characters." };
+  const supabase = await coachOnly();
+  const { error } = await supabase.from("programs").update({ name: clean }).eq("id", programId);
+  if (error) return { error: friendly(error.message) };
+  revalidatePath(`/coach/athlete/${athleteId}/program`);
+  revalidatePath("/coach/programs");
+  return {};
+}
+
 /** Delete a program. Workouts already on clients' calendars are kept. */
 export async function deleteProgramQuick(programId: string, athleteId: string): Promise<Result> {
   if (!UUID.test(programId) || !UUID.test(athleteId)) return { error: "Not found." };
