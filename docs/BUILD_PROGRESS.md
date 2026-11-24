@@ -14,8 +14,8 @@ Migrations for this module start at `029_`. They are tested locally with PGlite 
 | E Progress tracking | Done |
 | F Chat | Done: live chat, inbox, unread badges, announcements |
 | G Habits, macros, photos | Done (+ meal plan builder, premium toggle; nutrition in compliance card) |
-| H GHL payments | Not started |
-| I Trainerize move | Not started |
+| H GHL payments | Done: /api/ghl/payments webhook, payment event log |
+| I Trainerize move | Done: bulk invites (skip approval), docs/LAUNCH.md |
 | J Periodisation | Done: seasons, phase timeline, load:deload bars, fights, assigned-vs-planned, client phase banner |
 | L Readiness, session summary, rewards | Done |
 | K Coach overview dashboard | Done: 9 cards, show/hide, follow-ups on client page |

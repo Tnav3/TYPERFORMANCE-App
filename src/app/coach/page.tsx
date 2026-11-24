@@ -64,6 +64,7 @@ export default async function CoachHome() {
           ["/coach/library", "Exercises"],
           ["/coach/chat", "Inbox"],
           ["/coach/messages", "Scheduled Msgs"],
+          ["/coach/invites", "Invites & Payments"],
         ].map(([href, label]) => (
           <Link
             key={href}

@@ -49,3 +49,17 @@ describe("macros and photos (040)", () => {
     expect(b.rows[0].n).toBe(0);
   });
 });
+
+describe("invites (041)", () => {
+  it("an invited email starts approved with the plan's features", async () => {
+    await asUser(db, coach, () => q(`insert into invites (email, plan) values ('vip@typ.test', 'premium')`));
+    const id = await signUp(db, "VIP@typ.test", "Vip");
+    const p = await q(`select status, feat_mealplan from profiles where id = $1`, [id]);
+    expect(p.rows[0]).toEqual({ status: "active", feat_mealplan: true });
+    const other = await signUp(db, "walkin@typ.test", "Walk");
+    const o = await q(`select status, feat_mealplan from profiles where id = $1`, [other]);
+    expect(o.rows[0]).toEqual({ status: "pending", feat_mealplan: false });
+    const inv = await asUser(db, alice, () => q(`select count(*)::int n from invites`));
+    expect(inv.rows[0].n).toBe(0);
+  });
+});
