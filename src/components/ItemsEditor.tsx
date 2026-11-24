@@ -39,7 +39,8 @@ function loadValue(i: ItemFields) {
 }
 function restText(sec: number | null) {
   if (sec == null) return "";
-  return sec >= 60 && sec % 30 === 0 ? `${sec / 60}m` : `${sec}s`;
+  if (sec < 60) return `${sec}s`;
+  return sec % 60 === 0 ? `${sec / 60}m` : `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")}`;
 }
 
 type Order = { id: string; join: boolean }[];
@@ -204,7 +205,7 @@ export function ItemsEditor({
 
       {/* Column headings (desktop) */}
       {items.length > 0 && (
-        <div className="mb-1 hidden grid-cols-[28px_20px_32px_minmax(0,1fr)_64px_80px_150px_72px_88px] gap-2 px-2 text-[11px] font-semibold uppercase tracking-widest text-muted md:grid">
+        <div className="mb-1 hidden grid-cols-[28px_20px_32px_minmax(0,1fr)_64px_80px_162px_72px_108px] gap-2 px-2 text-[11px] font-semibold uppercase tracking-widest text-muted md:grid">
           <span />
           <span />
           <span />
@@ -369,7 +370,7 @@ export function ItemsEditor({
             e.preventDefault();
             submitDraft();
           }}
-          className="grid grid-cols-4 gap-2 md:grid-cols-[minmax(0,1fr)_64px_80px_150px_72px_auto]"
+          className="grid grid-cols-4 gap-2 md:grid-cols-[minmax(0,1fr)_64px_80px_162px_72px_auto]"
         >
           <input
             ref={addRef}
@@ -383,7 +384,7 @@ export function ItemsEditor({
           <input value={draft.sets} onChange={(e) => setDraft({ ...draft, sets: e.target.value })} inputMode="numeric" placeholder="Sets" className={box} aria-label="Sets" />
           <input value={draft.reps} onChange={(e) => setDraft({ ...draft, reps: e.target.value })} placeholder="Reps" className={box} aria-label="Reps" />
           <div className="col-span-2 flex gap-1 md:col-span-1">
-            <select value={draft.load_type} onChange={(e) => setDraft({ ...draft, load_type: e.target.value })} className={`${box} !w-[72px] shrink-0 !px-1`} aria-label="Load type">
+            <select value={draft.load_type} onChange={(e) => setDraft({ ...draft, load_type: e.target.value })} className={`${box} !w-[76px] shrink-0 !px-1 md:!w-[84px]`} aria-label="Load type">
               {LOADS.map(([v, l]) => (
                 <option key={v} value={v}>{l}</option>
               ))}
@@ -490,7 +491,7 @@ function Row({
 
   return (
     <div {...dropProps} className={`rounded-xl border bg-surface ${checked ? "border-brand" : "border-line"} ${dragging ? "opacity-40" : ""}`}>
-      <div className="grid grid-cols-[28px_20px_32px_minmax(0,1fr)_auto] items-center gap-2 p-2 md:grid-cols-[28px_20px_32px_minmax(0,1fr)_64px_80px_150px_72px_88px]">
+      <div className="grid grid-cols-[28px_20px_32px_minmax(0,1fr)_auto] items-center gap-2 p-2 md:grid-cols-[28px_20px_32px_minmax(0,1fr)_64px_80px_162px_72px_108px]">
         <input type="checkbox" checked={checked} onChange={(e) => onCheck(e.target.checked)} className="h-5 w-5 justify-self-center accent-[var(--color-brand)]" aria-label={`Select ${name || "row"}`} />
         <span {...dragProps} className="hidden cursor-grab text-muted active:cursor-grabbing md:block" title="Drag to reorder" aria-label="Drag to reorder">
           <GripVertical size={18} />
@@ -510,17 +511,17 @@ function Row({
           <ChevronDown size={18} className={open ? "rotate-180" : ""} />
         </button>
         {!text && (
-          <div className="col-span-5 grid grid-cols-4 gap-2 md:contents">
+          <div className="col-span-5 grid grid-cols-[1fr_1fr_2.6fr_1.2fr] gap-1.5 md:contents">
             <input defaultValue={i.sets ?? ""} onBlur={blur("sets", String(i.sets ?? ""))} onKeyDown={enter} inputMode="numeric" placeholder="Sets" className={box} aria-label="Sets" />
             <input defaultValue={i.reps ?? ""} onBlur={blur("reps", i.reps ?? "")} onKeyDown={enter} placeholder="Reps" className={box} aria-label="Reps" />
-            <div className="col-span-2 flex gap-1 md:col-span-1">
+            <div className="flex gap-1">
               <select
                 value={loadType}
                 onChange={(e) => {
                   setLoadType(e.target.value);
                   if (e.target.value === "none" || e.target.value === "bodyweight") onSave({ load_type: e.target.value, load_value: "" });
                 }}
-                className={`${box} !w-[72px] shrink-0 !px-1`}
+                className={`${box} !w-[76px] shrink-0 !px-1 md:!w-[84px]`}
                 aria-label="Load type"
               >
                 {LOADS.map(([v, l]) => (
@@ -543,7 +544,7 @@ function Row({
                 aria-label="Load"
               />
             </div>
-            <input defaultValue={restText(i.rest_sec)} onBlur={blur("rest", restText(i.rest_sec))} onKeyDown={enter} placeholder="Rest" className={`${box} md:col-span-1`} aria-label="Rest" />
+            <input defaultValue={restText(i.rest_sec)} onBlur={blur("rest", restText(i.rest_sec))} onKeyDown={enter} placeholder="Rest" className={box} aria-label="Rest" />
           </div>
         )}
         <div className="hidden items-center justify-end gap-0.5 md:flex">
