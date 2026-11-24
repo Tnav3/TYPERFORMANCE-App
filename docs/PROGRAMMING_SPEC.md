@@ -67,6 +67,23 @@ Principles
 - **Recurring messages**: weekly (pick weekdays + time) or every N days, to one client, a group, or everyone. Pause/resume/delete. Sent by Supabase's scheduler (pg_cron) every minute, so they arrive within ~1 minute.
 - Notifications: v1 = unread badge + optional email digest via GHL. Web push (home-screen install required on iPhone) is a later add-on.
 
+## Segment K: Coach overview dashboard
+Cards (each can be shown/hidden by the coach; choice saved on the coach's profile):
+- **Needs attention: incomplete setup**: pending approval, consent/profile not finished, never assigned a program, or prescribed % loads with no 1RM saved.
+- **Missed check-ins**: no weekly check-in for last week (existing data).
+- **Inactive clients**: not opened the app for 7+ days.
+- **Follow-ups due**: coach sets "follow up on <date>" + note per client; shows due/overdue; tick to clear.
+- **New personal bests**: last 7 days, from logged sets (best e1RM per exercise beaten).
+- **Programs expiring ≤ 7 days** and **programs expired** (no future workouts but had some in the last 28 days).
+- **Compliance** (toggle): workouts completed ÷ scheduled and nutrition days logged ÷ 7, for 7 or 30 days, per client and average.
+- **Average sign-in** (toggle): app opens are recorded per client per day (`app_opens`); shows the % of clients active in the last 7 days and average active days per client per week.
+
+## Logging experience (TrainHeroic-style)
+- Each set saves the moment it's ticked (no Save button to forget); offline-safe retry.
+- Tap a set to complete it with the pre-filled reps/kg; edit inline.
+- Rest timer starts automatically after a set when the line has a rest time.
+- Big, thumb-friendly layout; superset blocks clearly grouped; progress bar for the session.
+
 ## Segment J: Periodisation (season planner)
 - Per client or group: a **season** with phases on a timeline (e.g. GPP → Max Strength → Power → Peak → Taper → Deload).
 - Each phase: name, start/end dates, goal, emphasis (strength, power, hypertrophy, conditioning, skill, recovery), weekly targets (sessions, sets per week, intensity range %1RM, conditioning minutes), notes.
