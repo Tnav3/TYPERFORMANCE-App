@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { titleCase } from "@/lib/calculator";
 import { coachOnly, friendly, str, UUID } from "@/lib/programming/server";
 import { FIELD_KEYS } from "@/lib/programming/fields";
+import { EQUIPMENT_KEYS } from "@/lib/programming/equipment";
 import {
   cleanVideoUrl,
   isCategory,
@@ -106,6 +107,7 @@ function fields(fd: FormData) {
       video_url,
       cues: str(fd.get("cues"), 1000),
       tags: parseTags(String(fd.get("tags") ?? "")),
+      equipment: fd.getAll("equipment").map(String).filter((k) => EQUIPMENT_KEYS.includes(k)),
       ...d,
     },
   };

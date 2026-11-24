@@ -10,6 +10,7 @@ import {
 } from "@/lib/programming/types";
 import { Alert, Heading, Screen } from "@/components/ui";
 import { FIELD_KEYS, FIELD_LABEL } from "@/lib/programming/fields";
+import { EQUIPMENT_LIST, equipmentLabel } from "@/lib/programming/equipment";
 import { addExercise, bulkExercises, setExerciseActive, updateExercise } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -67,6 +68,20 @@ function ExerciseFields({
           ))}
         </select>
       </div>
+      <fieldset className="rounded-xl border border-line p-3">
+        <legend className="px-1 text-sm text-muted">Equipment needed (clients see this before the workout)</legend>
+        <div className="flex flex-wrap gap-1.5">
+          {EQUIPMENT_LIST.map(([k, l]) => (
+            <label key={k} className="cursor-pointer">
+              <input type="checkbox" name="equipment" value={k} defaultChecked={(e?.equipment ?? []).includes(k)} className="peer sr-only" />
+              <span className="inline-flex min-h-9 items-center rounded-full border border-line px-3 text-xs font-bold text-muted peer-checked:border-brand peer-checked:bg-brand/15 peer-checked:text-text peer-focus-visible:ring-2 peer-focus-visible:ring-brand">
+                {l}
+              </span>
+            </label>
+          ))}
+        </div>
+        <p className="mt-1 text-xs text-muted">None ticked = bodyweight / no equipment.</p>
+      </fieldset>
       <label className="block text-sm">
         <span className="mb-1 block text-muted">
           Linked 1RM lift (lets % loads calculate from the client&apos;s e1RM)
@@ -306,6 +321,9 @@ export default async function LibraryPage({
                             <span className="rounded-md bg-ok/15 px-1.5 py-0.5 font-bold text-ok">▶ video</span>
                           ) : (
                             <span className="rounded-md bg-warn/15 px-1.5 py-0.5 font-bold text-warn">no video</span>
+                          )}
+                          {(e.equipment ?? []).length > 0 && (
+                            <span className="rounded-md bg-surface-2 px-1.5 py-0.5 text-muted">🏋 {(e.equipment ?? []).map(equipmentLabel).join(", ")}</span>
                           )}
                           {e.lift_key && <span className="rounded-md bg-surface-2 px-1.5 py-0.5 text-muted">% of {liftName.get(e.lift_key) ?? "1RM"}</span>}
                           {fmtDefault(e) && <span className="rounded-md bg-surface-2 px-1.5 py-0.5 text-muted">default {fmtDefault(e)}</span>}

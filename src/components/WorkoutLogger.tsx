@@ -657,7 +657,7 @@ export function WorkoutLogger({
           }}
         />
       )}
-      {sheet && <ExerciseSheet exerciseId={sheet.id} name={sheet.name} historyHref={`/train/history/${sheet.id}`} onClose={closeSheet} />}
+      {sheet && <ExerciseSheet exerciseId={sheet.id} name={sheet.name} athleteId={athleteId} historyHref={`/train/history/${sheet.id}`} onClose={closeSheet} />}
     </div>
   );
 }

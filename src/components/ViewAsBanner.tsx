@@ -17,7 +17,7 @@ export function ViewAsBanner() {
   return (
     <div className="sticky top-0 z-40 flex items-center gap-2 border-b border-brand bg-brand px-3 py-2 text-sm font-bold text-white">
       <Eye size={16} className="shrink-0" />
-      <span className="min-w-0 flex-1 truncate">Viewing as {name} · read-only</span>
+      <span className="min-w-0 flex-1 truncate">Viewing as {name} · you can log their workouts</span>
       {/* Plain link on purpose: a route handler clears the cookie */}
       {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
       <a href="/view-as/exit" className="min-h-9 shrink-0 rounded-lg bg-white px-3 py-1.5 text-xs font-extrabold uppercase text-brand">

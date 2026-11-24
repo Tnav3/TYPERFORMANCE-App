@@ -21,7 +21,7 @@ export default async function WorkoutLogPage({
   if (state === "coach") redirect(`/coach/workouts/${id}`);
   const d = await loadLoggerData(supabase, id, user!.id);
   if (!d) notFound();
-  const { workout, assignment, ready, log, items, blocks, locked, early, finished, today, lastRpe } = d;
+  const { workout, assignment, ready, log, items, blocks, locked, early, finished, today, lastRpe, equipment } = d;
 
   return (
     <Screen>
@@ -36,11 +36,25 @@ export default async function WorkoutLogPage({
         </details>
       )}
       {workout.notes && <p className="mb-4 whitespace-pre-line rounded-xl bg-surface-2 p-3 text-sm">{workout.notes}</p>}
-      {!ready && !finished && !locked && workout.workout_date === today && items.length > 0 && <ReadinessCheck />}
+      {!ready && !finished && !locked && !viewAs && workout.workout_date === today && items.length > 0 && <ReadinessCheck />}
       {ready && !finished && (
         <p className={`mb-4 rounded-xl border px-3 py-2 text-sm ${readinessTone(ready.score) === "ok" ? "border-ok/50" : readinessTone(ready.score) === "warn" ? "border-warn/50" : "border-brand/50"}`}>
           <span className="font-black">Readiness {ready.score}</span> · {readinessAdvice(ready.score)}
         </p>
+      )}
+      {!finished && items.length > 0 && (
+        <div className="mb-4 rounded-xl border border-line bg-surface p-3">
+          <p className="text-xs font-semibold uppercase tracking-widest text-muted">You&apos;ll need</p>
+          {equipment.length ? (
+            <ul className="mt-1.5 flex flex-wrap gap-1.5">
+              {equipment.map((e) => (
+                <li key={e.key} className="rounded-full bg-surface-2 px-3 py-1 text-sm font-bold">{e.label}</li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-1 text-sm font-bold">No equipment. Just you.</p>
+          )}
+        </div>
       )}
       {finished && (
         <Link href={`/train/${workout.id}/summary`} className="mb-4 block rounded-xl border border-ok/50 bg-ok/10 px-3 py-2 text-sm font-bold">
@@ -56,7 +70,8 @@ export default async function WorkoutLogPage({
         rpe={log?.session_rpe ?? null}
         lastRpe={lastRpe}
         duration={log?.duration_min ?? null}
-        readOnly={locked || early || !!viewAs}
+        readOnly={locked || early}
+        athleteId={viewAs ? user!.id : undefined}
       />
       {workout.created_by === user!.id && !viewAs && (
         <div className="mt-6 text-center">

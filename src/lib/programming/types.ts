@@ -45,6 +45,7 @@ export interface Exercise {
   name: string;
   category: ExerciseCategory;
   subcategory: string | null;
+  equipment?: string[];
   measure: Measure;
   lift_key: string | null;
   video_url: string | null;

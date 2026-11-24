@@ -27,6 +27,7 @@ import {
   type WorkoutLog,
 } from "@/lib/programming/types";
 import type { LoggerBlock, LoggerItem } from "@/components/WorkoutLogger";
+import { neededFor } from "./equipment";
 
 export async function loadLoggerData(supabase: SupabaseClient, workoutId: string, athleteId: string) {
   const { data: workout } = await supabase.from("workouts").select("*").eq("id", workoutId).maybeSingle<Workout>();
@@ -215,5 +216,15 @@ export async function loadLoggerData(supabase: SupabaseClient, workoutId: string
     .maybeSingle();
   const lastRpe = prevLog?.session_rpe ? { rpe: prevLog.session_rpe as number, date: formatDate(prevLog.workout_date as string) } : null;
 
-  return { workout, assignment, ready, log, items, blocks, locked, early, finished, today, lastRpe };
+  // What to bring: the exercises actually being done (swaps included)
+  const equipment = neededFor(
+    items
+      .filter((it) => it.kind === "exercise" && it.exercise_id)
+      .map((it) => {
+        const sw = itemLogs.get(it.id)?.swap_exercise_id;
+        return exercises.get(sw ?? it.exercise_id!)?.equipment ?? [];
+      }),
+  );
+
+  return { workout, assignment, ready, log, items, blocks, locked, early, finished, today, lastRpe, equipment };
 }
