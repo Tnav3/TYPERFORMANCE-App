@@ -46,3 +46,19 @@ describe("automations (054)", () => {
     await expect(asUser(db, alice, () => q(`select run_automations()`))).rejects.toThrow(/permission denied/);
   });
 });
+
+describe("more automations (063)", () => {
+  it("birthday message and a post-fight form", async () => {
+    await q(`update profiles set birthday = (sydney_today() - interval '30 years')::date, next_fight_date = sydney_today() - 1 where id = $1`, [alice]);
+    const form = (await q(`select id from forms limit 1`)).rows[0].id;
+    await asUser(db, coach, async () => {
+      await q(`insert into automations (name, trigger, threshold, body, cooldown_days, active) values ('Birthday', 'birthday', 0, 'Happy birthday {first_name}!', 300, true)`);
+      await q(`insert into automations (name, trigger, threshold, body, form_id, active) values ('Post-fight', 'fight_done', 1, 'Proud of you. Fill this in when ready.', $1, true)`, [form]);
+      await q(`select run_automations(true)`);
+    });
+    const msgs = (await q(`select body from messages where athlete_id = $1 order by body`, [alice])).rows.map((r) => r.body);
+    expect(msgs).toEqual(["Happy birthday Alice!", "Proud of you. Fill this in when ready."]);
+    const fa = await q(`select repeat, active from form_assignments where athlete_id = $1 and form_id = $2`, [alice, form]);
+    expect(fa.rows).toEqual([{ repeat: "once", active: true }]);
+  });
+});

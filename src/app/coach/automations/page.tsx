@@ -9,9 +9,9 @@ export const dynamic = "force-dynamic";
 
 const input = "min-h-11 w-full min-w-0 rounded-xl border border-line bg-surface-2 px-3 text-text placeholder:text-muted/60 focus:border-brand focus:outline-none";
 
-type Rule = { id: string; name: string; trigger: Trigger; threshold: number; audience: Audience; body: string; cooldown_days: number; active: boolean };
+type Rule = { id: string; name: string; trigger: Trigger; threshold: number; audience: Audience; body: string; cooldown_days: number; active: boolean; form_id: string | null };
 
-function RuleForm({ r }: { r?: Rule }) {
+function RuleForm({ r, forms }: { r?: Rule; forms: { id: string; name: string }[] }) {
   return (
     <form action={saveAutomation} className="space-y-3">
       {r && <input type="hidden" name="id" value={r.id} />}
@@ -22,7 +22,7 @@ function RuleForm({ r }: { r?: Rule }) {
             <option key={t} value={t}>{TRIGGERS[t].label} ({TRIGGERS[t].unit})</option>
           ))}
         </select>
-        <input name="threshold" type="number" inputMode="numeric" min={1} max={100} defaultValue={r?.threshold ?? 2} className={input} aria-label="Number" />
+        <input name="threshold" type="number" inputMode="numeric" min={0} max={365} defaultValue={r?.threshold ?? 2} className={input} aria-label="Number" />
       </div>
       <div className="grid grid-cols-2 gap-2">
         {(["client", "coach"] as const).map((a) => (
@@ -33,10 +33,19 @@ function RuleForm({ r }: { r?: Rule }) {
         ))}
       </div>
       <textarea name="body" rows={3} maxLength={1000} defaultValue={r?.body} placeholder="Hey {first_name}, …  (for 'Just tell me' this is your note)" className={`${input} py-2`} aria-label="Message" />
+      {forms.length > 0 && (
+        <label className="block text-sm">
+          <span className="mb-1 block text-muted">Also send a check-in form (optional)</span>
+          <select name="form_id" defaultValue={r?.form_id ?? ""} className={input}>
+            <option value="">No form</option>
+            {forms.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
+          </select>
+        </label>
+      )}
       <div className="flex flex-wrap items-center justify-between gap-2">
         <label className="flex items-center gap-2 text-sm text-muted">
           Don&apos;t repeat for the same client within
-          <input name="cooldown_days" type="number" min={1} max={90} defaultValue={r?.cooldown_days ?? 7} className="min-h-10 w-16 rounded-lg border border-line bg-surface-2 px-2 text-text" aria-label="Days" /> days
+          <input name="cooldown_days" type="number" min={1} max={366} defaultValue={r?.cooldown_days ?? 7} className="min-h-10 w-16 rounded-lg border border-line bg-surface-2 px-2 text-text" aria-label="Days" /> days
         </label>
         <button className="min-h-11 rounded-xl bg-brand px-5 font-extrabold text-white">{r ? "Save" : "Add rule"}</button>
       </div>
@@ -47,11 +56,14 @@ function RuleForm({ r }: { r?: Rule }) {
 export default async function AutomationsPage({ searchParams }: { searchParams: Promise<{ error?: string; ran?: string }> }) {
   const { supabase } = await requireState(["coach"]);
   const { error, ran } = await searchParams;
-  const [{ data: rules }, { data: runs }] = await Promise.all([
-    supabase.from("automations").select("id, name, trigger, threshold, audience, body, cooldown_days, active").order("created_at"),
+  const [{ data: rules }, { data: formRows }, { data: runs }] = await Promise.all([
+    supabase.from("automations").select("id, name, trigger, threshold, audience, body, cooldown_days, active, form_id").order("created_at"),
+    supabase.from("forms").select("id, name").eq("archived", false).order("name"),
     supabase.from("automation_runs").select("id, ran_on, detail, athlete_id, automations(name), profiles(full_name)").order("created_at", { ascending: false }).limit(15),
   ]);
   const list = (rules ?? []) as Rule[];
+  const forms = (formRows ?? []) as { id: string; name: string }[];
+  const formName = new Map(forms.map((f) => [f.id, f.name]));
   const previews = await Promise.all(
     list.map(async (r) => ((await supabase.rpc("automation_preview", { p_id: r.id })).data ?? []) as { athlete_id: string; full_name: string | null; detail: string }[]),
   );
@@ -60,7 +72,7 @@ export default async function AutomationsPage({ searchParams }: { searchParams: 
 
   return (
     <Screen wide>
-      <Heading sub="Rules that watch your clients and act for you. They check every morning from 9am. New rules start switched off so you can see who they'd hit first.">
+      <Heading sub="Rules that watch your clients and act for you: missed sessions, birthdays, after a fight and more. They check every morning from 9am. New rules start switched off so you can see who they'd hit first.">
         Automations
       </Heading>
       {error && <Alert>{error}</Alert>}
@@ -74,7 +86,7 @@ export default async function AutomationsPage({ searchParams }: { searchParams: 
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="font-extrabold">{r.name}</p>
-                  <p className="text-sm text-muted">{summary(r.trigger, r.threshold, r.audience)}</p>
+                  <p className="text-sm text-muted">{summary(r.trigger, r.threshold, r.audience, r.form_id ? formName.get(r.form_id) : null)}</p>
                 </div>
                 <form action={toggleAutomation}>
                   <input type="hidden" name="id" value={r.id} />
@@ -100,7 +112,7 @@ export default async function AutomationsPage({ searchParams }: { searchParams: 
               <details className="mt-2">
                 <summary className="cursor-pointer text-sm font-bold text-muted">Edit</summary>
                 <div className="mt-3">
-                  <RuleForm r={r} />
+                  <RuleForm r={r} forms={forms} />
                   <form action={deleteAutomation} className="mt-2 text-right">
                     <input type="hidden" name="id" value={r.id} />
                     <button className="min-h-10 text-sm font-bold text-brand">Delete rule</button>
@@ -113,7 +125,7 @@ export default async function AutomationsPage({ searchParams }: { searchParams: 
           <details className="rounded-xl border border-line bg-surface p-4" open={list.length === 0}>
             <summary className="cursor-pointer font-extrabold">+ Build your own rule</summary>
             <div className="mt-3">
-              <RuleForm />
+              <RuleForm forms={forms} />
             </div>
             <p className="mt-2 text-xs text-muted">{"{first_name}"} is swapped for the client&apos;s first name.</p>
           </details>

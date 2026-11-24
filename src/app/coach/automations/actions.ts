@@ -13,8 +13,9 @@ function read(fd: FormData) {
   const audience: Audience = fd.get("audience") === "coach" ? "coach" : "client";
   const name = String(fd.get("name") ?? "").trim().slice(0, 80);
   const body = String(fd.get("body") ?? "").trim().slice(0, 1000) || (audience === "coach" ? "Check in with this client." : "");
-  const cooldown = Math.min(90, Math.max(1, Math.round(Number(fd.get("cooldown_days") ?? 7)) || 7));
-  return { trigger, audience, name, body, threshold: clampThreshold(trigger, Number(fd.get("threshold"))), cooldown_days: cooldown };
+  const cooldown = Math.min(366, Math.max(1, Math.round(Number(fd.get("cooldown_days") ?? 7)) || 7));
+  const form = String(fd.get("form_id") ?? "");
+  return { trigger, audience, name, body, threshold: clampThreshold(trigger, Number(fd.get("threshold"))), cooldown_days: cooldown, form_id: UUID.test(form) ? form : null };
 }
 
 export async function addFromTemplate(fd: FormData) {

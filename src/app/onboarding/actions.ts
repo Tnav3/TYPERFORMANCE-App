@@ -88,6 +88,10 @@ export async function saveProfile(
       ...toColumns([d.next_fight_date, before?.second_fight_date]),
       training_age_years: d.training_age_years,
       sex: d.sex,
+      birthday: (() => {
+        const b = String(formData.get("birthday") ?? "");
+        return /^\d{4}-\d{2}-\d{2}$/.test(b) && b >= "1900-01-01" && b <= todayISO() ? b : null;
+      })(),
       // A coach edit never completes onboarding on the athlete's behalf
       profile_completed_at: byCoach
         ? before.profile_completed_at

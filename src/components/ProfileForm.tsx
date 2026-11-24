@@ -157,6 +157,12 @@ export function ProfileForm({
         </div>
       )}
 
+      <div className="mt-4">
+        <Field label="Birthday (optional)" hint="So your coach can wish you happy birthday">
+          <Input name="birthday" type="date" max={today} defaultValue={(profile as { birthday?: string | null }).birthday ?? ""} />
+        </Field>
+      </div>
+
       <Button type="submit" disabled={pending} className="mt-6">
         {pending ? "Saving…" : submitLabel}
       </Button>
