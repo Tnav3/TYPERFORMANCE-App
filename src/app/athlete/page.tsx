@@ -127,6 +127,7 @@ export default async function AthleteHome() {
       trend={trend}
       tour={!profile.tutorial_done_at ? <WelcomeTour steps={welcomeSteps(profile)} /> : null}
       first={first}
+      me={{ name: profile.full_name ?? profile.email, avatar: (profile as unknown as { avatar_path: string | null }).avatar_path ?? null, nickname: (profile as unknown as { nickname: string | null }).nickname ?? null, goal: (profile as unknown as { goal_text: string | null }).goal_text ?? null }}
       fightLabel={nextFight ? nextFight.label.replace(" out", "") : null}
       unreadNotes={unreadNotes ?? 0}
       programOn={programOn}

@@ -1,6 +1,8 @@
 // One header for every client page: name, quick chat, and tabs across the top.
 import Link from "next/link";
 import { MessageCircle, Timer } from "lucide-react";
+import { createClient } from "@/lib/supabase/server";
+import { Avatar } from "./Avatar";
 
 export type ClientTab = "overview" | "program" | "progress" | "forms" | "tests" | "lifestyle" | "mobility" | "fights" | "profile";
 
@@ -16,23 +18,20 @@ const TABS: [ClientTab, string, string][] = [
   ["profile", "Profile", "/profile"],
 ];
 
-export function ClientTabs({ id, name, active, sub }: { id: string; name: string; active: ClientTab; sub?: string }) {
-  const initials = name
-    .split(/\s+/)
-    .map((w) => w[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
+export async function ClientTabs({ id, name, active, sub }: { id: string; name: string; active: ClientTab; sub?: string }) {
+  const supabase = await createClient();
+  const { data: me } = await supabase.from("profiles").select("avatar_path, nickname, goal_text").eq("id", id).maybeSingle();
+  const line = sub ?? [me?.nickname && `\u201c${me.nickname}\u201d`, me?.goal_text && `Goal: ${me.goal_text}`].filter(Boolean).join(" · ");
   return (
     <div className="mb-5">
       <div className="mb-3 flex items-center gap-3">
         <Link href="/coach/clients" className="hidden text-sm text-muted hover:text-text sm:block" aria-label="All clients">
           Clients /
         </Link>
-        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand text-sm font-black text-white">{initials}</span>
+        <Avatar name={name} path={me?.avatar_path} />
         <div className="min-w-0 flex-1">
           <h1 className="truncate text-xl font-black uppercase leading-tight tracking-tight">{name}</h1>
-          {sub && <p className="truncate text-sm text-muted">{sub}</p>}
+          {line && <p className="truncate text-sm text-muted">{line}</p>}
         </div>
         <Link
           href={`/coach/train?c=${id}`}

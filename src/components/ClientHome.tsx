@@ -1,6 +1,7 @@
 // Client home screen (display only): Today, To do, This week, tab bar.
 import Link from "next/link";
 import { MiniChart } from "./MiniChart";
+import { Avatar } from "./Avatar";
 import type { ReactNode } from "react";
 import { Bell } from "lucide-react";
 import { ClientTabBar } from "@/components/ClientTabBar";
@@ -9,6 +10,7 @@ import { Logo, Screen } from "@/components/ui";
 export interface HomeProps {
   tour: ReactNode;
   first: string;
+  me: { name: string; avatar: string | null; nickname: string | null; goal: string | null };
   fightLabel: string | null;
   unreadNotes: number;
   programOn: boolean;
@@ -31,9 +33,12 @@ export function ClientHome(p: HomeProps) {
     <Screen>
       {p.tour}
       <header className="mb-4 flex items-center gap-3">
-        <Logo size={36} />
+        <Link href="/profile#about" aria-label="My profile">
+          {p.me.avatar ? <Avatar name={p.me.name} path={p.me.avatar} /> : <Logo size={36} />}
+        </Link>
         <div className="min-w-0 flex-1">
           <p className="truncate text-lg font-black uppercase leading-tight tracking-tight">Hey {p.first}</p>
+          {p.me.nickname && <p className="truncate text-xs font-bold text-muted">&ldquo;{p.me.nickname}&rdquo;</p>}
           {p.fightLabel && <p className="text-xs font-bold text-brand">Fight in {p.fightLabel}</p>}
         </div>
         <Link
@@ -136,6 +141,13 @@ export function ClientHome(p: HomeProps) {
               </div>
             ))}
           </div>
+        </Link>
+      )}
+
+      {p.me.goal && (
+        <Link href="/profile#about" className="mb-5 block rounded-2xl border border-line bg-surface px-4 py-3">
+          <span className="text-xs font-semibold uppercase tracking-widest text-muted">Your goal</span>
+          <span className="block font-extrabold">{p.me.goal}</span>
         </Link>
       )}
 

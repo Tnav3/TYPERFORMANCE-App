@@ -1,3 +1,4 @@
+import { Avatar } from "@/components/Avatar";
 import Link from "next/link";
 import { requireState } from "@/lib/session";
 import { activityTone, lastSeenLabel } from "@/lib/activity";
@@ -12,7 +13,7 @@ export default async function ClientsPage({ searchParams }: { searchParams: Prom
   const show = sp.show === "all" ? "all" : "active";
   const { data } = await supabase
     .from("profiles")
-    .select("id, full_name, email, status, last_seen_at")
+    .select("id, full_name, email, status, last_seen_at, avatar_path, nickname")
     .eq("role", "athlete")
     .order("full_name", { nullsFirst: false });
   const now = new Date();
@@ -53,17 +54,14 @@ export default async function ClientsPage({ searchParams }: { searchParams: Prom
         <div className="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-surface">
           {rows.map((c) => {
             const tone = activityTone(c.last_seen_at, now);
-            const initials = (c.full_name ?? c.email)
-              .split(/\s+/)
-              .map((w: string) => w[0])
-              .slice(0, 2)
-              .join("")
-              .toUpperCase();
             return (
               <Link key={c.id} href={`/coach/athlete/${c.id}/program`} className="flex min-h-16 items-center gap-3 px-4 py-2 hover:bg-surface-2">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand/15 text-sm font-black text-brand">{initials}</span>
+                <Avatar name={c.full_name ?? c.email} path={c.avatar_path} size="sm" tone="soft" />
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate font-extrabold">{c.full_name ?? c.email}</span>
+                  <span className="block truncate font-extrabold">
+                    {c.full_name ?? c.email}
+                    {c.nickname && <span className="font-bold text-muted"> &ldquo;{c.nickname}&rdquo;</span>}
+                  </span>
                   <span className="block truncate text-sm text-muted">
                     {c.status !== "active" ? `${c.status} · ` : ""}
                     <span className={tone === "ok" ? "text-ok" : tone === "warn" ? "text-warn" : "text-brand"}>
