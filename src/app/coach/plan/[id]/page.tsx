@@ -121,7 +121,7 @@ export default async function SeasonPage({
   return (
     <Screen wide>
       <BackLink href={backHref} label={ownerName ?? "Back"} />
-      <Heading sub={[season.goal, nextFight ? `Next fight ${formatDate(nextFight)} · ${weeksOut(today, nextFight)}` : null].filter(Boolean).join(" · ") || "Season plan"}>
+      <Heading sub={[season.goal, nextFight ? `Next fight ${formatDate(nextFight)} · ${weeksOut(today, nextFight)}` : null].filter(Boolean).join(" · ") || "Training plan"}>
         {season.name}
       </Heading>
       {error && <Alert>{error}</Alert>}
@@ -193,11 +193,11 @@ export default async function SeasonPage({
       </Card>
 
       <details className="mt-8 rounded-2xl border border-line bg-surface p-4">
-        <summary className="cursor-pointer font-bold">Season details</summary>
+        <summary className="cursor-pointer font-bold">Plan details</summary>
         <form action={updateSeason} className="mt-3 space-y-2">
           <input type="hidden" name="id" value={id} />
           <input name="name" defaultValue={season.name} maxLength={80} required className={input} aria-label="Name" />
-          <input name="goal" defaultValue={season.goal ?? ""} maxLength={500} placeholder="Season goal" className={input} aria-label="Goal" />
+          <input name="goal" defaultValue={season.goal ?? ""} maxLength={500} placeholder="Goal for this plan" className={input} aria-label="Goal" />
           <textarea name="notes" defaultValue={season.notes ?? ""} rows={3} maxLength={2000} className={`${input} py-2`} aria-label="Notes" />
           <button className={smallBtn}>Save</button>
         </form>
@@ -205,7 +205,7 @@ export default async function SeasonPage({
           <input type="hidden" name="id" value={id} />
           <input type="hidden" name="back" value={backHref} />
           <input name="confirm" placeholder="Type DELETE" className={input} aria-label="Type DELETE to confirm" />
-          <button className={`${smallBtn} !border-brand/60 !text-brand`}>Delete season</button>
+          <button className={`${smallBtn} !border-brand/60 !text-brand`}>Delete plan</button>
         </form>
       </details>
     </Screen>

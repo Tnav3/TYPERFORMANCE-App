@@ -5,9 +5,9 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { GripVertical, Plus } from "lucide-react";
+import { Copy, GripVertical, Pencil, Plus, Trash2 } from "lucide-react";
 import { addWorkout } from "@/app/coach/workouts/actions";
-import { assignProgramOn, copyWorkout, moveWorkout } from "@/app/coach/athlete/[id]/program/actions";
+import { assignProgramOn, copyWorkout, deleteProgramQuick, duplicateProgramQuick, moveWorkout } from "@/app/coach/athlete/[id]/program/actions";
 import type { CalStatus } from "@/components/WorkoutCalendar";
 
 export interface PlanWorkout {
@@ -59,6 +59,8 @@ export function PlanCalendar({
   const [over, setOver] = useState<string | null>(null);
   const [picked, setPicked] = useState<PlanProgram | null>(null); // tap-to-place on phones
   const [confirm, setConfirm] = useState<{ program: PlanProgram; date: string } | null>(null);
+  const [showProgs, setShowProgs] = useState(false);
+  const [toDelete, setToDelete] = useState<PlanProgram | null>(null);
 
   const byDate = new Map<string, PlanWorkout[]>();
   for (const w of workouts) byDate.set(w.date, [...(byDate.get(w.date) ?? []), w]);
@@ -158,44 +160,7 @@ export function PlanCalendar({
   );
 
   return (
-    <div className="lg:grid lg:grid-cols-[220px_1fr] lg:gap-4">
-      {/* Programs to drag in */}
-      <aside className="mb-4 lg:mb-0">
-        <details className="rounded-2xl border border-line bg-surface lg:sticky lg:top-4" open>
-          <summary className="flex min-h-12 cursor-pointer items-center px-4 text-sm font-extrabold uppercase tracking-wide">Programs</summary>
-          <div className="border-t border-line p-2">
-            <p className="mb-2 px-1 text-xs text-muted">
-              <span className="hidden lg:inline">Drag one onto a day to start it there.</span>
-              <span className="lg:hidden">Tap one, then tap the start day.</span>
-            </p>
-            {programs.length === 0 && <p className="px-1 text-sm text-muted">No programs yet.</p>}
-            <div className="max-h-80 space-y-1 overflow-y-auto">
-              {programs.map((p) => (
-                <button
-                  key={p.id}
-                  {...drag("p", p.id)}
-                  onClick={() => setPicked(picked?.id === p.id ? null : p)}
-                  className={`flex w-full cursor-grab items-center gap-2 rounded-lg border px-2 py-2 text-left text-sm active:cursor-grabbing ${
-                    picked?.id === p.id ? "border-brand bg-brand/15" : "border-line bg-surface-2 hover:border-muted"
-                  }`}
-                >
-                  <GripVertical size={14} className="shrink-0 text-muted" aria-hidden />
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate font-bold">{p.name}</span>
-                    <span className="block text-[11px] text-muted">
-                      {p.weeks} wk{p.master ? " · template" : ""}
-                    </span>
-                  </span>
-                </button>
-              ))}
-            </div>
-            <Link href="/coach/programs" className="mt-2 block px-1 text-xs font-bold text-brand">
-              Build a new program →
-            </Link>
-          </div>
-        </details>
-      </aside>
-
+    <div>
       <div>
         {/* Toolbar */}
         <div className="mb-3 flex flex-wrap items-center gap-2">
@@ -205,6 +170,12 @@ export function PlanCalendar({
             <Link href={nav.next} className="flex h-11 w-11 items-center justify-center text-lg text-muted hover:text-text" aria-label="Next">›</Link>
           </div>
           <p className="flex-1 font-black uppercase tracking-tight">{nav.label}</p>
+          <button
+            onClick={() => setShowProgs((v) => !v)}
+            className={`flex min-h-11 items-center gap-1.5 rounded-xl border px-3 text-sm font-bold ${showProgs ? "border-brand bg-brand/10 text-text" : "border-line text-muted"}`}
+          >
+            <Plus size={16} /> Add a program
+          </button>
           <div className="flex rounded-xl border border-line p-1 text-sm font-bold">
             {(["week", "month"] as const).map((v) => (
               <Link key={v} href={v === "week" ? nav.week : nav.month} className={`min-h-9 content-center rounded-lg px-4 capitalize ${view === v ? "bg-brand text-white" : "text-muted"}`}>
@@ -213,6 +184,47 @@ export function PlanCalendar({
             ))}
           </div>
         </div>
+
+        {showProgs && (
+          <div className="mb-3 rounded-2xl border border-line bg-surface p-3">
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <p className="text-xs text-muted">
+                <span className="hidden lg:inline">Drag a program onto the day it should start.</span>
+                <span className="lg:hidden">Tap a program, then tap the day it should start.</span>
+              </p>
+              <Link href="/coach/programs" className="shrink-0 text-xs font-bold text-brand">Build a new one →</Link>
+            </div>
+            {programs.length === 0 && <p className="text-sm text-muted">No programs yet.</p>}
+            <div className="grid max-h-72 gap-2 overflow-y-auto sm:grid-cols-2 xl:grid-cols-3">
+              {programs.map((p) => (
+                <div
+                  key={p.id}
+                  {...drag("p", p.id)}
+                  className={`flex cursor-grab items-center gap-2 rounded-xl border px-2 py-1.5 active:cursor-grabbing ${
+                    picked?.id === p.id ? "border-brand bg-brand/15" : "border-line bg-surface-2 hover:border-muted"
+                  }`}
+                >
+                  <button onClick={() => setPicked(picked?.id === p.id ? null : p)} className="flex min-h-10 min-w-0 flex-1 items-center gap-2 text-left">
+                    <GripVertical size={14} className="shrink-0 text-muted" aria-hidden />
+                    <span className="min-w-0">
+                      <span className="block truncate text-sm font-bold">{p.name}</span>
+                      <span className="block text-[11px] text-muted">{p.weeks} wk{p.master ? " · template" : ""}</span>
+                    </span>
+                  </button>
+                  <Link href={`/coach/programs/${p.id}`} className="flex h-9 w-9 items-center justify-center rounded-lg text-muted hover:bg-surface hover:text-text" title="Edit" aria-label={`Edit ${p.name}`}>
+                    <Pencil size={15} />
+                  </Link>
+                  <button onClick={() => run(() => duplicateProgramQuick(p.id, athleteId))} className="flex h-9 w-9 items-center justify-center rounded-lg text-muted hover:bg-surface hover:text-text" title="Duplicate" aria-label={`Duplicate ${p.name}`}>
+                    <Copy size={15} />
+                  </button>
+                  <button onClick={() => setToDelete(p)} className="flex h-9 w-9 items-center justify-center rounded-lg text-muted hover:bg-surface hover:text-brand" title="Delete" aria-label={`Delete ${p.name}`}>
+                    <Trash2 size={15} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {picked && (
           <div className="mb-3 flex items-center justify-between gap-2 rounded-xl border border-brand bg-brand/10 px-3 py-2 text-sm">
@@ -225,14 +237,15 @@ export function PlanCalendar({
         {error && <p className="mb-3 rounded-xl border border-brand/50 bg-brand/10 px-3 py-2 text-sm">{error}</p>}
 
         {view === "week" ? (
-          <div className={`grid gap-2 lg:grid-cols-7 ${busy ? "opacity-60" : ""}`}>
+          <div className={`-mx-1 overflow-x-auto px-1 pb-2 ${busy ? "opacity-60" : ""}`}>
+          <div className="grid gap-3 lg:min-w-[1100px] lg:grid-cols-7">
             {days.map((date) => {
               const list = byDate.get(date) ?? [];
               return (
                 <div
                   key={date}
                   {...dayProps(date)}
-                  className={`flex min-h-24 flex-col gap-1.5 rounded-xl border p-2 transition-colors lg:min-h-64 ${
+                  className={`flex min-h-24 flex-col gap-2 rounded-xl border p-2.5 transition-colors lg:min-h-80 ${
                     over === date ? "border-brand bg-brand/10" : date === today ? "border-brand/60 bg-surface" : "border-line bg-surface"
                   } ${picked ? "cursor-pointer" : ""}`}
                 >
@@ -253,6 +266,7 @@ export function PlanCalendar({
                 </div>
               );
             })}
+          </div>
           </div>
         ) : (
           <div className={busy ? "opacity-60" : ""}>
@@ -299,6 +313,28 @@ export function PlanCalendar({
           <span className="hidden lg:inline">· Drag to move · Alt/Option-drag to copy</span>
         </p>
       </div>
+
+      {toDelete && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-4 sm:items-center" role="dialog" aria-modal="true">
+          <div className="w-full max-w-sm rounded-2xl border border-line bg-surface p-5">
+            <p className="text-lg font-black uppercase leading-tight tracking-tight">Delete {toDelete.name}?</p>
+            <p className="mt-2 text-sm text-muted">The program is removed for good. Workouts already on clients&apos; calendars stay where they are.</p>
+            <div className="mt-5 grid grid-cols-2 gap-2">
+              <button onClick={() => setToDelete(null)} className="min-h-12 rounded-xl border border-line font-bold">Keep it</button>
+              <button
+                onClick={() => {
+                  const p = toDelete;
+                  setToDelete(null);
+                  run(() => deleteProgramQuick(p.id, athleteId));
+                }}
+                className="min-h-12 rounded-xl bg-brand font-extrabold uppercase tracking-wide text-white"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {confirm && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-4 sm:items-center" role="dialog" aria-modal="true">

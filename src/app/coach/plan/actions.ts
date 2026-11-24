@@ -17,7 +17,7 @@ export async function createSeason(fd: FormData) {
   const [k, id] = String(fd.get("target") ?? "").split(":");
   const name = str(fd.get("name"), 80);
   if (!UUID.test(id ?? "") || !["a", "g"].includes(k)) go(back, "Pick a client or group.");
-  if (!name || name.length < 2) go(back, "Name the season (e.g. Road to the title).");
+  if (!name || name.length < 2) go(back, "Name the training plan (e.g. Road to the title).");
   const { data, error } = await supabase
     .from("seasons")
     .insert({ name, athlete_id: k === "a" ? id : null, group_id: k === "g" ? id : null, goal: str(fd.get("goal"), 500) })

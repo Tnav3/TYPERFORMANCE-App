@@ -1,50 +1,63 @@
-// Coach editor for a day's prescription lines (program day or dated workout).
-import { ChevronDown, ChevronUp, Trash2 } from "lucide-react";
-import { formatPrescription, itemLabel } from "@/lib/prescription";
-import { blockTitle, byBlock, type ItemFields } from "@/lib/programming/types";
+"use client";
+// Spreadsheet-style builder for a day's exercises (program day or dated workout).
+// Tick rows → "Superset". Drag the handle to reorder (arrows on phones). Every box saves when you leave it.
+import { useMemo, useRef, useState, useTransition } from "react";
+import { ArrowDown, ArrowUp, ChevronDown, Copy, GripVertical, Link2, Plus, Trash2, Unlink } from "lucide-react";
+import { itemLabel } from "@/lib/prescription";
+import type { ItemFields } from "@/lib/programming/types";
 import { FIELD_KEYS, FIELD_LABEL, type FieldKey } from "@/lib/programming/fields";
 import {
-  addItem,
-  deleteItem,
-  moveItem,
-  reletterItems,
-  setBlockTitle,
-  updateItem,
-} from "@/app/coach/items-actions";
+  builderAdd,
+  builderDelete,
+  builderDuplicate,
+  builderOrder,
+  builderUpdate,
+  quickAddExercise,
+  type RowPatch,
+} from "@/app/coach/builder-actions";
 
-const input =
-  "min-h-11 w-full min-w-0 rounded-xl border border-line bg-surface-2 px-3 text-text placeholder:text-muted/60 focus:border-brand focus:outline-none";
-const smallBtn =
-  "min-h-11 shrink-0 rounded-xl border border-line bg-surface-2 px-3 text-sm font-bold";
-const iconBtn =
-  "flex h-11 w-11 items-center justify-center rounded-xl border border-line bg-surface-2 text-muted";
+const box =
+  "h-10 w-full min-w-0 rounded-lg border border-line bg-surface-2 px-2 text-sm text-text placeholder:text-muted/50 focus:border-brand focus:outline-none";
+const LOADS: [string, string][] = [
+  ["none", "—"],
+  ["percent", "%1RM"],
+  ["rpe", "RPE"],
+  ["kg", "kg"],
+  ["bodyweight", "BW"],
+  ["velocity", "m/s"],
+];
+const CATS = ["strength", "power", "plyometric", "conditioning", "core", "mobility", "accessory"];
 
-/** The one-line text that round-trips through the parser. */
-function lineFor(i: ItemFields) {
-  const base = formatPrescription({
-    sets: i.sets,
-    reps: i.reps,
-    load_type: i.load_type,
-    percent: i.percent != null ? Number(i.percent) : null,
-    rpe: i.rpe != null ? Number(i.rpe) : null,
-    load_kg: i.load_kg != null ? Number(i.load_kg) : null,
-    velocity: i.velocity != null ? Number(i.velocity) : null,
-    tempo: i.tempo,
-    rest_sec: i.rest_sec,
-  })
-    .replace(/ × /, "x")
-    .replace(/(\d) min$/, "$1m")
-    .replace(/(\d) min /, "$1m ");
-  const extraKg =
-    i.load_type === "percent" && i.load_kg != null ? ` ${Number(i.load_kg)}kg` : "";
-  return [base + extraKg, i.notes].filter(Boolean).join(" ").trim();
+function loadValue(i: ItemFields) {
+  const v = i.load_type === "percent" ? i.percent : i.load_type === "rpe" ? i.rpe : i.load_type === "kg" ? i.load_kg : i.load_type === "velocity" ? i.velocity : null;
+  return v == null ? "" : String(Number(v));
+}
+function restText(sec: number | null) {
+  if (sec == null) return "";
+  return sec >= 60 && sec % 30 === 0 ? `${sec / 60}m` : `${sec}s`;
+}
+
+type Order = { id: string; join: boolean }[];
+const orderOf = (list: ItemFields[]): Order => list.map((i, k) => ({ id: i.id, join: k > 0 && i.block === list[k - 1].block }));
+
+/** Move row `from` so it ends up at index `to` (index in the list after removal). */
+function moveRow(order: Order, from: number, to: number): Order {
+  const o = order.map((x) => ({ ...x }));
+  const [row] = o.splice(from, 1);
+  // If the moved row led a group, the next row now leads it
+  if (!row.join && o[from]?.join) o[from].join = false;
+  // Dropping between two rows of a superset joins that superset
+  row.join = to > 0 && !!o[to]?.join;
+  o.splice(to, 0, row);
+  if (to === 0) o[0].join = false;
+  return o;
 }
 
 export function ItemsEditor({
   table,
   parentId,
   back,
-  items,
+  items: initial,
   exercises,
 }: {
   table: "program_items" | "workout_items";
@@ -53,263 +66,487 @@ export function ItemsEditor({
   items: ItemFields[];
   exercises: { id: string; name: string; active: boolean }[];
 }) {
-  const exName = new Map(exercises.map((e) => [e.id, e.name]));
-  const hidden = (
-    <>
-      <input type="hidden" name="table" value={table} />
-      <input type="hidden" name="parent_id" value={parentId} />
-      <input type="hidden" name="back" value={back} />
-    </>
-  );
-  const blocks = byBlock(items);
+  const [items, setItems] = useState(initial);
+  const [lib, setLib] = useState(exercises);
+  const [sel, setSel] = useState<Set<string>>(new Set());
+  const [open, setOpen] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [missing, setMissing] = useState<{ name: string; then: (name: string) => void } | null>(null);
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [dropAt, setDropAt] = useState<number | null>(null);
+  const [busy, start] = useTransition();
+
+  const exName = useMemo(() => new Map(lib.map((e) => [e.id, e.name])), [lib]);
+  const known = useMemo(() => new Set(lib.map((e) => e.name.toLowerCase())), [lib]);
+  const sizes = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const i of items) m.set(i.block, (m.get(i.block) ?? 0) + 1);
+    return m;
+  }, [items]);
+
+  const run = (fn: () => Promise<{ error?: string; data?: ItemFields[] }>) =>
+    start(async () => {
+      setError(null);
+      const r = await fn();
+      if (r.error) setError(r.error);
+      else if (r.data) setItems(r.data);
+    });
+  const save = (id: string, patch: RowPatch) => run(() => builderUpdate(table, parentId, id, patch, back));
+  const reorder = (o: Order) => {
+    // optimistic: show the new order straight away
+    const byId = new Map(items.map((i) => [i.id, i]));
+    setItems(o.map((x) => byId.get(x.id)!));
+    run(() => builderOrder(table, parentId, o, back));
+  };
+
+  const withExercise = (name: string, then: (n: string) => void) => {
+    if (!name.trim()) return;
+    if (known.has(name.trim().toLowerCase())) then(name.trim());
+    else setMissing({ name: name.trim(), then });
+  };
+
+  // ---- selection actions
+  const selected = items.map((i, k) => ({ i, k })).filter((x) => sel.has(x.i.id));
+  const blockOf = new Map(items.map((i) => [i.id, i.block]));
+  // Rows keep their group only if the row above is still from the same group
+  const regroup = (o: { id: string }[]): Order =>
+    o.map((x, k) => ({ id: x.id, join: k > 0 && blockOf.get(o[k - 1].id) === blockOf.get(x.id) }));
+  const makeSuperset = () => {
+    if (selected.length < 2) return;
+    const ids = selected.map((x) => x.i.id);
+    const firstAt = selected[0].k;
+    const restIds = items.filter((i) => !sel.has(i.id));
+    const at = restIds.filter((i) => items.indexOf(i) < firstAt).length;
+    const rest = regroup(restIds);
+    if (rest[at]) rest[at].join = false;
+    const group = ids.map((id, n) => ({ id, join: n > 0 }));
+    setSel(new Set());
+    reorder([...rest.slice(0, at), ...group, ...rest.slice(at)]);
+  };
+  const split = () => {
+    const o = orderOf(items).map((x, k, all) => ({
+      ...x,
+      join: x.join && !sel.has(x.id) && !sel.has(all[k - 1]?.id ?? ""),
+    }));
+    setSel(new Set());
+    reorder(o);
+  };
+  const removeSelected = () => {
+    const ids = selected.map((x) => x.i.id);
+    if (!ids.length) return;
+    setSel(new Set());
+    run(() => builderDelete(table, parentId, ids, back));
+  };
+
+  // ---- drag
+  const onDragOver = (e: React.DragEvent, k: number) => {
+    if (!dragId) return;
+    e.preventDefault();
+    const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    setDropAt(e.clientY < r.top + r.height / 2 ? k : k + 1);
+  };
+  const onDrop = () => {
+    if (dragId == null || dropAt == null) return;
+    const o = orderOf(items);
+    const from = o.findIndex((x) => x.id === dragId);
+    const to = dropAt > from ? dropAt - 1 : dropAt;
+    setDragId(null);
+    setDropAt(null);
+    if (from < 0 || to === from) return;
+    reorder(moveRow(o, from, to));
+  };
+
+  // ---- add row
+  const addRef = useRef<HTMLInputElement>(null);
+  const [draft, setDraft] = useState({ exercise: "", sets: "", reps: "", load_type: "none", load_value: "", rest: "" });
+  const submitDraft = () =>
+    withExercise(draft.exercise, (name) =>
+      run(async () => {
+        const r = await builderAdd(table, parentId, { kind: "exercise", ...draft, exercise: name }, back);
+        if (!r.error) {
+          setDraft((d) => ({ ...d, exercise: "" }));
+          setTimeout(() => addRef.current?.focus(), 0);
+        }
+        return r;
+      }),
+    );
+
+  // group rows into blocks for display
+  const groups: { block: string; rows: { i: ItemFields; k: number }[] }[] = [];
+  items.forEach((i, k) => {
+    const g = groups[groups.length - 1];
+    if (g && g.block === i.block) g.rows.push({ i, k });
+    else groups.push({ block: i.block, rows: [{ i, k }] });
+  });
+
+  const DropLine = ({ at }: { at: number }) => (dragId && dropAt === at ? <div className="my-0.5 h-1 rounded-full bg-brand" /> : null);
 
   return (
-    <div>
+    <div className={busy ? "cursor-progress" : ""}>
       <datalist id="exercise-list">
-        {exercises
+        {lib
           .filter((e) => e.active)
           .map((e) => (
             <option key={e.id} value={e.name} />
           ))}
       </datalist>
 
-      {items.length === 0 && (
-        <p className="mb-4 rounded-xl border border-dashed border-line p-4 text-center text-muted">
-          Rest day. Add an exercise or a text block below.
-        </p>
+      {/* Column headings (desktop) */}
+      {items.length > 0 && (
+        <div className="mb-1 hidden grid-cols-[28px_20px_32px_minmax(0,1fr)_64px_80px_150px_72px_88px] gap-2 px-2 text-[11px] font-semibold uppercase tracking-widest text-muted md:grid">
+          <span />
+          <span />
+          <span />
+          <span>Exercise</span>
+          <span>Sets</span>
+          <span>Reps</span>
+          <span>Load</span>
+          <span>Rest</span>
+          <span />
+        </div>
       )}
 
-      <div className="space-y-4">
-        {blocks.map(([letter, list]) => (
-          <section key={letter} className="rounded-2xl border border-line bg-surface p-3">
-            <details className="mb-2">
-              <summary className="cursor-pointer list-none text-xs font-semibold uppercase tracking-widest text-brand">
-                {blockTitle(list) ? `${letter}: ${blockTitle(list)}` : list.length > 1 ? `Superset ${letter}` : `Block ${letter}`}
-                <span className="ml-2 font-normal normal-case tracking-normal text-muted">· label</span>
-              </summary>
-              <form action={setBlockTitle} className="mt-2 flex gap-2">
-                {hidden}
-                <input type="hidden" name="block" value={letter} />
-                <input
-                  name="block_title"
-                  defaultValue={blockTitle(list) ?? ""}
-                  maxLength={60}
-                  placeholder="Block label, e.g. Power, Finisher"
-                  className={input}
-                  aria-label="Block label"
-                />
-                <button className={smallBtn}>Save</button>
-              </form>
-            </details>
-            <div className="space-y-2">
-              {list.map((i) => (
-                <details
-                  key={i.id}
-                  id={`item-${i.id}`}
-                  className="scroll-mt-6 rounded-xl bg-surface-2 p-3"
-                >
-                  <summary className="flex cursor-pointer list-none items-start gap-3">
-                    <span className="mt-0.5 w-8 shrink-0 font-black text-brand">
-                      {itemLabel(i, list.length)}
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block font-bold">
-                        {i.kind === "text" ? i.title ?? "Notes" : exName.get(i.exercise_id!) ?? "Exercise"}
-                      </span>
-                      <span className="block text-sm text-muted">
-                        {i.kind === "text"
-                          ? i.notes?.split("\n")[0]
-                          : formatPrescription({
-                              ...i,
-                              percent: i.percent != null ? Number(i.percent) : null,
-                              rpe: i.rpe != null ? Number(i.rpe) : null,
-                              load_kg: i.load_kg != null ? Number(i.load_kg) : null,
-                              velocity: i.velocity != null ? Number(i.velocity) : null,
-                            }) || "No prescription"}
-                        {i.fields?.length ? ` · records ${i.fields.map((f) => FIELD_LABEL[f as FieldKey] ?? f).join(", ")}` : ""}
-                        {i.kind === "exercise" && i.notes ? ` · ${i.notes}` : ""}
-                      </span>
-                    </span>
-                    <span className="text-xs text-muted">Edit</span>
-                  </summary>
+      {items.length === 0 && (
+        <p className="mb-4 rounded-xl border border-dashed border-line p-4 text-center text-muted">Rest day. Add the first exercise below.</p>
+      )}
 
-                  <form action={updateItem} className="mt-3 space-y-2">
-                    {hidden}
-                    <input type="hidden" name="id" value={i.id} />
-                    <input type="hidden" name="kind" value={i.kind} />
-                    {i.kind === "exercise" ? (
-                      <>
-                        <input
-                          name="exercise"
-                          list="exercise-list"
-                          defaultValue={exName.get(i.exercise_id!) ?? ""}
-                          className={input}
-                          aria-label="Exercise"
-                        />
-                        <input
-                          name="line"
-                          defaultValue={lineFor(i)}
-                          placeholder="4x5 @ 80% rest 3m"
-                          className={input}
-                          aria-label="Prescription"
-                        />
-                        <fieldset>
-                          <legend className="mb-1 text-xs text-muted">Record on this line (none ticked = the exercise&apos;s default)</legend>
-                          <div className="flex flex-wrap gap-1">
-                            {FIELD_KEYS.map((k) => (
-                              <label key={k} className="cursor-pointer">
-                                <input type="checkbox" name="fields" value={k} defaultChecked={i.fields?.includes(k)} className="peer sr-only" />
-                                <span className="inline-flex min-h-8 items-center rounded-full border border-line px-2.5 text-[11px] font-bold text-muted peer-checked:border-brand peer-checked:bg-brand peer-checked:text-white">
-                                  {FIELD_LABEL[k]}
-                                </span>
-                              </label>
-                            ))}
-                          </div>
-                        </fieldset>
-                      </>
-                    ) : (
-                      <>
-                        <input
-                          name="title"
-                          defaultValue={i.title ?? ""}
-                          placeholder="Title (e.g. Warm-up, ESD)"
-                          maxLength={80}
-                          className={input}
-                          aria-label="Title"
-                        />
-                        <textarea
-                          name="notes"
-                          defaultValue={i.notes ?? ""}
-                          rows={4}
-                          maxLength={2000}
-                          className={`${input} py-2`}
-                          aria-label="Notes"
-                        />
-                      </>
-                    )}
-                    <div className="flex gap-2">
-                      <label className="flex items-center gap-2 text-sm text-muted">
-                        Block
-                        <input
-                          name="block"
-                          defaultValue={i.block}
-                          maxLength={1}
-                          className={`${input} !w-14 text-center uppercase`}
-                        />
-                      </label>
-                      <label className="flex items-center gap-2 text-sm text-muted">
-                        Slot
-                        <input
-                          name="slot"
-                          type="number"
-                          min={1}
-                          max={9}
-                          defaultValue={i.slot}
-                          className={`${input} !w-16 text-center`}
-                        />
-                      </label>
-                      <button className={`${smallBtn} ml-auto`}>Save</button>
-                    </div>
-                  </form>
-                  <div className="mt-2 flex gap-2">
-                    {(["up", "down"] as const).map((dir) => (
-                      <form key={dir} action={moveItem}>
-                        {hidden}
-                        <input type="hidden" name="id" value={i.id} />
-                        <input type="hidden" name="dir" value={dir} />
-                        <button className={iconBtn} aria-label={`Move ${dir}`}>
-                          {dir === "up" ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-                        </button>
-                      </form>
-                    ))}
-                    <form action={deleteItem} className="ml-auto">
-                      {hidden}
-                      <input type="hidden" name="id" value={i.id} />
-                      <button className={`${iconBtn} !text-brand`} aria-label="Delete">
-                        <Trash2 size={18} />
-                      </button>
-                    </form>
+      <div className="space-y-2" onDragEnd={() => { setDragId(null); setDropAt(null); }}>
+        {groups.map((g) => {
+          const isSuper = g.rows.length > 1;
+          const first = g.rows[0].i;
+          return (
+            <div key={g.block + first.id} className={`rounded-2xl ${isSuper ? "border border-brand/50 bg-brand/5 p-1.5" : ""}`}>
+              {(isSuper || first.block_title) && (
+                <div className="flex items-center gap-2 px-2 pb-1 pt-0.5">
+                  <span className="text-[11px] font-bold uppercase tracking-widest text-brand">{isSuper ? `Superset ${g.block}` : `Block ${g.block}`}</span>
+                  <input
+                    defaultValue={first.block_title ?? ""}
+                    placeholder="Label (optional)"
+                    maxLength={60}
+                    onBlur={(e) => {
+                      if ((e.target.value || null) !== (first.block_title ?? null)) save(first.id, { block_title: e.target.value });
+                    }}
+                    className="h-7 min-w-0 flex-1 rounded-md border border-transparent bg-transparent px-1 text-xs text-muted hover:border-line focus:border-brand focus:outline-none"
+                    aria-label={`Label for block ${g.block}`}
+                  />
+                </div>
+              )}
+              <div className="space-y-1">
+                {g.rows.map(({ i, k }) => (
+                  <div key={i.id}>
+                    <DropLine at={k} />
+                    <Row
+                      i={i}
+                      k={k}
+                      label={itemLabel(i, sizes.get(i.block) ?? 1)}
+                      name={i.kind === "exercise" ? exName.get(i.exercise_id!) ?? "" : i.title ?? ""}
+                      checked={sel.has(i.id)}
+                      open={open === i.id}
+                      dragging={dragId === i.id}
+                      last={k === items.length - 1}
+                      onCheck={(v) => setSel((s) => { const n = new Set(s); if (v) n.add(i.id); else n.delete(i.id); return n; })}
+                      onToggle={() => setOpen(open === i.id ? null : i.id)}
+                      onSave={(p) => {
+                        if (p.exercise !== undefined) withExercise(p.exercise, (n) => save(i.id, { ...p, exercise: n }));
+                        else save(i.id, p);
+                      }}
+                      onMove={(d) => reorder(moveRow(orderOf(items), k, Math.max(0, Math.min(items.length - 1, k + d))))}
+                      onDup={() => run(() => builderDuplicate(table, parentId, i.id, back))}
+                      onDelete={() => run(() => builderDelete(table, parentId, [i.id], back))}
+                      dragProps={{
+                        draggable: true,
+                        onDragStart: (e: React.DragEvent) => {
+                          e.dataTransfer.effectAllowed = "move";
+                          e.dataTransfer.setData("text/plain", i.id);
+                          setDragId(i.id);
+                        },
+                      }}
+                      dropProps={{ onDragOver: (e: React.DragEvent) => onDragOver(e, k), onDrop }}
+                    />
                   </div>
-                </details>
-              ))}
+                ))}
+              </div>
             </div>
-          </section>
-        ))}
+          );
+        })}
+        <DropLine at={items.length} />
       </div>
 
-      {items.length > 1 && (
-        <form action={reletterItems} className="mt-2 text-right">
-          {hidden}
-          <button className="text-sm text-muted underline underline-offset-4">
-            Re-letter blocks A, B, C…
+      {/* Selection toolbar */}
+      {sel.size > 0 && (
+        <div className="sticky bottom-20 z-20 mt-3 flex flex-wrap items-center gap-2 rounded-2xl border border-brand bg-surface p-2 shadow-lg lg:bottom-4">
+          <span className="px-2 text-sm font-bold">{sel.size} selected</span>
+          <button onClick={makeSuperset} disabled={sel.size < 2} className="flex min-h-10 items-center gap-1.5 rounded-xl bg-brand px-3 text-sm font-extrabold text-white disabled:opacity-40">
+            <Link2 size={16} /> Superset
           </button>
-        </form>
+          <button onClick={split} className="flex min-h-10 items-center gap-1.5 rounded-xl border border-line px-3 text-sm font-bold">
+            <Unlink size={16} /> Split
+          </button>
+          <button onClick={removeSelected} className="flex min-h-10 items-center gap-1.5 rounded-xl border border-line px-3 text-sm font-bold text-brand">
+            <Trash2 size={16} /> Delete
+          </button>
+          <button onClick={() => setSel(new Set())} className="ml-auto min-h-10 px-3 text-sm text-muted">Clear</button>
+        </div>
       )}
 
-      <div className="mt-6 rounded-2xl border border-brand/50 bg-surface p-4">
-        <h2 className="mb-3 font-extrabold">Add exercise</h2>
-        <form action={addItem} className="space-y-2">
-          {hidden}
-          <input type="hidden" name="kind" value="exercise" />
+      {error && <p className="mt-3 rounded-xl border border-brand/50 bg-brand/10 px-3 py-2 text-sm">{error}</p>}
+
+      {missing && (
+        <QuickAdd
+          name={missing.name}
+          onCancel={() => setMissing(null)}
+          onAdd={(name, cat) =>
+            start(async () => {
+              const r = await quickAddExercise(name, cat);
+              if (r.error) return setError(r.error);
+              setLib((l) => [...l, { id: r.data!.id, name: r.data!.name, active: true }]);
+              const then = missing.then;
+              setMissing(null);
+              then(r.data!.name);
+            })
+          }
+        />
+      )}
+
+      {/* Add row */}
+      <div className="mt-4 rounded-2xl border border-line bg-surface p-3">
+        <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted">Add exercise · press Enter to add the next</p>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            submitDraft();
+          }}
+          className="grid grid-cols-4 gap-2 md:grid-cols-[minmax(0,1fr)_64px_80px_150px_72px_auto]"
+        >
           <input
-            name="exercise"
+            ref={addRef}
+            value={draft.exercise}
+            onChange={(e) => setDraft({ ...draft, exercise: e.target.value })}
             list="exercise-list"
             placeholder="Start typing an exercise"
-            required
-            className={input}
+            className={`${box} col-span-4 md:col-span-1`}
             aria-label="Exercise"
           />
-          <input
-            name="line"
-            placeholder="4x5 @ 80% rest 3m"
-            className={input}
-            aria-label="Prescription"
-          />
-          <p className="text-xs text-muted">
-            Examples: 4x5 @ 80% · 3x8 RPE 7 · 3x10 @ 40kg · 3x8-10 · 3x30s ·
-            4x3 @ 80% 0.7m/s · tempo 31X1 · rest 90s. Anything else is kept as a note.
-            Change what gets recorded per line under Edit.
-          </p>
-          {items.length > 0 && (
-            <label className="flex min-h-11 items-center gap-3 text-sm">
-              <input
-                type="checkbox"
-                name="superset"
-                className="h-5 w-5 accent-[var(--color-brand)]"
-              />
-              Superset with the last exercise
-            </label>
-          )}
-          <button className="min-h-11 rounded-xl bg-brand px-4 text-sm font-extrabold uppercase text-white">
-            Add
+          <input value={draft.sets} onChange={(e) => setDraft({ ...draft, sets: e.target.value })} inputMode="numeric" placeholder="Sets" className={box} aria-label="Sets" />
+          <input value={draft.reps} onChange={(e) => setDraft({ ...draft, reps: e.target.value })} placeholder="Reps" className={box} aria-label="Reps" />
+          <div className="col-span-2 flex gap-1 md:col-span-1">
+            <select value={draft.load_type} onChange={(e) => setDraft({ ...draft, load_type: e.target.value })} className={`${box} !w-[72px] shrink-0 !px-1`} aria-label="Load type">
+              {LOADS.map(([v, l]) => (
+                <option key={v} value={v}>{l}</option>
+              ))}
+            </select>
+            <input
+              value={draft.load_value}
+              onChange={(e) => setDraft({ ...draft, load_value: e.target.value })}
+              inputMode="decimal"
+              disabled={draft.load_type === "none" || draft.load_type === "bodyweight"}
+              placeholder="—"
+              className={`${box} disabled:opacity-40`}
+              aria-label="Load"
+            />
+          </div>
+          <input value={draft.rest} onChange={(e) => setDraft({ ...draft, rest: e.target.value })} placeholder="Rest" className={`${box} col-span-2 md:col-span-1`} aria-label="Rest" />
+          <button className="col-span-2 flex h-10 items-center justify-center gap-1 rounded-lg bg-brand px-4 text-sm font-extrabold uppercase text-white md:col-span-1">
+            <Plus size={16} /> Add
           </button>
         </form>
+        <button
+          onClick={() => run(() => builderAdd(table, parentId, { kind: "text", title: "Warm-up", notes: "" }, back))}
+          className="mt-2 text-sm font-bold text-muted underline underline-offset-4"
+        >
+          + Add a text block (warm-up, conditioning, finisher)
+        </button>
+      </div>
+      <p className="mt-2 text-xs text-muted">
+        Tick two or more rows and press <b>Superset</b>. Drag <GripVertical size={12} className="inline" /> to reorder (drop inside a superset to join it). Rest: 90s, 2m or 1:30. Reps can be a range or time: 8-10, 30s, AMRAP.
+      </p>
+    </div>
+  );
+}
 
-        <details className="mt-4">
-          <summary className="cursor-pointer text-sm font-bold text-muted">
-            + Add a text block (warm-up, conditioning, finisher)
-          </summary>
-          <form action={addItem} className="mt-3 space-y-2">
-            {hidden}
-            <input type="hidden" name="kind" value="text" />
-            <input
-              name="title"
-              placeholder="Title, e.g. ESD: Assault Bike"
-              maxLength={80}
-              className={input}
-              aria-label="Title"
-            />
+function Row({
+  i,
+  k,
+  label,
+  name,
+  checked,
+  open,
+  dragging,
+  last,
+  onCheck,
+  onToggle,
+  onSave,
+  onMove,
+  onDup,
+  onDelete,
+  dragProps,
+  dropProps,
+}: {
+  i: ItemFields;
+  k: number;
+  label: string;
+  name: string;
+  checked: boolean;
+  open: boolean;
+  dragging: boolean;
+  last: boolean;
+  onCheck: (v: boolean) => void;
+  onToggle: () => void;
+  onSave: (p: RowPatch) => void;
+  onMove: (d: -1 | 1) => void;
+  onDup: () => void;
+  onDelete: () => void;
+  dragProps: Record<string, unknown>;
+  dropProps: Record<string, unknown>;
+}) {
+  const [loadType, setLoadType] = useState<string>(i.load_type ?? "none");
+  const blur = (key: keyof RowPatch, was: string) => (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    if (e.target.value.trim() !== was) onSave({ [key]: e.target.value } as RowPatch);
+  };
+  const enter = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+  };
+  const text = i.kind === "text";
+
+  return (
+    <div {...dropProps} className={`rounded-xl border bg-surface ${checked ? "border-brand" : "border-line"} ${dragging ? "opacity-40" : ""}`}>
+      <div className="grid grid-cols-[28px_20px_32px_minmax(0,1fr)_auto] items-center gap-2 p-2 md:grid-cols-[28px_20px_32px_minmax(0,1fr)_64px_80px_150px_72px_88px]">
+        <input type="checkbox" checked={checked} onChange={(e) => onCheck(e.target.checked)} className="h-5 w-5 justify-self-center accent-[var(--color-brand)]" aria-label={`Select ${name || "row"}`} />
+        <span {...dragProps} className="hidden cursor-grab text-muted active:cursor-grabbing md:block" title="Drag to reorder" aria-label="Drag to reorder">
+          <GripVertical size={18} />
+        </span>
+        <span className="flex flex-col md:hidden">
+          <button onClick={() => onMove(-1)} disabled={k === 0} className="h-5 text-muted disabled:opacity-20" aria-label="Move up"><ArrowUp size={16} /></button>
+          <button onClick={() => onMove(1)} disabled={last} className="h-5 text-muted disabled:opacity-20" aria-label="Move down"><ArrowDown size={16} /></button>
+        </span>
+        <span className="text-center font-black text-brand">{label}</span>
+        {text ? (
+          <input defaultValue={i.title ?? ""} onBlur={blur("title", i.title ?? "")} onKeyDown={enter} placeholder="Title" className={`${box} font-bold md:col-span-5`} aria-label="Title" />
+        ) : (
+          <input defaultValue={name} list="exercise-list" onBlur={blur("exercise", name)} onKeyDown={enter} className={`${box} font-bold`} aria-label="Exercise" />
+        )}
+        {/* phone: more button sits at row end */}
+        <button onClick={onToggle} className="flex h-10 w-10 items-center justify-center rounded-lg text-muted md:hidden" aria-label="More options">
+          <ChevronDown size={18} className={open ? "rotate-180" : ""} />
+        </button>
+        {!text && (
+          <div className="col-span-5 grid grid-cols-4 gap-2 md:contents">
+            <input defaultValue={i.sets ?? ""} onBlur={blur("sets", String(i.sets ?? ""))} onKeyDown={enter} inputMode="numeric" placeholder="Sets" className={box} aria-label="Sets" />
+            <input defaultValue={i.reps ?? ""} onBlur={blur("reps", i.reps ?? "")} onKeyDown={enter} placeholder="Reps" className={box} aria-label="Reps" />
+            <div className="col-span-2 flex gap-1 md:col-span-1">
+              <select
+                value={loadType}
+                onChange={(e) => {
+                  setLoadType(e.target.value);
+                  if (e.target.value === "none" || e.target.value === "bodyweight") onSave({ load_type: e.target.value, load_value: "" });
+                }}
+                className={`${box} !w-[72px] shrink-0 !px-1`}
+                aria-label="Load type"
+              >
+                {LOADS.map(([v, l]) => (
+                  <option key={v} value={v}>{l}</option>
+                ))}
+              </select>
+              <input
+                key={loadType}
+                defaultValue={loadType === i.load_type ? loadValue(i) : ""}
+                onBlur={(e) => {
+                  if (loadType === "none" || loadType === "bodyweight") return;
+                  if (e.target.value.trim() === "" && loadType !== i.load_type) return;
+                  if (e.target.value.trim() !== loadValue(i) || loadType !== i.load_type) onSave({ load_type: loadType, load_value: e.target.value });
+                }}
+                onKeyDown={enter}
+                inputMode="decimal"
+                disabled={loadType === "none" || loadType === "bodyweight"}
+                placeholder="—"
+                className={`${box} disabled:opacity-40`}
+                aria-label="Load"
+              />
+            </div>
+            <input defaultValue={restText(i.rest_sec)} onBlur={blur("rest", restText(i.rest_sec))} onKeyDown={enter} placeholder="Rest" className={`${box} md:col-span-1`} aria-label="Rest" />
+          </div>
+        )}
+        <div className="hidden items-center justify-end gap-0.5 md:flex">
+          <button onClick={onToggle} className="flex h-9 w-9 items-center justify-center rounded-lg text-muted hover:bg-surface-2" title="Tempo, notes, what to record" aria-label="More options">
+            <ChevronDown size={18} className={open ? "rotate-180" : ""} />
+          </button>
+          <button onClick={onDup} className="flex h-9 w-9 items-center justify-center rounded-lg text-muted hover:bg-surface-2" title="Duplicate" aria-label="Duplicate">
+            <Copy size={16} />
+          </button>
+          <button onClick={onDelete} className="flex h-9 w-9 items-center justify-center rounded-lg text-muted hover:bg-surface-2 hover:text-brand" title="Delete" aria-label="Delete">
+            <Trash2 size={16} />
+          </button>
+        </div>
+      </div>
+
+      {open && (
+        <div className="space-y-2 border-t border-line p-3">
+          {!text && (
+            <div className="grid grid-cols-[100px_1fr] gap-2">
+              <input defaultValue={i.tempo ?? ""} onBlur={blur("tempo", i.tempo ?? "")} onKeyDown={enter} placeholder="Tempo 31X1" className={box} aria-label="Tempo" />
+              <input defaultValue={i.notes ?? ""} onBlur={blur("notes", i.notes ?? "")} onKeyDown={enter} placeholder="Coaching note the client sees" className={box} aria-label="Notes" />
+            </div>
+          )}
+          {text && (
             <textarea
-              name="notes"
+              defaultValue={i.notes ?? ""}
+              onBlur={blur("notes", i.notes ?? "")}
               rows={4}
               maxLength={2000}
-              placeholder={"10 × 30s on / 30s off @ 120% MAS"}
-              className={`${input} py-2`}
+              placeholder="10 × 30s on / 30s off @ 120% MAS"
+              className={`${box} h-auto py-2`}
               aria-label="Notes"
             />
-            <button className={smallBtn}>Add block</button>
-          </form>
-        </details>
+          )}
+          {!text && (
+            <fieldset>
+              <legend className="mb-1 text-xs text-muted">Client records (none ticked = the exercise&apos;s default)</legend>
+              <div className="flex flex-wrap gap-1">
+                {FIELD_KEYS.map((f) => {
+                  const on = i.fields?.includes(f) ?? false;
+                  return (
+                    <button
+                      key={f}
+                      onClick={() => {
+                        const cur = i.fields ?? [];
+                        onSave({ fields: on ? cur.filter((x) => x !== f) : [...cur, f] });
+                      }}
+                      className={`min-h-8 rounded-full border px-2.5 text-[11px] font-bold ${on ? "border-brand bg-brand text-white" : "border-line text-muted"}`}
+                    >
+                      {FIELD_LABEL[f as FieldKey]}
+                    </button>
+                  );
+                })}
+              </div>
+            </fieldset>
+          )}
+          <div className="flex gap-2 md:hidden">
+            <button onClick={onDup} className="flex min-h-10 items-center gap-1.5 rounded-lg border border-line px-3 text-sm font-bold"><Copy size={14} /> Duplicate</button>
+            <button onClick={onDelete} className="flex min-h-10 items-center gap-1.5 rounded-lg border border-line px-3 text-sm font-bold text-brand"><Trash2 size={14} /> Delete</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function QuickAdd({ name, onCancel, onAdd }: { name: string; onCancel: () => void; onAdd: (name: string, cat: string) => void }) {
+  const [n, setN] = useState(name);
+  const [cat, setCat] = useState("strength");
+  return (
+    <div className="mt-3 rounded-2xl border border-warn/60 bg-warn/10 p-3">
+      <p className="mb-2 text-sm">
+        <b>{name}</b> isn&apos;t in your exercise library. Add it now? You can add a video later in the library.
+      </p>
+      <div className="flex flex-wrap gap-2">
+        <input value={n} onChange={(e) => setN(e.target.value)} className={`${box} min-w-40 flex-1`} aria-label="Exercise name" />
+        <select value={cat} onChange={(e) => setCat(e.target.value)} className={`${box} !w-36 capitalize`} aria-label="Category">
+          {CATS.map((c) => (
+            <option key={c} value={c}>{c}</option>
+          ))}
+        </select>
+        <button onClick={() => onAdd(n, cat)} className="h-10 rounded-lg bg-brand px-4 text-sm font-extrabold uppercase text-white">Add & use</button>
+        <button onClick={onCancel} className="h-10 px-3 text-sm text-muted">Cancel</button>
       </div>
     </div>
   );

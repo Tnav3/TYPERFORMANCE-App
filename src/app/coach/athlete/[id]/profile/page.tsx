@@ -28,8 +28,9 @@ export default async function CoachEditProfile({
   );
 
   return (
-    <Screen>
+    <Screen wide>
       <ClientTabs id={id} name={p.full_name ?? p.email} active="profile" sub="Changes show on their account straight away" />
+      <div className="max-w-2xl">
       <ProfileForm
         profile={p}
         disciplines={list}
@@ -37,6 +38,7 @@ export default async function CoachEditProfile({
         today={todayISO()}
         athleteId={id}
       />
+      </div>
     </Screen>
   );
 }

@@ -37,7 +37,7 @@ export function Screen({
 }) {
   return (
     <main
-      className={`mx-auto min-h-dvh w-full px-5 pb-[max(3rem,env(safe-area-inset-bottom))] pt-[calc(env(safe-area-inset-top)+1.25rem)] ${wide ? "max-w-3xl xl:max-w-5xl" : "max-w-md"}`}
+      className={`mx-auto min-h-dvh w-full px-5 pb-[max(3rem,env(safe-area-inset-bottom))] pt-[calc(env(safe-area-inset-top)+1.25rem)] ${wide ? "max-w-3xl lg:max-w-[1600px] lg:px-8" : "max-w-md"}`}
     >
       {children}
     </main>

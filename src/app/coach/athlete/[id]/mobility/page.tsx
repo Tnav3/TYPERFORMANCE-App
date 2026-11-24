@@ -29,12 +29,21 @@ export default async function CoachAthleteMobility({
   const back = `/coach/athlete/${id}/mobility`;
 
   return (
-    <Screen>
+    <Screen wide>
       <ClientTabs id={id} name={p.full_name ?? p.email} active="mobility" />
 
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+      <div>
       <RomSummary measures={measures} entries={entries} showUntested />
+      <RomHistory
+        measures={measures}
+        entries={entries}
+        back={back}
+        canDelete={() => true}
+      />
+      </div>
 
-      <Card className="mb-6">
+      <Card className="mb-6 lg:sticky lg:top-4">
         <h2 className="mb-1 text-lg font-black uppercase">Enter a screen</h2>
         <p className="mb-4 text-sm text-muted">
           Degrees unless marked cm. Thomas thigh angle: degrees below horizontal
@@ -47,13 +56,7 @@ export default async function CoachAthleteMobility({
           today={todayISO()}
         />
       </Card>
-
-      <RomHistory
-        measures={measures}
-        entries={entries}
-        back={back}
-        canDelete={() => true}
-      />
+      </div>
     </Screen>
   );
 }

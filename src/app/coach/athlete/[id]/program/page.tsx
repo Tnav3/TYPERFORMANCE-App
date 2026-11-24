@@ -118,6 +118,10 @@ export default async function ClientProgramPage({
       {sp.swapped && <Alert tone="ok">Swapped on {sp.swapped} upcoming line{sp.swapped === "1" ? "" : "s"}.</Alert>}
       {sp.removed && <Alert tone="ok">Removed {sp.removed} upcoming workouts. Past and logged ones are kept.</Alert>}
 
+      <div className="mb-4">
+        <SeasonList supabase={supabase} target={{ athlete_id: id }} back={back} today={today} />
+      </div>
+
       <PlanCalendar
         athleteId={id}
         view={view}
@@ -130,7 +134,7 @@ export default async function ClientProgramPage({
         nav={nav}
       />
 
-      <div className="mt-8 grid gap-3 sm:grid-cols-2">
+      <div className="mt-8 grid gap-3 lg:max-w-2xl">
         <Card className="!p-4">
           <h2 className="mb-2 font-extrabold">Assigned programs</h2>
           {(assignments ?? []).length === 0 && <p className="text-sm text-muted">None assigned yet.</p>}
@@ -185,9 +189,6 @@ export default async function ClientProgramPage({
             Build or edit programs →
           </Link>
         </Card>
-        <div>
-          <SeasonList supabase={supabase} target={{ athlete_id: id }} back={back} today={today} />
-        </div>
       </div>
 
       <datalist id="swap-ex">

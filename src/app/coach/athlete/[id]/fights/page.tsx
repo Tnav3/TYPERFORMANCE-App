@@ -33,14 +33,17 @@ export default async function CoachAthleteFights({
   const planned = p.next_fight_date as string | null;
 
   return (
-    <Screen>
+    <Screen wide>
       <ClientTabs id={id} name={p.full_name ?? p.email} active="fights" />
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_440px]">
+      <div>
       <FightRecordView
         fights={(data ?? []) as Fight[]}
         back={back}
         thisYear={Number(today.slice(0, 4))}
       />
-      <Card className="mt-6">
+      </div>
+      <Card className="mt-6 lg:mt-0">
         <h2 className="mb-4 text-lg font-black uppercase">
           Log a fight for {p.full_name?.split(" ")[0] ?? "them"}
         </h2>
@@ -50,6 +53,7 @@ export default async function CoachAthleteFights({
           today={today}
         />
       </Card>
+      </div>
     </Screen>
   );
 }

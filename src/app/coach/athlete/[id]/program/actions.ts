@@ -61,3 +61,28 @@ export async function assignProgramOn(athleteId: string, programId: string, star
   revalidatePath(`/coach/athlete/${athleteId}/program`);
   return {};
 }
+
+/** Copy a program from the calendar's program list. */
+export async function duplicateProgramQuick(programId: string, athleteId: string): Promise<Result> {
+  if (!UUID.test(programId) || !UUID.test(athleteId)) return { error: "Not found." };
+  const supabase = await coachOnly();
+  const { data: p } = await supabase.from("programs").select("name").eq("id", programId).maybeSingle();
+  if (!p) return { error: "Program not found." };
+  const name = `${p.name} (copy)`.slice(0, 80);
+  const { error } = await supabase.rpc("duplicate_program", { p_program: programId, p_name: name });
+  if (error) return { error: friendly(error.message) };
+  revalidatePath(`/coach/athlete/${athleteId}/program`);
+  revalidatePath("/coach/programs");
+  return {};
+}
+
+/** Delete a program. Workouts already on clients' calendars are kept. */
+export async function deleteProgramQuick(programId: string, athleteId: string): Promise<Result> {
+  if (!UUID.test(programId) || !UUID.test(athleteId)) return { error: "Not found." };
+  const supabase = await coachOnly();
+  const { error } = await supabase.from("programs").delete().eq("id", programId);
+  if (error) return { error: friendly(error.message) };
+  revalidatePath(`/coach/athlete/${athleteId}/program`);
+  revalidatePath("/coach/programs");
+  return {};
+}
