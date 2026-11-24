@@ -51,4 +51,4 @@ Migrations for this module start at `029_`. They are tested locally with PGlite 
 - Client exercise pop-up (video, how-to, e1RM, best set, last 5 sessions).
 - Logger redesigned TrainHeroic-style: one exercise/superset per screen, progress dots, totals, Back/Timer/Next, timers (rest, stopwatch, EMOM, Tabata), wrap-up screen; "See all" list view kept.
 - Forms (049), referrals (050), notifications inbox (051).
-- Trainerize exercise import into TEST db via temporary edge function `tz-import` + `private.import_trainerize` / `public.import_trainerize_svc` — DELETE both after import (see LAUNCH.md).
+- Trainerize import DONE: 2,357 custom exercises (2,341 new + 16 merged), 2,284 with video, 1,274 with instructions. Import endpoint disabled (returns 410) and helper locked; `public.import_trainerize_svc` + `private.import_trainerize` can be dropped from TEST.
