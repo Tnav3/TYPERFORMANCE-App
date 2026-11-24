@@ -20,7 +20,7 @@ Migrations for this module start at `029_`. They are tested locally with PGlite 
 | L Readiness, session summary, rewards | Done |
 | K Coach overview dashboard | Done: 9 cards, show/hide, follow-ups on client page |
 | Scheduled/recurring messages (part of F) | Done (in-app, pg_cron every minute) |
-| Test database loaded | Not started |
+| Test database loaded | Done: migrations 001–043 + pg_cron + pg_net (app_url still to set) |
 
 ## Backlog from Tyrell (add when able)
 - Notifications centre
@@ -32,3 +32,6 @@ Migrations for this module start at `029_`. They are tested locally with PGlite 
 - Launch-first priority suggested: logging, chat, coach dashboard, payments; announcements/referrals/forms in phase 2
 - Later: review Tyrell's Trainerize account (read-only, via his Chrome) for features to match, esp. Settings → Auto Messages & Events onboarding sequences
 - Also done: per-exercise fields/units, faded prescribed values, master templates, exercise swap, program instructions, one-week-at-a-time, block labels, timers
+| M Push notifications | Done: web push, outbox, reminders, prefs page |
+- Habit gamification done (streaks, perfect days, weekly score, badges)
+- VBT done (m/s targets, velocity metric, per-line metric overrides)

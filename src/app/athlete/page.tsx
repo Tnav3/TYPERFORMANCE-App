@@ -5,6 +5,7 @@ import { planned } from "@/lib/planned-fights";
 import { NextFightCard } from "@/components/NextFightCard";
 import {
   CircleHelp,
+  Bell,
   Camera,
   ClipboardList,
   ListChecks,
@@ -307,6 +308,13 @@ export default async function AthleteHome() {
             </p>
           </Card>
         )}
+
+      <FeatureLink
+        href="/notifications"
+        title="Notifications"
+        description="Phone alerts for messages, workouts and reminders"
+        icon={<Bell size={22} strokeWidth={2.25} />}
+      />
 
       <FeatureLink
         href="/faq"

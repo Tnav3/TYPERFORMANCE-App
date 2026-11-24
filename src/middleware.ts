@@ -8,6 +8,6 @@ export async function middleware(request: NextRequest) {
 export const config = {
   // Skip static files, images, icons and the PWA manifest
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|icon|apple-icon|logo|.*\\.(?:png|jpg|jpeg|svg|webp|ico)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|sw.js|manifest.webmanifest|icon|apple-icon|logo|.*\\.(?:png|jpg|jpeg|svg|webp|ico)$).*)",
   ],
 };

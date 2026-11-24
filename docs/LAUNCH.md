@@ -31,15 +31,27 @@ Test-project login settings: **Authentication → Sign In / Providers → Email*
 
 What happens: paid → account active (or an invite is created if they haven't signed up yet, so they skip the approval queue). Cancelled/failed → account inactive (their data is kept; paying again reactivates it).
 
-## 3. Moving clients off Trainerize
+## 3. Push notifications
+1. Vercel env (Production + Preview): `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`, `PUSH_DISPATCH_SECRET`, `SUPABASE_SERVICE_ROLE_KEY` (values are in the private file Claude sent you, not in this repo).
+2. Tell the database where the app lives (Supabase SQL editor, once per project; use the preview link for the test project and the live link for live):
+   ```sql
+   insert into private.settings (key, value) values
+     ('app_url', 'https://YOUR-APP-LINK'),
+     ('push_secret', 'SAME VALUE AS PUSH_DISPATCH_SECRET')
+   on conflict (key) do update set value = excluded.value;
+   ```
+3. Supabase → Database → Extensions: **pg_net** and **pg_cron** on (the test project already has both).
+4. On your phone: open the app from the Home Screen → Notifications → Turn on. Send yourself a chat message from a second account to check.
+
+## 4. Moving clients off Trainerize
 1. Rebuild your main programs as **master templates** (Programs → More → Save as master).
 2. Dashboard → **Invites & Payments** → paste client emails (basic or premium).
 3. Send them the app link and "sign up with this email" from GHL.
 4. Assign programs from a start date (one week at a time if you prefer).
 5. Run both systems for one full block. Cancel Trainerize after that.
 
-## 4. Going live
-1. Load migrations `029`–`041` into the **live** Supabase project (SQL editor, in order). They only add things; nothing existing is removed.
+## 5. Going live
+1. Load migrations `029`–`043` into the **live** Supabase project (SQL editor, in order). They only add things; nothing existing is removed.
 2. In Supabase (live) check **Database → Extensions → pg_cron** is enabled (needed for scheduled messages), then run:
    `select cron.schedule('send-due-messages', '* * * * *', 'select public.send_due_messages()');`
 3. **Database → Publications → supabase_realtime**: make sure `messages` is included (live chat).
