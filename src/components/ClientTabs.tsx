@@ -1,6 +1,6 @@
 // One header for every client page: name, quick chat, and tabs across the top.
 import Link from "next/link";
-import { MessageCircle } from "lucide-react";
+import { MessageCircle, Timer } from "lucide-react";
 
 export type ClientTab = "overview" | "program" | "progress" | "forms" | "tests" | "lifestyle" | "mobility" | "fights" | "profile";
 
@@ -34,6 +34,12 @@ export function ClientTabs({ id, name, active, sub }: { id: string; name: string
           <h1 className="truncate text-xl font-black uppercase leading-tight tracking-tight">{name}</h1>
           {sub && <p className="truncate text-sm text-muted">{sub}</p>}
         </div>
+        <Link
+          href={`/coach/train?c=${id}`}
+          className="flex min-h-11 items-center gap-2 rounded-xl bg-brand px-3 text-sm font-extrabold text-white"
+        >
+          <Timer size={16} /> <span className="hidden sm:inline">Train now</span>
+        </Link>
         <Link
           href={`/coach/chat/${id}`}
           className="flex min-h-11 items-center gap-2 rounded-xl border border-line bg-surface-2 px-3 text-sm font-bold hover:border-brand"

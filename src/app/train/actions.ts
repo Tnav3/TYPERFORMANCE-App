@@ -16,17 +16,22 @@ import {
 type Result = { ok: true } | { ok: false; error: string };
 type Ctx = Awaited<ReturnType<typeof signedIn>>;
 
-async function ensureLog({ supabase, user }: Ctx, workoutId: string) {
+/** Whose log this is: the client themselves, or a client their coach is logging for. */
+function whoFor(ctx: Ctx, athleteId?: string) {
+  return athleteId && ctx.isCoach && UUID.test(athleteId) ? athleteId : ctx.user.id;
+}
+
+async function ensureLog({ supabase }: Ctx, workoutId: string, who: string) {
   const { data } = await supabase
     .from("workout_logs")
     .select("id, completed_at, training_session_id, workout_date")
     .eq("workout_id", workoutId)
-    .eq("athlete_id", user.id)
+    .eq("athlete_id", who)
     .maybeSingle();
   if (data) return { log: data, error: null };
   const { data: created, error } = await supabase
     .from("workout_logs")
-    .insert({ workout_id: workoutId, athlete_id: user.id })
+    .insert({ workout_id: workoutId, athlete_id: who })
     .select("id, completed_at, training_session_id, workout_date")
     .single();
   return { log: created, error: error?.message ?? null };
@@ -39,6 +44,7 @@ async function ensureLog({ supabase, user }: Ctx, workoutId: string) {
  */
 export async function logSet(input: {
   workoutId: string;
+  athleteId?: string;
   itemId: string;
   setNo: number;
   done: boolean;
@@ -48,7 +54,7 @@ export async function logSet(input: {
   if (!Number.isInteger(input.setNo) || input.setNo < 1 || input.setNo > 30)
     return { ok: false, error: "Bad set number." };
   const ctx = await signedIn();
-  const { log, error } = await ensureLog(ctx, input.workoutId);
+  const { log, error } = await ensureLog(ctx, input.workoutId, whoFor(ctx, input.athleteId));
   if (!log) return { ok: false, error: friendly(error ?? undefined) };
 
   if (!input.done) {
@@ -98,13 +104,14 @@ export async function logSet(input: {
 /** Exercise / text-block note and done tick. */
 export async function saveItemLog(input: {
   workoutId: string;
+  athleteId?: string;
   itemId: string;
   done?: boolean;
   comment?: string | null;
 }): Promise<Result> {
   if (!UUID.test(input.workoutId) || !UUID.test(input.itemId)) return { ok: false, error: "Not found." };
   const ctx = await signedIn();
-  const { log, error } = await ensureLog(ctx, input.workoutId);
+  const { log, error } = await ensureLog(ctx, input.workoutId, whoFor(ctx, input.athleteId));
   if (!log) return { ok: false, error: friendly(error ?? undefined) };
   const { data: cur } = await ctx.supabase
     .from("item_logs")
@@ -121,10 +128,10 @@ export async function saveItemLog(input: {
   return e ? { ok: false, error: friendly(e.message) } : { ok: true };
 }
 
-export async function saveWorkoutComment(input: { workoutId: string; comment: string }): Promise<Result> {
+export async function saveWorkoutComment(input: { workoutId: string; comment: string; athleteId?: string }): Promise<Result> {
   if (!UUID.test(input.workoutId)) return { ok: false, error: "Not found." };
   const ctx = await signedIn();
-  const { log, error } = await ensureLog(ctx, input.workoutId);
+  const { log, error } = await ensureLog(ctx, input.workoutId, whoFor(ctx, input.athleteId));
   if (!log) return { ok: false, error: friendly(error ?? undefined) };
   const { error: e } = await ctx.supabase
     .from("workout_logs")
@@ -135,6 +142,7 @@ export async function saveWorkoutComment(input: { workoutId: string; comment: st
 
 export async function finishWorkout(input: {
   workoutId: string;
+  athleteId?: string;
   rpe: number;
   duration: number;
   comment?: string;
@@ -145,7 +153,7 @@ export async function finishWorkout(input: {
   if (!Number.isInteger(input.duration) || input.duration < 5 || input.duration > 360)
     return { ok: false, error: "Enter how long the session took (5–360 minutes)." };
   const ctx = await signedIn();
-  const { log, error } = await ensureLog(ctx, input.workoutId);
+  const { log, error } = await ensureLog(ctx, input.workoutId, whoFor(ctx, input.athleteId));
   if (!log) return { ok: false, error: friendly(error ?? undefined) };
   const patch: Record<string, unknown> = {
     completed_at: log.completed_at ?? new Date().toISOString(),
@@ -155,32 +163,33 @@ export async function finishWorkout(input: {
   if (input.comment !== undefined) patch.comment = input.comment.trim().slice(0, 1000) || null;
   const { error: e } = await ctx.supabase.from("workout_logs").update(patch).eq("id", log.id);
   if (e) return { ok: false, error: friendly(e.message) };
-  await linkTrainingSession(ctx, log, input.rpe, input.duration);
+  await linkTrainingSession(ctx, whoFor(ctx, input.athleteId), log, input.rpe, input.duration);
   revalidatePath("/train");
   revalidatePath("/athlete");
   return { ok: true };
 }
 
-export async function reopenWorkout(input: { workoutId: string }): Promise<Result> {
+export async function reopenWorkout(input: { workoutId: string; athleteId?: string }): Promise<Result> {
   if (!UUID.test(input.workoutId)) return { ok: false, error: "Not found." };
-  const { supabase, user } = await signedIn();
-  const { error } = await supabase
+  const ctx = await signedIn();
+  const { error } = await ctx.supabase
     .from("workout_logs")
     .update({ completed_at: null })
     .eq("workout_id", input.workoutId)
-    .eq("athlete_id", user.id);
+    .eq("athlete_id", whoFor(ctx, input.athleteId));
   revalidatePath("/train");
   return error ? { ok: false, error: friendly(error.message) } : { ok: true };
 }
 
 /** Feed the weekly training load (S&C → Strength) so nothing is entered twice. */
 async function linkTrainingSession(
-  { supabase, user }: Ctx,
+  { supabase }: Ctx,
+  who: string,
   log: { id: string; training_session_id: string | null; workout_date: string },
   rpe: number,
   duration: number,
 ) {
-  const { data: me } = await supabase.from("profiles").select("feat_checkin").eq("id", user.id).single();
+  const { data: me } = await supabase.from("profiles").select("feat_checkin").eq("id", who).single();
   if (me?.feat_checkin === false) return;
   if (log.training_session_id) {
     await supabase
@@ -207,7 +216,7 @@ async function linkTrainingSession(
   const { data: session } = await supabase
     .from("training_sessions")
     .insert({
-      athlete_id: user.id,
+      athlete_id: who,
       session_date: date,
       start_time: now,
       duration_min: duration,

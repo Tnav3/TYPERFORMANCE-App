@@ -19,6 +19,7 @@ import {
   MessageCircle,
   Settings,
   Trophy,
+  Timer,
   Users,
   UsersRound,
   Workflow,
@@ -38,6 +39,7 @@ export function CoachNav({ unread, notes = 0 }: { unread: number; notes?: number
       [
         { href: "/coach", label: "Dashboard", icon: House },
         { href: "/coach/clients", label: "Clients", icon: Users },
+        { href: "/coach/train", label: "Train together", icon: Timer },
         { href: "/coach/chat", label: "Inbox", icon: MessageCircle, badge: unread },
         { href: "/coach/feed", label: "Workout feed", icon: Activity },
       ],

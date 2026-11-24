@@ -57,17 +57,20 @@ export interface LoggerBlock {
 }
 
 const RPE = [
-  [10, "Max effort"],
-  [9, "Really hard"],
-  [8, "Hard"],
-  [7, "Challenging"],
-  [6, "Moderate+"],
-  [5, "Moderate"],
-  [4, "Somewhat easy"],
-  [3, "Easy"],
+  [1, "Very light"],
   [2, "Very easy"],
-  [1, "Rest"],
+  [3, "Easy"],
+  [4, "Steady"],
+  [5, "Moderate"],
+  [6, "Moderate+"],
+  [7, "Hard"],
+  [8, "Very hard"],
+  [9, "Near max"],
+  [10, "Max effort"],
 ] as const;
+// green → amber → red as the number rises
+const RPE_TONE = (v: number) =>
+  v <= 3 ? "peer-checked:border-ok peer-checked:bg-ok/25" : v <= 6 ? "peer-checked:border-warn peer-checked:bg-warn/25" : "peer-checked:border-brand peer-checked:bg-brand/30";
 
 type SaveState = "idle" | "saving" | "error";
 
@@ -79,6 +82,8 @@ export function WorkoutLogger({
   rpe,
   duration,
   readOnly,
+  athleteId,
+  embedded = false,
 }: {
   workoutId: string;
   blocks: LoggerBlock[];
@@ -87,13 +92,17 @@ export function WorkoutLogger({
   rpe: number | null;
   duration: number | null;
   readOnly: boolean;
+  /** Coach logging for this client (Train together) */
+  athleteId?: string;
+  /** Inside a panel: no sticky/fixed bars, always the full list */
+  embedded?: boolean;
 }) {
   const router = useRouter();
   const [blocks, setBlocks] = useState(initial);
   const [status, setStatus] = useState<Record<string, SaveState>>({});
   const [rest, setRest] = useState<{ until: number; total: number } | null>(null);
   const [sheet, setSheet] = useState<{ id: string; name: string } | null>(null);
-  const [view, setView] = useState<"focus" | "list">(finished || readOnly ? "list" : "focus");
+  const [view, setView] = useState<"focus" | "list">(finished || readOnly || embedded ? "list" : "focus");
   const [idx, setIdx] = useState(0); // current block; blocks.length = wrap-up screen
   const [timersOpen, setTimersOpen] = useState(false);
   const [clock, setClock] = useState<{ kind: "stopwatch" | "interval"; start: number; work?: number; off?: number; rounds?: number; label: string } | null>(null);
@@ -166,7 +175,7 @@ export function WorkoutLogger({
     const key = `${item.id}:${s.setNo}`;
     setStatus((st) => ({ ...st, [key]: "saving" }));
     const values = Object.fromEntries(item.fields.map((f) => [f.key, (s.v[f.key] ?? "").trim() || (s.hint[f.key] ?? "")]));
-    const r = await logSet({ workoutId, itemId: item.id, setNo: s.setNo, done: s.done, values });
+    const r = await logSet({ workoutId, athleteId, itemId: item.id, setNo: s.setNo, done: s.done, values });
     setStatus((st) => ({ ...st, [key]: r.ok ? "idle" : "error" }));
   }
 
@@ -207,7 +216,7 @@ export function WorkoutLogger({
     if (readOnly) return;
     const next = !item.done;
     update(item.id, (i) => ({ ...i, done: next }));
-    saveItemLog({ workoutId, itemId: item.id, done: next });
+    saveItemLog({ workoutId, athleteId, itemId: item.id, done: next });
   }
 
   function finish(fd: FormData) {
@@ -215,6 +224,7 @@ export function WorkoutLogger({
     start(async () => {
       const r = await finishWorkout({
         workoutId,
+        athleteId,
         rpe: Number(fd.get("rpe")),
         duration: Number(fd.get("duration")),
         comment,
@@ -222,7 +232,8 @@ export function WorkoutLogger({
       if (!r.ok) setFinishErr(r.error);
       else {
         setFinishOpen(false);
-        router.push(`/train/${workoutId}/summary`);
+        if (embedded) router.refresh();
+        else router.push(`/train/${workoutId}/summary`);
       }
     });
   }
@@ -232,9 +243,9 @@ export function WorkoutLogger({
     "h-11 w-full min-w-0 rounded-lg border border-line bg-surface-2 px-1 text-center text-base text-text focus:border-brand focus:outline-none disabled:opacity-60";
 
   return (
-    <div className="pb-44">
+    <div className={embedded ? "" : "pb-44"}>
       {/* Progress: one dot per block, running totals */}
-      <div className="sticky top-0 z-10 -mx-5 mb-4 border-b border-line bg-ink/95 px-5 py-2.5 backdrop-blur">
+      {!embedded && <div className="sticky top-0 z-10 -mx-5 mb-4 border-b border-line bg-ink/95 px-5 py-2.5 backdrop-blur">
         <div className="flex items-center gap-3">
           <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
             {blocks.map((b, k) => (
@@ -265,7 +276,7 @@ export function WorkoutLogger({
           {totals.vol > 0 && <span><b className="font-black">{totals.vol.toLocaleString()}</b> <span className="text-muted">{totals.unit} lifted</span></span>}
           <span className="ml-auto text-muted">{done}/{total} {finished ? "· done" : "sets"}</span>
         </p>
-      </div>
+      </div>}
 
       <div className="space-y-4">
         {blocks.map((b, bi) => (view === "focus" && bi !== idx ? null :
@@ -298,7 +309,7 @@ export function WorkoutLogger({
                       </button>
                     </div>
                     {it.notes && <p className="mt-1 whitespace-pre-line text-sm text-muted">{it.notes}</p>}
-                    <ItemNote workoutId={workoutId} item={it} readOnly={readOnly} />
+                    <ItemNote workoutId={workoutId} athleteId={athleteId} item={it} readOnly={readOnly} />
                   </div>
                 ) : (
                   <div key={it.id}>
@@ -421,7 +432,7 @@ export function WorkoutLogger({
                         </button>
                       )}
                     </div>
-                    <ItemNote workoutId={workoutId} item={it} readOnly={readOnly} />
+                    <ItemNote workoutId={workoutId} athleteId={athleteId} item={it} readOnly={readOnly} />
                   </div>
                 ),
               )}
@@ -444,7 +455,7 @@ export function WorkoutLogger({
         <textarea
           value={comment}
           onChange={(e) => setComment(e.target.value)}
-          onBlur={() => !readOnly && saveWorkoutComment({ workoutId, comment })}
+          onBlur={() => !readOnly && saveWorkoutComment({ workoutId, athleteId, comment })}
           rows={3}
           maxLength={1000}
           disabled={readOnly}
@@ -465,7 +476,7 @@ export function WorkoutLogger({
                 </button>
                 <button
                   type="button"
-                  onClick={() => start(async () => { await reopenWorkout({ workoutId }); router.refresh(); })}
+                  onClick={() => start(async () => { await reopenWorkout({ workoutId, athleteId }); router.refresh(); })}
                   className="text-muted underline underline-offset-4"
                 >
                   Reopen
@@ -487,7 +498,7 @@ export function WorkoutLogger({
       </>)}
 
       {/* Bottom bar: Back · Timers · Next */}
-      {view === "focus" && (
+      {view === "focus" && !embedded && (
         <div className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-ink/95 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur">
           <div className="mx-auto grid max-w-md grid-cols-[1fr_auto_1fr] items-center gap-2">
             <button type="button" onClick={() => go(idx - 1)} disabled={idx === 0} className="flex min-h-12 items-center gap-1 rounded-xl px-2 font-bold text-muted disabled:opacity-30">
@@ -577,12 +588,14 @@ export function WorkoutLogger({
                 <X />
               </button>
             </div>
-            <p className="mb-2 text-sm text-muted">How hard was the whole session?</p>
+            <p className="font-bold">Rate the workout intensity</p>
+            <p className="mb-2 text-sm text-muted">1 = very light · 10 = max effort. Rate the whole session, not your hardest set.</p>
+            <div className="mb-1 h-1.5 rounded-full bg-gradient-to-r from-ok via-warn to-brand" aria-hidden />
             <div className="mb-4 grid grid-cols-5 gap-1.5">
               {RPE.map(([v, l]) => (
                 <label key={v} className="cursor-pointer">
                   <input type="radio" name="rpe" value={v} defaultChecked={rpe === v} className="peer sr-only" required />
-                  <span className="flex min-h-12 flex-col items-center justify-center rounded-xl border border-line text-center peer-checked:border-brand peer-checked:bg-brand/20">
+                  <span className={`flex min-h-14 flex-col items-center justify-center rounded-xl border border-line text-center ${RPE_TONE(v)}`}>
                     <span className="text-lg font-black">{v}</span>
                     <span className="px-0.5 text-[10px] leading-tight text-muted">{l}</span>
                   </span>
@@ -611,7 +624,7 @@ export function WorkoutLogger({
       )}
 
       {/* Rest timer */}
-      {rest && (
+      {rest && !embedded && (
         <div className={`fixed inset-x-0 z-20 flex justify-center px-4 ${view === "focus" ? "bottom-[calc(4.5rem+env(safe-area-inset-bottom))]" : "bottom-0 pb-[max(1rem,env(safe-area-inset-bottom))]"}`}>
           <div className="flex w-full max-w-md items-center gap-3 rounded-2xl border border-line bg-surface-2 p-3 shadow-2xl">
             <Timer className="text-brand" />
@@ -638,7 +651,7 @@ export function WorkoutLogger({
   );
 }
 
-function ItemNote({ workoutId, item, readOnly }: { workoutId: string; item: LoggerItem; readOnly: boolean }) {
+function ItemNote({ workoutId, athleteId, item, readOnly }: { workoutId: string; athleteId?: string; item: LoggerItem; readOnly: boolean }) {
   const [v, setV] = useState(item.comment);
   const [saved, setSaved] = useState(item.comment);
   return (
@@ -649,7 +662,7 @@ function ItemNote({ workoutId, item, readOnly }: { workoutId: string; item: Logg
         onChange={(e) => setV(e.target.value)}
         onBlur={async () => {
           if (readOnly || v === saved) return;
-          const r = await saveItemLog({ workoutId, itemId: item.id, comment: v });
+          const r = await saveItemLog({ workoutId, athleteId, itemId: item.id, comment: v });
           if (r.ok) setSaved(v);
         }}
         rows={2}
