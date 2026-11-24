@@ -4,6 +4,7 @@ import { formatDate, todayISO } from "@/lib/dates";
 import { addDays, dayShort } from "@/lib/week";
 import { bodyweights } from "@/lib/programming/history-data";
 import { PhotoGallery } from "@/components/PhotoGallery";
+import { habitStats } from "@/lib/programming/habits";
 import { BodyweightTrend } from "@/components/ProgressViews";
 import { Alert, BackLink, Card, Heading, Screen } from "@/components/ui";
 import { addHabit, setHabitActive, setMacroTargets } from "@/app/lifestyle-actions";
@@ -29,12 +30,13 @@ export default async function LifestylePage({
   const [{ data: client }, { data: habits }, { data: hlogs }, { data: target }, { data: mlogs }, weights] = await Promise.all([
     supabase.from("profiles").select("full_name, email, feat_habits, feat_macros, feat_photos, weight_class_limit_kg").eq("id", id).maybeSingle(),
     supabase.from("habits").select("id, name, active").eq("athlete_id", id).order("active", { ascending: false }).order("created_at"),
-    supabase.from("habit_logs").select("habit_id, day").eq("athlete_id", id).gte("day", days[0]),
+    supabase.from("habit_logs").select("habit_id, day").eq("athlete_id", id).gte("day", addDays(today, -120)),
     supabase.from("macro_targets").select("*").eq("athlete_id", id).maybeSingle(),
     supabase.from("macro_logs").select("*").eq("athlete_id", id).gte("day", addDays(today, -13)).order("day", { ascending: false }),
     bodyweights(supabase, id),
   ]);
   if (!client) notFound();
+  const stats = habitStats((habits ?? []).filter((h) => h.active).map((h) => h.id), hlogs ?? [], today);
   const hit = new Set((hlogs ?? []).map((l) => `${l.habit_id}|${l.day}`));
   const name = client.full_name ?? client.email;
   const off = [!client.feat_habits && "Habits", !client.feat_macros && "Macros", !client.feat_photos && "Photos"].filter(Boolean);
@@ -49,14 +51,20 @@ export default async function LifestylePage({
       )}
 
       <Card className="mb-6 !p-4">
-        <h2 className="mb-3 font-extrabold">Habits · last 4 weeks</h2>
+        <h2 className="mb-1 font-extrabold">Habits · last 4 weeks</h2>
+        <p className="mb-3 text-sm text-muted">
+          This week {stats.weekScore}% · perfect-day streak 🔥 {stats.perfectStreak}
+        </p>
         <div className="space-y-3 overflow-x-auto">
           {(habits ?? []).map((h) => (
             <div key={h.id} className={h.active ? "" : "opacity-50"}>
               <div className="mb-1 flex items-center justify-between gap-2 text-sm">
                 <span className="font-bold">
                   {h.name}{" "}
-                  <span className="font-normal text-muted">{days.filter((d) => hit.has(`${h.id}|${d}`)).length}/28</span>
+                  <span className="font-normal text-muted">
+                    {days.filter((d) => hit.has(`${h.id}|${d}`)).length}/28
+                    {(stats.perHabit.get(h.id) ?? 0) > 1 && ` · 🔥 ${stats.perHabit.get(h.id)}`}
+                  </span>
                 </span>
                 <form action={setHabitActive}>
                   <input type="hidden" name="athlete_id" value={id} />

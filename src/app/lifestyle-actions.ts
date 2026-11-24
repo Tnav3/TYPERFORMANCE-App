@@ -3,6 +3,8 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { todayISO } from "@/lib/dates";
+import { addDays } from "@/lib/week";
+import { habitBadges, habitStats } from "@/lib/programming/habits";
 import { coachOnly, friendly, int, ISO_DATE, safePath, signedIn, str, UUID } from "@/lib/programming/server";
 
 function go(path: string, error?: string): never {
@@ -21,7 +23,22 @@ export async function toggleHabit(fd: FormData) {
     go("/habits");
   }
   const { error } = await supabase.from("habit_logs").insert({ habit_id: habit, day, athlete_id: user.id });
-  go("/habits", error ? friendly(error.message) : undefined);
+  if (error) go("/habits", friendly(error.message));
+  // Rewards: perfect day + streak badges
+  const today = todayISO();
+  const [{ data: habits }, { data: logs }, { data: have }] = await Promise.all([
+    supabase.from("habits").select("id").eq("athlete_id", user.id).eq("active", true),
+    supabase.from("habit_logs").select("habit_id, day").eq("athlete_id", user.id).gte("day", addDays(today, -120)),
+    supabase.from("badges").select("key").eq("athlete_id", user.id),
+  ]);
+  const stats = habitStats((habits ?? []).map((h) => h.id), logs ?? [], today);
+  const held = new Set((have ?? []).map((b) => b.key));
+  const fresh = habitBadges(stats).filter((b) => !held.has(b.key));
+  if (fresh.length) await supabase.from("badges").insert(fresh.map((b) => ({ athlete_id: user.id, key: b.key, detail: b.title })));
+  const params = new URLSearchParams();
+  if (day === today && stats.perfectToday) params.set("perfect", "1");
+  if (fresh.length) params.set("badge", fresh.map((b) => b.title).join(" · "));
+  go(`/habits${params.size ? `?${params}` : ""}`);
 }
 
 export async function saveMacros(fd: FormData) {
