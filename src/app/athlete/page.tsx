@@ -8,6 +8,7 @@ import {
   Bell,
   Camera,
   ClipboardList,
+  ClipboardCheck,
   ListChecks,
   MessageCircle,
   Salad,
@@ -23,6 +24,7 @@ import { welcomeSteps } from "@/lib/tutorial";
 import { WelcomeTour } from "@/components/WelcomeTour";
 import { formatDate, todayISO } from "@/lib/dates";
 import { fightCountdown } from "@/lib/fight";
+import { currentDue, type Repeat } from "@/lib/forms";
 import { addDays, mondayOf } from "@/lib/week";
 import {
   Card,
@@ -110,6 +112,15 @@ export default async function AthleteHome() {
         .neq("sender_id", user!.id)
         .is("read_at", null)
     : { count: 0 };
+  const [{ data: fAsg }, { data: fResp }] = await Promise.all([
+    supabase.from("form_assignments").select("id, form_id, repeat, starts_on, forms(archived)").eq("athlete_id", user!.id).eq("active", true),
+    supabase.from("form_responses").select("form_id, due_on").eq("athlete_id", user!.id).gte("due_on", addDays(today, -62)),
+  ]);
+  const formsDue = (fAsg ?? []).filter((a) => {
+    if ((a.forms as unknown as { archived: boolean } | null)?.archived) return false;
+    const due = currentDue({ repeat: a.repeat as Repeat, starts_on: a.starts_on }, today);
+    return !!due && !(fResp ?? []).some((r) => r.form_id === a.form_id && r.due_on === due);
+  }).length;
   const doneIds = new Set((todayLogs ?? []).filter((l) => l.completed_at).map((l) => l.workout_id));
   // Their planned fight date has passed: ask how it went
   const fightToLog =
@@ -157,6 +168,15 @@ export default async function AthleteHome() {
             <p className="mt-4 flex min-h-12 items-center justify-center rounded-xl bg-brand font-extrabold uppercase tracking-wide text-white">
               {todayWorkouts.length && !todayWorkouts.every((w) => doneIds.has(w.id)) ? "Start workout" : "See my program"}
             </p>
+          </Card>
+        </Link>
+      )}
+
+      {formsDue > 0 && (
+        <Link href="/forms" className="mb-4 block">
+          <Card className="border-warn/60 hover:border-warn">
+            <p className="text-xs font-semibold uppercase tracking-widest text-warn">Check-in due</p>
+            <p className="mt-1 font-extrabold">Your coach is waiting on {formsDue === 1 ? "a quick check-in" : `${formsDue} check-ins`} · tap to fill in →</p>
           </Card>
         </Link>
       )}
@@ -222,6 +242,7 @@ export default async function AthleteHome() {
       {(() => {
         const tiles: [boolean, string, string, React.ReactNode, number?][] = [
           [chatOn, "/chat", "Chat", <MessageCircle key="c" size={28} />, unreadChat ?? 0],
+          [(fAsg ?? []).length > 0, "/forms", "Check-in", <ClipboardCheck key="ci" size={28} />, formsDue],
           [programOn, "/train/history", "Progress", <TrendingUp key="p" size={28} />],
           [hasFeature(profile, "bodyweight"), "/bodyweight", "Weigh-in", <Scale key="b" size={28} />],
           [hasFeature(profile, "habits"), "/habits", "Habits", <ListChecks key="h" size={28} />],
@@ -245,7 +266,7 @@ export default async function AthleteHome() {
                 <span className="text-brand">{icon}</span>
                 <span className="text-base font-extrabold">{label}</span>
                 {badge ? (
-                  <span className="absolute right-3 top-3 rounded-full bg-brand px-2 py-0.5 text-xs font-black text-white">{badge} new</span>
+                  <span className="absolute right-3 top-3 rounded-full bg-brand px-2 py-0.5 text-xs font-black text-white">{badge}{label === "Chat" ? " new" : " due"}</span>
                 ) : null}
               </Link>
             ))}

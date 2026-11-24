@@ -2,12 +2,13 @@
 import Link from "next/link";
 import { MessageCircle } from "lucide-react";
 
-export type ClientTab = "overview" | "program" | "progress" | "tests" | "lifestyle" | "mobility" | "fights" | "profile";
+export type ClientTab = "overview" | "program" | "progress" | "forms" | "tests" | "lifestyle" | "mobility" | "fights" | "profile";
 
 const TABS: [ClientTab, string, string][] = [
   ["program", "Calendar", "/program"],
   ["overview", "Overview", ""],
   ["progress", "Progress", "/progress"],
+  ["forms", "Check-ins", "/forms"],
   ["lifestyle", "Habits & food", "/lifestyle"],
   ["tests", "Testing", "/tests"],
   ["mobility", "Mobility", "/mobility"],

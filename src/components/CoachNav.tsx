@@ -8,6 +8,7 @@ import {
   BookOpen,
   CalendarClock,
   Calculator,
+  ClipboardList,
   CreditCard,
   Dumbbell,
   Bell,
@@ -49,8 +50,9 @@ export function CoachNav({ unread }: { unread: number }) {
       ],
     ],
     [
-      "Messaging",
+      "Clients & messaging",
       [
+        { href: "/coach/forms", label: "Check-in forms", icon: ClipboardList },
         { href: "/coach/messages", label: "Scheduled messages", icon: CalendarClock },
         { href: "/coach/sequences", label: "Onboarding sequences", icon: Workflow },
       ],

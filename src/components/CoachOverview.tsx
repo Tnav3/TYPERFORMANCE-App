@@ -15,6 +15,7 @@ import {
   type OverviewCard,
 } from "@/lib/programming/overview";
 import { programRunway } from "@/lib/programming/runway";
+import { currentDue, isOverdue, type Repeat } from "@/lib/forms";
 import { clearFollowUp, saveDashboardPrefs } from "@/app/coach/overview-actions";
 
 type Client = {
@@ -69,6 +70,15 @@ export async function CoachOverview({
         : Promise.resolve({ data: [] }),
       supabase.from("workouts").select("athlete_id, group_id").limit(5000),
     ]);
+  const [{ data: fAsg }, { data: fResp }] = await Promise.all([
+    supabase.from("form_assignments").select("athlete_id, form_id, repeat, starts_on, forms(name, archived)").eq("active", true),
+    supabase.from("form_responses").select("id, athlete_id, form_id, due_on, coach_seen_at").gte("due_on", addDays(today, -62)),
+  ]);
+  const unread = (fResp ?? []).filter((r) => !r.coach_seen_at);
+  const formOverdue = (fAsg ?? [])
+    .filter((a) => !(a.forms as unknown as { archived: boolean } | null)?.archived)
+    .map((a) => ({ a, due: currentDue({ repeat: a.repeat as Repeat, starts_on: a.starts_on }, today) }))
+    .filter(({ a, due }) => isOverdue(due, (fResp ?? []).some((r) => r.athlete_id === a.athlete_id && r.form_id === a.form_id && r.due_on === due), today));
   const { data: macroRows } = show("compliance")
     ? await supabase.from("macro_logs").select("athlete_id, day").gte("day", weekAgo).lt("day", today)
     : { data: [] };
@@ -181,6 +191,22 @@ export async function CoachOverview({
       )),
     },
     {
+      k: "checkins",
+      label: "New check-ins to read",
+      count: unread.length,
+      body: unread.map((r) => <Person key={r.id} id={r.athlete_id} href={`/coach/athlete/${r.athlete_id}/forms`}>Read →</Person>),
+    },
+    {
+      k: "checkins",
+      label: "Check-in form overdue",
+      count: formOverdue.length,
+      body: formOverdue.map(({ a, due }) => (
+        <Person key={a.athlete_id + a.form_id} id={a.athlete_id} href={`/coach/athlete/${a.athlete_id}/forms`}>
+          {(a.forms as unknown as { name: string } | null)?.name} · due {formatDate(due!)}
+        </Person>
+      )),
+    },
+    {
       k: "expired",
       label: "Program finished – nothing scheduled",
       count: expired.length,
@@ -274,7 +300,7 @@ export async function CoachOverview({
       <h2 className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted">Needs your attention</h2>
       {todo.length ? (
         <div className="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-surface">
-          {todo.map((i) => <Row key={i.k} i={i} />)}
+          {todo.map((i) => <Row key={i.k + i.label} i={i} />)}
         </div>
       ) : (
         <div className="rounded-2xl border border-ok/40 bg-ok/10 px-4 py-4 font-bold text-ok">All clear. Nothing needs you right now.</div>
