@@ -22,7 +22,7 @@ export interface HomeProps {
   trend: { title: string; message: string | null; latest: string; kind: "bars" | "line"; points: { label: string; value: number | null }[] } | null;
   week: { days: { date: string; st: "done" | "missed" | "planned" | "rest" }[]; done: number; total: number } | null;
   empty: boolean;
-  tabs: { train: boolean; chat: boolean; progress: boolean; chatBadge: number; moreBadge: number };
+  tabs: { train: boolean; chat: boolean; progress: boolean; chatBadge: number; moreBadge: number; food?: string | null };
 }
 
 const DOW = ["M", "T", "W", "T", "F", "S", "S"];

@@ -42,7 +42,7 @@ export default async function HistoryPage() {
         </div>
       )}
       <ExerciseList rows={rows} exercises={exercises} hrefBase="/train/history" />
-      <ClientTabBar train chat={menu.chatOn} progress chatBadge={menu.unreadChat} moreBadge={menu.formsDue} />
+      <ClientTabBar train chat={menu.chatOn} progress chatBadge={menu.unreadChat} moreBadge={menu.formsDue} food={menu.food} />
     </Screen>
   );
 }

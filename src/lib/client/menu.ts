@@ -51,5 +51,7 @@ export async function clientMenu(supabase: SupabaseClient, profile: Profile, use
     [!!offer, { href: "/refer", label: "Refer a friend", icon: "refer" }],
   ];
   const items = all.filter(([on]) => on).map(([, i]) => i);
-  return { items, chatOn, programOn, unreadChat: unreadChat ?? 0, formsDue };
+  // Food gets its own tab: meal plan first, then macros, then the nutrition guide.
+  const food = hasFeature(profile, "mealplan") ? "/meal-plan" : hasFeature(profile, "macros") ? "/macros" : hasFeature(profile, "nutrition") ? "/nutrition" : null;
+  return { items, chatOn, programOn, unreadChat: unreadChat ?? 0, formsDue, food };
 }

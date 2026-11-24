@@ -95,7 +95,7 @@ export default async function MorePage() {
       <div className="mt-6 flex justify-center">
         <SignOutButton />
       </div>
-      <ClientTabBar train={hasFeature(profile, "program")} chat={m.chatOn} progress={m.programOn} chatBadge={m.unreadChat} moreBadge={m.formsDue} />
+      <ClientTabBar train={hasFeature(profile, "program")} chat={m.chatOn} progress={m.programOn} chatBadge={m.unreadChat} moreBadge={m.formsDue} food={m.food} />
     </Screen>
   );
 }

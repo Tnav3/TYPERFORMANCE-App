@@ -1,3 +1,4 @@
+import { ClientNavBar } from "@/components/ClientNavBar";
 import Link from "next/link";
 import { requireFeature } from "@/lib/session";
 import { hasFeature } from "@/lib/features";
@@ -85,6 +86,7 @@ export default async function MacrosPage({ searchParams }: { searchParams: Promi
       {hasFeature(profile, "mealplan") && (
         <Link href="/meal-plan" className="mt-6 block text-sm font-bold text-brand">Sample meal plan →</Link>
       )}
+      <ClientNavBar supabase={supabase} profile={profile} userId={user!.id} />
     </Screen>
   );
 }

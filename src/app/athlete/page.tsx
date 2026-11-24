@@ -138,7 +138,7 @@ export default async function AthleteHome() {
       showTodo={todo.length > 0 || programOn || on.checkin}
       week={programOn && week.length ? { days: weekDays.map((d) => ({ date: d, st: dayDone(d) })), done: doneCount, total: week.length } : null}
       empty={!programOn && !on.checkin && menu.items.length === 0}
-      tabs={{ train: programOn, chat: menu.chatOn, progress: programOn, chatBadge: menu.unreadChat, moreBadge: menu.formsDue }}
+      tabs={{ train: programOn, chat: menu.chatOn, progress: programOn, chatBadge: menu.unreadChat, moreBadge: menu.formsDue, food: menu.food }}
     />
   );
 }

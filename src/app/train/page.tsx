@@ -123,7 +123,7 @@ export default async function TrainPage() {
       <Link href="/train/history" className="text-sm text-muted underline underline-offset-4">
         Exercise history & PRs
       </Link>
-      <ClientTabBar train chat={menu.chatOn} progress chatBadge={menu.unreadChat} moreBadge={menu.formsDue} />
+      <ClientTabBar train chat={menu.chatOn} progress chatBadge={menu.unreadChat} moreBadge={menu.formsDue} food={menu.food} />
     </Screen>
   );
 }

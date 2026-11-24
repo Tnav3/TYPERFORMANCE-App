@@ -1,3 +1,4 @@
+import { ClientNavBar } from "@/components/ClientNavBar";
 import { requireFeature } from "@/lib/session";
 import { Tip } from "@/components/Tip";
 import { NutritionGuide } from "@/components/NutritionGuide";
@@ -32,6 +33,7 @@ export default async function NutritionPage() {
           lastBw?.bodyweight_kg != null ? Number(lastBw.bodyweight_kg) : null
         }
       />
+      {state === "athlete" && <ClientNavBar supabase={supabase} profile={profile} userId={user!.id} />}
     </Screen>
   );
 }

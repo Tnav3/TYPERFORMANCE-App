@@ -1,15 +1,16 @@
 "use client";
-// Phone-style tab bar for clients: Home · Train · Chat · Progress · More.
+// Phone-style tab bar for clients: Home · Train · Chat · Nutrition · Progress · More.
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Dumbbell, House, Menu, MessageCircle, TrendingUp } from "lucide-react";
+import { Dumbbell, House, Menu, MessageCircle, TrendingUp, Utensils } from "lucide-react";
 
-export function ClientTabBar({ train, chat, progress, chatBadge, moreBadge }: { train: boolean; chat: boolean; progress: boolean; chatBadge: number; moreBadge: number }) {
+export function ClientTabBar({ train, chat, progress, chatBadge, moreBadge, food = null }: { train: boolean; chat: boolean; progress: boolean; chatBadge: number; moreBadge: number; food?: string | null }) {
   const path = usePathname();
   const tabs = [
     { href: "/", label: "Home", Icon: House, on: path === "/" || path === "/athlete", show: true, badge: 0 },
     { href: "/train", label: "Train", Icon: Dumbbell, on: path === "/train", show: train, badge: 0 },
     { href: "/chat", label: "Chat", Icon: MessageCircle, on: path.startsWith("/chat"), show: chat, badge: chatBadge },
+    { href: food ?? "/nutrition", label: "Nutrition", Icon: Utensils, on: !!food && (path.startsWith("/meal-plan") || path.startsWith("/macros") || path.startsWith("/nutrition")), show: !!food, badge: 0 },
     { href: "/train/history", label: "Progress", Icon: TrendingUp, on: path.startsWith("/train/history"), show: progress, badge: 0 },
     { href: "/more", label: "More", Icon: Menu, on: path === "/more", show: true, badge: moreBadge },
   ].filter((t) => t.show);

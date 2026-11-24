@@ -1,3 +1,4 @@
+import { ClientNavBar } from "@/components/ClientNavBar";
 import { requireFeature } from "@/lib/session";
 import { bodyweights } from "@/lib/programming/history-data";
 import { ACTIVITY, dayTotals, sampleDay, targets, type Goal, type Sex } from "@/lib/programming/mealplan";
@@ -113,6 +114,7 @@ export default async function MealPlanPage({
           </form>
         </>
       )}
+      <ClientNavBar supabase={supabase} profile={profile} userId={user!.id} />
     </Screen>
   );
 }
