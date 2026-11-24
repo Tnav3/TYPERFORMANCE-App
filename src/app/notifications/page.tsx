@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { requireState } from "@/lib/session";
 import { hasFeature } from "@/lib/features";
 import { PushSetup } from "@/components/PushSetup";
@@ -6,11 +7,27 @@ import { saveNotificationPrefs } from "./actions";
 
 export const dynamic = "force-dynamic";
 
+function ago(iso: string) {
+  const m = Math.round((Date.now() - Date.parse(iso)) / 60000);
+  if (m < 1) return "just now";
+  if (m < 60) return `${m} min ago`;
+  const h = Math.round(m / 60);
+  if (h < 24) return `${h} h ago`;
+  const d = Math.round(h / 24);
+  return d === 1 ? "yesterday" : `${d} days ago`;
+}
+
 const check = "h-5 w-5 accent-[var(--color-brand)]";
 const input = "min-h-11 rounded-xl border border-line bg-surface-2 px-3 text-text";
 
 export default async function NotificationsPage({ searchParams }: { searchParams: Promise<{ saved?: string }> }) {
-  const { profile, state } = await requireState(["athlete", "coach"]);
+  const { supabase, profile, state } = await requireState(["athlete", "coach"]);
+  const { data: inbox } = await supabase
+    .from("notifications")
+    .select("id, kind, title, body, url, created_at, read_at")
+    .order("created_at", { ascending: false })
+    .limit(40);
+  if ((inbox ?? []).some((n) => !n.read_at)) await supabase.rpc("mark_notifications_read");
   const { saved } = await searchParams;
   const p = profile as typeof profile & {
     notify_messages?: boolean;
@@ -21,8 +38,22 @@ export default async function NotificationsPage({ searchParams }: { searchParams
   return (
     <Screen>
       <BackLink href={state === "coach" ? "/coach" : "/"} label="Home" />
-      <Heading sub="Get a ping on your phone for messages, new workouts and reminders.">Notifications</Heading>
+      <Heading sub="Messages, new workouts and reminders.">Notifications</Heading>
       {saved && <Alert tone="ok">Saved.</Alert>}
+      <div className="mb-6 divide-y divide-line overflow-hidden rounded-2xl border border-line bg-surface">
+        {(inbox ?? []).length === 0 && <p className="p-4 text-sm text-muted">Nothing yet. New messages and workouts will show up here.</p>}
+        {(inbox ?? []).map((n) => (
+          <Link key={n.id} href={n.url} className={`flex gap-3 px-4 py-3 hover:bg-surface-2 ${n.read_at ? "" : "bg-brand/5"}`}>
+            <span className={`mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full ${n.read_at ? "bg-transparent" : "bg-brand"}`} />
+            <span className="min-w-0 flex-1">
+              <span className="block font-bold">{n.title}</span>
+              <span className="block text-sm text-muted">{n.body}</span>
+              <span className="block text-xs text-muted/70">{ago(n.created_at)}</span>
+            </span>
+          </Link>
+        ))}
+      </div>
+      <h2 className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted">Settings</h2>
       <Card className="mb-4">
         <PushSetup vapidKey={process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? null} />
       </Card>

@@ -13,9 +13,12 @@ export default async function CoachLayout({ children }: { children: React.ReactN
         .neq("sender_id", user.id)
         .is("read_at", null)
     : { count: 0 };
+  const { count: notes } = user
+    ? await supabase.from("notifications").select("id", { count: "exact", head: true }).eq("user_id", user.id).is("read_at", null)
+    : { count: 0 };
   return (
     <>
-      <CoachNav unread={count ?? 0} />
+      <CoachNav unread={count ?? 0} notes={notes ?? 0} />
       <div className="pb-20 lg:pb-0 lg:pl-64">{children}</div>
     </>
   );

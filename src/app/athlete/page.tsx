@@ -122,6 +122,7 @@ export default async function AthleteHome() {
     const due = currentDue({ repeat: a.repeat as Repeat, starts_on: a.starts_on }, today);
     return !!due && !(fResp ?? []).some((r) => r.form_id === a.form_id && r.due_on === due);
   }).length;
+  const { count: unreadNotes } = await supabase.from("notifications").select("id", { count: "exact", head: true }).is("read_at", null);
   const { data: offer } = await supabase.from("referral_offers").select("id").eq("active", true).limit(1).maybeSingle();
   const doneIds = new Set((todayLogs ?? []).filter((l) => l.completed_at).map((l) => l.workout_id));
   // Their planned fight date has passed: ask how it went
@@ -135,7 +136,10 @@ export default async function AthleteHome() {
       )}
       <header className="mb-5 flex items-center justify-between">
         <Logo size={40} />
-        <Link href="/profile" className="text-sm text-muted underline underline-offset-4">My profile</Link>
+        <Link href="/notifications" className="relative flex h-11 w-11 items-center justify-center rounded-xl border border-line text-muted" aria-label={unreadNotes ? `${unreadNotes} new notifications` : "Notifications"}>
+          <Bell size={20} />
+          {unreadNotes ? <span className="absolute -right-1 -top-1 min-w-5 rounded-full bg-brand px-1.5 text-center text-[11px] font-black leading-5 text-white">{unreadNotes}</span> : null}
+        </Link>
       </header>
 
       <h1 className="text-2xl font-black uppercase tracking-tight">

@@ -59,3 +59,10 @@ What happens: paid → account active (or an invite is created if they haven't s
 3. **Database → Publications → supabase_realtime**: make sure `messages` is included (live chat).
 4. Merge `programming-v2` into `main` on GitHub. Vercel deploys production automatically.
 5. Custom SMTP (Authentication → Emails → SMTP) if not done yet, so password resets reach clients.
+
+
+## Added 2026-11-25
+- Load migrations 046–051 into live with the others.
+- Exercise library from Trainerize: after the test import is checked, copy exercises to live with
+  `insert into exercises (...) select ... ` from a CSV export of the test table (Supabase → Table editor → export), or rerun the import against live.
+- Remove the temporary import pieces from TEST once finished: edge function `tz-import`, `public.import_trainerize_svc`, `private.import_trainerize`.

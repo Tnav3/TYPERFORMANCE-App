@@ -23,11 +23,11 @@ Migrations for this module start at `029_`. They are tested locally with PGlite 
 | Test database loaded | Done: migrations 001–043 + pg_cron + pg_net (app_url still to set) |
 
 ## Backlog from Tyrell (add when able)
-- Notifications centre
+- Notifications centre — DONE (inbox + bell, migration 051)
 - Group options (beyond membership)
-- Announcements (in-app, to all / group)
-- Referral offers
-- Form builder (e.g. general check-in form)
+- Announcements (in-app, to all / group) — DONE via Announcements & scheduled (send now/later to everyone, a group or one client)
+- Referral offers — DONE (migration 050)
+- Form builder (e.g. general check-in form) — DONE (migration 049)
 - Scheduled + recurring chat messages are IN-APP only (not email)
 - Launch-first priority suggested: logging, chat, coach dashboard, payments; announcements/referrals/forms in phase 2
 - Later: review Tyrell's Trainerize account (read-only, via his Chrome) for features to match, esp. Settings → Auto Messages & Events onboarding sequences
@@ -44,3 +44,11 @@ Migrations for this module start at `029_`. They are tested locally with PGlite 
 - Client pages share one tabbed header (`ClientTabs`): Calendar · Overview · Progress · Habits & food · Testing · Mobility · Fights · Profile.
 - Planner (`PlanCalendar`): week view with exercises per day, month view, "+" to build a workout on any day, drag to move (Alt-drag copies), drag a program onto a day to start it (tap-then-tap on phones), confirm before assigning.
 - Client home: big Start workout button + icon tiles.
+
+## 2026-11-25 overnight
+- Programming: tick-to-superset builder, sets/reps boxes, drag reorder, duplicate, quick-add exercise, Enter-to-add; apply line to later weeks with progression; exercise default prescriptions; saved blocks; detailed program grid; shift assigned block; copy week forward (047).
+- Library: category chips, tags (048), no-video filter, bulk move/tag/archive.
+- Client exercise pop-up (video, how-to, e1RM, best set, last 5 sessions).
+- Logger redesigned TrainHeroic-style: one exercise/superset per screen, progress dots, totals, Back/Timer/Next, timers (rest, stopwatch, EMOM, Tabata), wrap-up screen; "See all" list view kept.
+- Forms (049), referrals (050), notifications inbox (051).
+- Trainerize exercise import into TEST db via temporary edge function `tz-import` + `private.import_trainerize` / `public.import_trainerize_svc` — DELETE both after import (see LAUNCH.md).

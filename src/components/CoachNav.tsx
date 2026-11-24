@@ -28,7 +28,7 @@ import {
 
 type Item = { href: string; label: string; icon: LucideIcon; badge?: number };
 
-export function CoachNav({ unread }: { unread: number }) {
+export function CoachNav({ unread, notes = 0 }: { unread: number; notes?: number }) {
   const path = usePathname();
   const [open, setOpen] = useState(false);
 
@@ -77,7 +77,7 @@ export function CoachNav({ unread }: { unread: number }) {
     [
       "",
       [
-        { href: "/notifications", label: "Phone notifications", icon: Bell },
+        { href: "/notifications", label: "Notifications", icon: Bell, badge: notes },
         { href: "/coach/settings", label: "Settings", icon: Settings },
       ],
     ],
