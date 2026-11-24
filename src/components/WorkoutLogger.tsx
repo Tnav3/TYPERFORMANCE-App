@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Check, ChevronLeft, ChevronRight, List, RotateCcw, Timer, X } from "lucide-react";
 import { ExerciseSheet } from "@/components/ExerciseSheet";
 import { SwapSheet } from "@/components/SwapSheet";
+import { IntensityDial } from "@/components/IntensityDial";
 import { swapExercise } from "@/app/train/actions";
 import { SWAP_REASONS } from "@/lib/programming/types";
 import { ArrowLeftRight, Info, PlayCircle } from "lucide-react";
@@ -63,21 +64,6 @@ export interface LoggerBlock {
   items: LoggerItem[];
 }
 
-const RPE = [
-  [1, "Very light"],
-  [2, "Very easy"],
-  [3, "Easy"],
-  [4, "Steady"],
-  [5, "Moderate"],
-  [6, "Moderate+"],
-  [7, "Hard"],
-  [8, "Very hard"],
-  [9, "Near max"],
-  [10, "Max effort"],
-] as const;
-// green → amber → red as the number rises
-const RPE_TONE = (v: number) =>
-  v <= 3 ? "peer-checked:border-ok peer-checked:bg-ok/25" : v <= 6 ? "peer-checked:border-warn peer-checked:bg-warn/25" : "peer-checked:border-brand peer-checked:bg-brand/30";
 
 type SaveState = "idle" | "saving" | "error";
 
@@ -89,6 +75,7 @@ export function WorkoutLogger({
   rpe,
   duration,
   readOnly,
+  lastRpe,
   athleteId,
   embedded = false,
 }: {
@@ -99,6 +86,8 @@ export function WorkoutLogger({
   rpe: number | null;
   duration: number | null;
   readOnly: boolean;
+  /** Previous finished session's rating, to compare against */
+  lastRpe?: { rpe: number; date: string } | null;
   /** Coach logging for this client (Train together) */
   athleteId?: string;
   /** Inside a panel: no sticky/fixed bars, always the full list */
@@ -232,6 +221,10 @@ export function WorkoutLogger({
 
   function finish(fd: FormData) {
     setFinishErr(null);
+    if (!Number(fd.get("rpe"))) {
+      setFinishErr("Slide to rate how hard the session was.");
+      return;
+    }
     start(async () => {
       const r = await finishWorkout({
         workoutId,
@@ -501,32 +494,45 @@ export function WorkoutLogger({
 
       {!readOnly && (
         <div className="mt-4">
-          {finished ? (
+          {finished && !finishOpen ? (
             <div className="flex items-center justify-between rounded-2xl border border-ok/50 bg-ok/10 p-4">
               <span className="font-bold">
-                Done · RPE {rpe} · {duration} min
+                Done · intensity {rpe}/10 · {duration} min
               </span>
               <span className="flex gap-3 text-sm">
-                <button type="button" onClick={() => setFinishOpen(true)} className="underline underline-offset-4">
+                <button type="button" onClick={() => setFinishOpen(true)} className="min-h-9 underline underline-offset-4">
                   Edit
                 </button>
                 <button
                   type="button"
                   onClick={() => start(async () => { await reopenWorkout({ workoutId, athleteId }); router.refresh(); })}
-                  className="text-muted underline underline-offset-4"
+                  className="min-h-9 text-muted underline underline-offset-4"
                 >
                   Reopen
                 </button>
               </span>
             </div>
           ) : (
-            <button
-              type="button"
-              onClick={() => setFinishOpen(true)}
-              className="min-h-14 w-full rounded-2xl bg-brand text-lg font-black uppercase tracking-wide text-white"
-            >
-              Finish workout
-            </button>
+            <form action={finish} className="space-y-4 rounded-2xl border border-line bg-surface p-4">
+              <IntensityDial name="rpe" initial={rpe} last={lastRpe ?? null} />
+              <label className="flex items-center justify-between gap-3 text-sm">
+                <span className="font-bold">Minutes</span>
+                <input
+                  name="duration"
+                  type="number"
+                  inputMode="numeric"
+                  min={5}
+                  max={360}
+                  required
+                  defaultValue={duration ?? elapsedMin}
+                  className="min-h-12 w-28 rounded-xl border border-line bg-surface-2 px-3 text-center text-text focus:border-brand focus:outline-none"
+                />
+              </label>
+              {finishErr && <p className="text-sm font-bold text-brand">{finishErr}</p>}
+              <button disabled={pending} className="min-h-14 w-full rounded-2xl bg-brand text-lg font-black uppercase tracking-wide text-white disabled:opacity-60">
+                {pending ? "Saving…" : finished ? "Save changes" : "Finish workout"}
+              </button>
+            </form>
           )}
         </div>
       )}
@@ -613,51 +619,6 @@ export function WorkoutLogger({
 
       {/* Running stopwatch / interval clock */}
       {clock && !rest && <ClockBar clock={clock} now={now} raised={view === "focus"} onStop={() => setClock(null)} />}
-
-      {/* Finish sheet */}
-      {finishOpen && (
-        <div className="fixed inset-0 z-30 flex items-end justify-center bg-black/60" role="dialog" aria-modal="true" aria-label="Finish workout">
-          <form action={finish} className="w-full max-w-md rounded-t-3xl border border-line bg-surface p-5 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
-            <div className="mb-3 flex items-center justify-between">
-              <p className="text-lg font-black uppercase">Finish workout</p>
-              <button type="button" onClick={() => setFinishOpen(false)} aria-label="Close" className="flex h-11 w-11 items-center justify-center text-muted">
-                <X />
-              </button>
-            </div>
-            <p className="font-bold">Rate the workout intensity</p>
-            <p className="mb-2 text-sm text-muted">1 = very light · 10 = max effort. Rate the whole session, not your hardest set.</p>
-            <div className="mb-1 h-1.5 rounded-full bg-gradient-to-r from-ok via-warn to-brand" aria-hidden />
-            <div className="mb-4 grid grid-cols-5 gap-1.5">
-              {RPE.map(([v, l]) => (
-                <label key={v} className="cursor-pointer">
-                  <input type="radio" name="rpe" value={v} defaultChecked={rpe === v} className="peer sr-only" required />
-                  <span className={`flex min-h-14 flex-col items-center justify-center rounded-xl border border-line text-center ${RPE_TONE(v)}`}>
-                    <span className="text-lg font-black">{v}</span>
-                    <span className="px-0.5 text-[10px] leading-tight text-muted">{l}</span>
-                  </span>
-                </label>
-              ))}
-            </div>
-            <label className="mb-4 block text-sm">
-              <span className="mb-1 block text-muted">Minutes</span>
-              <input
-                name="duration"
-                type="number"
-                inputMode="numeric"
-                min={5}
-                max={360}
-                required
-                defaultValue={duration ?? elapsedMin}
-                className="min-h-12 w-full rounded-xl border border-line bg-surface-2 px-3 text-text focus:border-brand focus:outline-none"
-              />
-            </label>
-            {finishErr && <p className="mb-2 text-sm text-brand">{finishErr}</p>}
-            <button disabled={pending} className="min-h-14 w-full rounded-2xl bg-brand text-lg font-black uppercase text-white disabled:opacity-60">
-              {pending ? "Saving…" : "Save workout"}
-            </button>
-          </form>
-        </div>
-      )}
 
       {/* Rest timer */}
       {rest && !embedded && (

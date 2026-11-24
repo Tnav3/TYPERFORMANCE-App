@@ -20,7 +20,7 @@ export default async function WorkoutLogPage({
   if (state === "coach") redirect(`/coach/workouts/${id}`);
   const d = await loadLoggerData(supabase, id, user!.id);
   if (!d) notFound();
-  const { workout, assignment, ready, log, items, blocks, locked, early, finished, today } = d;
+  const { workout, assignment, ready, log, items, blocks, locked, early, finished, today, lastRpe } = d;
 
   return (
     <Screen>
@@ -53,6 +53,7 @@ export default async function WorkoutLogPage({
         comment={log?.comment ?? ""}
         finished={finished}
         rpe={log?.session_rpe ?? null}
+        lastRpe={lastRpe}
         duration={log?.duration_min ?? null}
         readOnly={locked || early}
       />

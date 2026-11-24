@@ -203,5 +203,17 @@ export async function loadLoggerData(supabase: SupabaseClient, workoutId: string
     }),
   }));
 
-  return { workout, assignment, ready, log, items, blocks, locked, early, finished, today };
+  const { data: prevLog } = await supabase
+    .from("workout_logs")
+    .select("session_rpe, workout_date")
+    .eq("athlete_id", athleteId)
+    .not("completed_at", "is", null)
+    .neq("workout_id", workoutId)
+    .lte("workout_date", workout.workout_date)
+    .order("workout_date", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const lastRpe = prevLog?.session_rpe ? { rpe: prevLog.session_rpe as number, date: formatDate(prevLog.workout_date as string) } : null;
+
+  return { workout, assignment, ready, log, items, blocks, locked, early, finished, today, lastRpe };
 }

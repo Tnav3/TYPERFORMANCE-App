@@ -145,6 +145,7 @@ export default async function TrainTogether({ searchParams }: { searchParams: Pr
                   comment={d.log?.comment ?? ""}
                   finished={d.finished}
                   rpe={d.log?.session_rpe ?? null}
+                  lastRpe={d.lastRpe}
                   duration={d.log?.duration_min ?? null}
                   readOnly={false}
                 />

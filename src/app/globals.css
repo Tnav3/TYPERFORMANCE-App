@@ -38,3 +38,38 @@ textarea {
 :root {
   color-scheme: dark;
 }
+
+/* Session intensity slider: green → amber → red track, big thumb for thumbs */
+.intensity-range {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 2.75rem;
+  background: transparent;
+}
+.intensity-range::-webkit-slider-runnable-track {
+  height: 0.75rem;
+  border-radius: 999px;
+  background: linear-gradient(to right, var(--color-ok), var(--color-warn), var(--color-brand));
+}
+.intensity-range::-moz-range-track {
+  height: 0.75rem;
+  border-radius: 999px;
+  background: linear-gradient(to right, var(--color-ok), var(--color-warn), var(--color-brand));
+}
+.intensity-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  margin-top: -0.75rem;
+  height: 2.25rem;
+  width: 2.25rem;
+  border-radius: 999px;
+  background: #fff;
+  border: 3px solid var(--color-ink, #0b0b0b);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.5);
+}
+.intensity-range::-moz-range-thumb {
+  height: 2.25rem;
+  width: 2.25rem;
+  border-radius: 999px;
+  background: #fff;
+  border: 3px solid var(--color-ink, #0b0b0b);
+}
