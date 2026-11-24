@@ -38,6 +38,8 @@ export interface Exercise {
   default_load_type?: string | null;
   default_load_value?: number | string | null;
   default_rest_sec?: number | null;
+  tags?: string[];
+  source?: string | null;
 }
 
 export interface Program {

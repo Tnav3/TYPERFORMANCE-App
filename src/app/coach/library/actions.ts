@@ -24,6 +24,16 @@ function back(error?: string, anchor?: string, q?: string): never {
   redirect(`${PATH}${qs ? `?${qs}` : ""}${anchor ? `#${anchor}` : ""}`);
 }
 
+/** "Lower, unilateral , DB" → ["lower","unilateral","db"] (max 8, 30 chars each) */
+function parseTags(raw: string): string[] {
+  const out: string[] = [];
+  for (const t of raw.split(",")) {
+    const v = t.trim().toLowerCase().replace(/\s+/g, " ").slice(0, 30);
+    if (v && !out.includes(v)) out.push(v);
+  }
+  return out.slice(0, 8);
+}
+
 const LOAD_TYPES = ["percent", "rpe", "kg", "bodyweight", "velocity", "none"];
 /** Default prescription filled in when this exercise is added to a day. */
 function defaults(fd: FormData):
@@ -88,6 +98,7 @@ function fields(fd: FormData) {
       lift_key: KEY.test(lift) ? lift : null,
       video_url,
       cues: str(fd.get("cues"), 1000),
+      tags: parseTags(String(fd.get("tags") ?? "")),
       ...d,
     },
   };
@@ -123,4 +134,35 @@ export async function setExerciseActive(fd: FormData) {
   const active = fd.get("active") === "true";
   const { error } = await supabase.from("exercises").update({ active }).eq("id", id);
   back(error ? friendly(error.message) : undefined, `ex-${id}`);
+}
+
+/** Tick several exercises, then move category, add/remove a tag, archive or restore. */
+export async function bulkExercises(fd: FormData) {
+  const supabase = await coachOnly();
+  const ids = fd.getAll("ids").map(String).filter((x) => UUID.test(x));
+  const op = String(fd.get("op") ?? "");
+  const value = String(fd.get("value") ?? "").trim();
+  const q = String(fd.get("q") ?? "");
+  if (!ids.length) back("Tick some exercises first.", undefined, q);
+  if (op === "category") {
+    if (!CATS.includes(value)) back("Pick a category to move them to.", undefined, q);
+    const { error } = await supabase.from("exercises").update({ category: value }).in("id", ids);
+    if (error) back(friendly(error.message), undefined, q);
+  } else if (op === "archive" || op === "restore") {
+    const { error } = await supabase.from("exercises").update({ active: op === "restore" }).in("id", ids);
+    if (error) back(friendly(error.message), undefined, q);
+  } else if (op === "tag_add" || op === "tag_remove") {
+    const tag = parseTags(value)[0];
+    if (!tag) back("Type the tag.", undefined, q);
+    const { data } = await supabase.from("exercises").select("id, tags").in("id", ids);
+    for (const e of data ?? []) {
+      const cur = (e.tags ?? []) as string[];
+      const next = op === "tag_add" ? (cur.includes(tag!) ? cur : [...cur, tag!].slice(0, 8)) : cur.filter((t) => t !== tag);
+      if (next.join() !== cur.join()) {
+        const { error } = await supabase.from("exercises").update({ tags: next }).eq("id", e.id);
+        if (error) back(friendly(error.message), undefined, q);
+      }
+    }
+  } else back("Pick what to do.", undefined, q);
+  back(undefined, undefined, q);
 }

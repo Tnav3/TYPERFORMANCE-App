@@ -6,9 +6,9 @@ import {
   MEASURES,
   type Exercise,
 } from "@/lib/programming/types";
-import { Alert, BackLink, Card, Heading, Screen } from "@/components/ui";
+import { Alert, Heading, Screen } from "@/components/ui";
 import { FIELD_KEYS, FIELD_LABEL } from "@/lib/programming/fields";
-import { addExercise, setExerciseActive, updateExercise } from "./actions";
+import { addExercise, bulkExercises, setExerciseActive, updateExercise } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -127,6 +127,13 @@ function ExerciseFields({
         className={input}
         aria-label="Video link"
       />
+      <input
+        name="tags"
+        defaultValue={(e?.tags ?? []).join(", ")}
+        placeholder="Tags, comma separated: lower, unilateral, dumbbell, hinge"
+        className={input}
+        aria-label="Tags"
+      />
       <textarea
         name="cues"
         defaultValue={e?.cues ?? ""}
@@ -143,106 +150,165 @@ function ExerciseFields({
 export default async function LibraryPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; q?: string; cat?: string; hidden?: string }>;
+  searchParams: Promise<{ error?: string; q?: string; cat?: string; hidden?: string; tag?: string; novideo?: string }>;
 }) {
   const { supabase } = await requireState(["coach"]);
-  const { error, q = "", cat = "", hidden } = await searchParams;
+  const { error, q = "", cat = "", hidden, tag = "", novideo } = await searchParams;
   const [{ data }, lifts] = await Promise.all([
     supabase.from("exercises").select("*").order("name"),
     getLifts(supabase),
   ]);
   const all = (data ?? []) as Exercise[];
+  const pool = all.filter((e) => (hidden ? !e.active : e.active));
   const needle = q.trim().toLowerCase();
-  const shown = all.filter(
+  const shown = pool.filter(
     (e) =>
-      (hidden ? true : e.active) &&
       (!cat || e.category === cat) &&
-      (!needle || e.name.toLowerCase().includes(needle)),
+      (!tag || (e.tags ?? []).includes(tag)) &&
+      (!novideo || !e.video_url) &&
+      (!needle || e.name.toLowerCase().includes(needle) || (e.tags ?? []).some((t) => t.includes(needle)) || (e.cues ?? "").toLowerCase().includes(needle)),
   );
   const liftOptions = lifts
     .filter((l) => l.kind !== "jump")
     .map((l) => ({ key: l.key, name: l.name }));
   const liftName = new Map(lifts.map((l) => [l.key, l.name]));
   const catLabel = new Map<string, string>(EXERCISE_CATEGORIES);
+  const catCount = new Map<string, number>();
+  for (const e of pool) catCount.set(e.category, (catCount.get(e.category) ?? 0) + 1);
+  const tagCount = new Map<string, number>();
+  for (const e of pool) for (const t of e.tags ?? []) tagCount.set(t, (tagCount.get(t) ?? 0) + 1);
+  const topTags = [...tagCount.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).slice(0, 24);
+  const noVideo = pool.filter((e) => !e.video_url).length;
+  const link = (over: Record<string, string | undefined>) => {
+    const p = new URLSearchParams();
+    const cur: Record<string, string | undefined> = { q: q || undefined, cat: cat || undefined, tag: tag || undefined, novideo, hidden, ...over };
+    for (const [k, v] of Object.entries(cur)) if (v) p.set(k, v);
+    const s = p.toString();
+    return `/coach/library${s ? `?${s}` : ""}`;
+  };
+  const chip = (on: boolean) =>
+    `inline-flex min-h-9 items-center gap-1.5 rounded-full px-3 text-sm font-bold ${on ? "bg-brand text-white" : "border border-line text-muted hover:text-text"}`;
+  const groups = (cat ? [cat] : EXERCISE_CATEGORIES.map(([v]) => v)).map((c) => [c, shown.filter((e) => e.category === c)] as const).filter(([, l]) => l.length);
+  const fmtDefault = (e: Exercise) => {
+    if (!e.default_sets && !e.default_reps) return null;
+    return [e.default_sets && e.default_reps ? `${e.default_sets}×${e.default_reps}` : e.default_reps ?? `${e.default_sets} sets`].join("");
+  };
 
   return (
     <Screen wide>
-      <BackLink href="/coach" label="Dashboard" />
-      <Heading sub={`${all.filter((e) => e.active).length} exercises. Archived ones stay on old workouts.`}>
+      <Heading sub={`${all.filter((e) => e.active).length} exercises · ${noVideo} without a video. Archived ones stay on old workouts.`}>
         Exercise library
       </Heading>
       {error && <Alert>{error}</Alert>}
 
-      <form className="mb-4 flex gap-2" role="search">
-        <input
-          name="q"
-          defaultValue={q}
-          placeholder="Search"
-          className={input}
-          aria-label="Search exercises"
-        />
-        <select name="cat" defaultValue={cat} className={`${input} !w-40`} aria-label="Category">
-          <option value="">All</option>
-          {EXERCISE_CATEGORIES.map(([v, l]) => (
-            <option key={v} value={v}>
-              {l}
-            </option>
-          ))}
-        </select>
-        <button className={smallBtn}>Go</button>
-      </form>
-      <p className="mb-4 text-sm">
-        <Link
-          href={`/coach/library?${new URLSearchParams({ q, cat, ...(hidden ? {} : { hidden: "1" }) })}`}
-          className="text-muted underline underline-offset-4"
-        >
-          {hidden ? "Hide archived" : "Show archived"}
-        </Link>
-      </p>
-
-      <details className="mb-6 rounded-2xl border border-brand/50 bg-surface p-4">
-        <summary className="cursor-pointer font-extrabold">+ Add an exercise</summary>
-        <form action={addExercise} className="mt-4">
-          <ExerciseFields lifts={liftOptions} />
-          <button className="mt-3 min-h-11 rounded-xl bg-brand px-4 text-sm font-extrabold uppercase text-white">
-            Add exercise
-          </button>
+      <div className="mb-4 flex flex-wrap gap-2">
+        <form className="flex min-w-64 flex-1 gap-2" role="search">
+          {cat && <input type="hidden" name="cat" value={cat} />}
+          {tag && <input type="hidden" name="tag" value={tag} />}
+          {novideo && <input type="hidden" name="novideo" value="1" />}
+          {hidden && <input type="hidden" name="hidden" value="1" />}
+          <input name="q" defaultValue={q} placeholder="Search name, tag or cue" className={input} aria-label="Search exercises" />
+          <button className={smallBtn}>Search</button>
         </form>
-      </details>
-
-      <div className="space-y-2">
-        {shown.map((e) => (
-          <Card key={e.id} className={`!p-3 scroll-mt-6 ${e.active ? "" : "opacity-60"}`}>
-            <details id={`ex-${e.id}`}>
-              <summary className="flex cursor-pointer list-none items-center justify-between gap-2">
-                <span className="min-w-0">
-                  <span className="block font-bold">{e.name}</span>
-                  <span className="block text-xs text-muted">
-                    {catLabel.get(e.category)}
-                    {e.lift_key && ` · % of ${liftName.get(e.lift_key) ?? "1RM"}`}
-                    {e.video_url && " · video"}
-                    {!e.active && " · archived"}
-                  </span>
-                </span>
-                <span className="text-sm text-muted">Edit</span>
-              </summary>
-              <form action={updateExercise} className="mt-3">
-                <input type="hidden" name="id" value={e.id} />
-                <ExerciseFields e={e} lifts={liftOptions} />
-                <button className={`${smallBtn} mt-3`}>Save</button>
-              </form>
-              <form action={setExerciseActive} className="mt-2">
-                <input type="hidden" name="id" value={e.id} />
-                <input type="hidden" name="active" value={String(!e.active)} />
-                <button className="text-sm text-muted underline underline-offset-4">
-                  {e.active ? "Archive" : "Restore"}
-                </button>
-              </form>
-            </details>
-          </Card>
-        ))}
-        {shown.length === 0 && <p className="text-muted">No exercises match.</p>}
+        <details className="relative">
+          <summary className="flex min-h-11 cursor-pointer list-none items-center rounded-xl bg-brand px-4 text-sm font-extrabold uppercase text-white">+ New exercise</summary>
+          <div className="absolute right-0 z-20 mt-2 w-[min(92vw,640px)] rounded-2xl border border-line bg-surface p-4 shadow-2xl">
+            <form action={addExercise}>
+              <ExerciseFields lifts={liftOptions} />
+              <button className="mt-3 min-h-11 rounded-xl bg-brand px-4 text-sm font-extrabold uppercase text-white">Add exercise</button>
+            </form>
+          </div>
+        </details>
       </div>
+
+      {/* Category chips */}
+      <div className="mb-2 flex flex-wrap gap-1.5">
+        <Link href={link({ cat: undefined })} className={chip(!cat)}>All <span className="opacity-70">{pool.length}</span></Link>
+        {EXERCISE_CATEGORIES.map(([v, l]) => (
+          <Link key={v} href={link({ cat: cat === v ? undefined : v })} className={chip(cat === v)}>
+            {l} <span className="opacity-70">{catCount.get(v) ?? 0}</span>
+          </Link>
+        ))}
+      </div>
+      {/* Tag + status filters */}
+      <div className="mb-5 flex flex-wrap items-center gap-1.5 text-xs">
+        <Link href={link({ novideo: novideo ? undefined : "1" })} className={`${chip(!!novideo)} !min-h-8 !text-xs`}>No video ({noVideo})</Link>
+        <Link href={link({ hidden: hidden ? undefined : "1" })} className={`${chip(!!hidden)} !min-h-8 !text-xs`}>Archived</Link>
+        {topTags.length > 0 && <span className="ml-2 text-muted">Tags:</span>}
+        {topTags.map(([t, n]) => (
+          <Link key={t} href={link({ tag: tag === t ? undefined : t })} className={`${chip(tag === t)} !min-h-8 !text-xs`}>
+            #{t} <span className="opacity-70">{n}</span>
+          </Link>
+        ))}
+      </div>
+
+      {/* Bulk bar */}
+      <form id="bulk" action={bulkExercises} className="sticky top-2 z-10 mb-4 flex flex-wrap items-center gap-2 rounded-2xl border border-line bg-surface/95 p-2 backdrop-blur">
+        <input type="hidden" name="q" value={q} />
+        <span className="px-2 text-xs font-semibold uppercase tracking-widest text-muted">Ticked:</span>
+        <select name="op" defaultValue="category" className={`${input} !w-44`} aria-label="Action">
+          <option value="category">Move to category</option>
+          <option value="tag_add">Add tag</option>
+          <option value="tag_remove">Remove tag</option>
+          <option value="archive">Archive</option>
+          <option value="restore">Restore</option>
+        </select>
+        <input name="value" list="bulk-values" placeholder="Category or tag" className={`${input} !w-48`} aria-label="Category or tag" />
+        <datalist id="bulk-values">
+          {EXERCISE_CATEGORIES.map(([v]) => <option key={v} value={v} />)}
+          {topTags.map(([t]) => <option key={t} value={t} />)}
+        </datalist>
+        <button className={smallBtn}>Apply</button>
+        <span className="ml-auto pr-2 text-xs text-muted">{shown.length} shown</span>
+      </form>
+
+      {groups.map(([c, list]) => (
+        <section key={c} className="mb-6">
+          <h2 className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted">
+            {catLabel.get(c)} · {list.length}
+          </h2>
+          <div className="grid items-start gap-2 md:grid-cols-2 2xl:grid-cols-3">
+            {list.map((e) => (
+              <div key={e.id} id={`ex-${e.id}`} className={`scroll-mt-24 rounded-xl border border-line bg-surface ${e.active ? "" : "opacity-60"}`}>
+                <div className="flex items-start gap-2 p-3">
+                  <input type="checkbox" name="ids" value={e.id} form="bulk" className="mt-1 h-5 w-5 shrink-0 accent-[var(--color-brand)]" aria-label={`Select ${e.name}`} />
+                  <details className="min-w-0 flex-1">
+                    <summary className="flex cursor-pointer list-none items-start justify-between gap-2">
+                      <span className="min-w-0">
+                        <span className="block font-bold">{e.name}</span>
+                        <span className="mt-1 flex flex-wrap gap-1 text-[11px]">
+                          {e.video_url ? (
+                            <span className="rounded-md bg-ok/15 px-1.5 py-0.5 font-bold text-ok">▶ video</span>
+                          ) : (
+                            <span className="rounded-md bg-warn/15 px-1.5 py-0.5 font-bold text-warn">no video</span>
+                          )}
+                          {e.lift_key && <span className="rounded-md bg-surface-2 px-1.5 py-0.5 text-muted">% of {liftName.get(e.lift_key) ?? "1RM"}</span>}
+                          {fmtDefault(e) && <span className="rounded-md bg-surface-2 px-1.5 py-0.5 text-muted">default {fmtDefault(e)}</span>}
+                          {(e.tags ?? []).map((t) => (
+                            <span key={t} className="rounded-md bg-surface-2 px-1.5 py-0.5 text-muted">#{t}</span>
+                          ))}
+                        </span>
+                      </span>
+                      <span className="shrink-0 text-xs text-muted">Edit</span>
+                    </summary>
+                    <form action={updateExercise} className="mt-3">
+                      <input type="hidden" name="id" value={e.id} />
+                      <ExerciseFields e={e} lifts={liftOptions} />
+                      <button className={`${smallBtn} mt-3`}>Save</button>
+                    </form>
+                    <form action={setExerciseActive} className="mt-2">
+                      <input type="hidden" name="id" value={e.id} />
+                      <input type="hidden" name="active" value={String(!e.active)} />
+                      <button className="text-sm text-muted underline underline-offset-4">{e.active ? "Archive" : "Restore"}</button>
+                    </form>
+                  </details>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      ))}
+      {shown.length === 0 && <p className="text-muted">No exercises match.</p>}
     </Screen>
   );
 }
