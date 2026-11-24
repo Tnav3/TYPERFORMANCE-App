@@ -6,6 +6,15 @@ import { getLifts, getMaxes, latestBodyweight } from "@/lib/lift-data";
 import { formatPrescription, formatRest, itemLabel, setCount, targetReps } from "@/lib/prescription";
 import { baseFor, latestByLift, lineLoad } from "@/lib/programming/loads";
 import {
+  DEFAULT_UNITS,
+  describeSet,
+  fieldsFor,
+  fromCanonical,
+  suggestedDisplayWeight,
+  unitLabel,
+  type Units,
+} from "@/lib/programming/fields";
+import {
   blockTitle,
   byBlock,
   ITEM_COLUMNS,
@@ -24,7 +33,6 @@ import { Alert, BackLink, Heading, Screen } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
 
-const UNIT: Record<string, string> = { time: "sec", distance: "m", calories: "cal", load: "", bodyweight: "" };
 
 export default async function WorkoutLogPage({
   params,
@@ -64,7 +72,7 @@ export default async function WorkoutLogPage({
     exIds.length
       ? supabase
           .from("set_logs")
-          .select("reps, load_kg, value, workout_items!inner(exercise_id, workout_id), workout_logs!inner(workout_date, athlete_id)")
+          .select("reps, load_kg, value, metrics, workout_items!inner(exercise_id, workout_id), workout_logs!inner(workout_date, athlete_id)")
           .eq("workout_logs.athlete_id", user!.id)
           .in("workout_items.exercise_id", exIds)
           .neq("workout_items.workout_id", id)
@@ -79,11 +87,12 @@ export default async function WorkoutLogPage({
   const itemLogs = new Map(((itemLogRows ?? []) as ItemLog[]).map((l) => [l.item_id, l]));
 
   // Most recent previous session per exercise: "5 × 100 kg, 5 × 100 kg…"
-  const last = new Map<string, { date: string; sets: { reps: number | null; kg: number | null; value: number | null }[] }>();
+  const last = new Map<string, { date: string; sets: { reps: number | null; load_kg: number | null; value: number | null; metrics: Record<string, number | null> }[] }>();
   for (const r of (lastRows ?? []) as unknown as {
     reps: number | null;
     load_kg: string | null;
     value: string | null;
+    metrics: Record<string, number | null> | null;
     workout_items: { exercise_id: string };
     workout_logs: { workout_date: string };
   }[]) {
@@ -91,7 +100,7 @@ export default async function WorkoutLogPage({
     const date = r.workout_logs.workout_date;
     const cur = last.get(ex);
     if (cur && cur.date !== date) continue;
-    const entry = { reps: r.reps, kg: r.load_kg == null ? null : Number(r.load_kg), value: r.value == null ? null : Number(r.value) };
+    const entry = { reps: r.reps, load_kg: r.load_kg == null ? null : Number(r.load_kg), value: r.value == null ? null : Number(r.value), metrics: r.metrics ?? {} };
     if (cur) cur.sets.push(entry);
     else last.set(ex, { date, sets: [entry] });
   }
@@ -113,14 +122,17 @@ export default async function WorkoutLogPage({
         return {
           id: it.id, kind: "text", label, name: it.title ?? "Notes", exerciseId: null, rx: "", meta: "",
           notes: it.notes, cues: null, videoUrl: null, loadChip: null, warn: null, prev: null,
-          measure: "load", restSec: null, sets: [], comment: il?.comment ?? "", done: !!il?.done,
+          fields: [], restSec: null, sets: [], comment: il?.comment ?? "", done: !!il?.done,
         };
       const base = baseFor(ex.lift_key, liftMap, latest);
       const load = lineLoad(it, base, bodyweight);
       const logged = sets.filter((x) => x.item_id === it.id);
       const rows = Math.max(setCount(it.sets), ...logged.map((x) => x.set_no));
-      const timed = ex.measure === "time" || ex.measure === "distance" || ex.measure === "calories";
+      const fields = fieldsFor(ex);
+      const units: Units = { ...DEFAULT_UNITS, ...(ex.weight_unit ? { weight_unit: ex.weight_unit } : {}), ...(ex.distance_unit ? { distance_unit: ex.distance_unit } : {}), ...(ex.speed_unit ? { speed_unit: ex.speed_unit } : {}) };
       const prev = last.get(ex.id);
+      const target = targetReps(it.reps);
+      const timeTarget = it.reps && /\d+\s*s$/.test(it.reps) ? String(target) : it.reps && /\d+\s*min$/.test(it.reps) ? String((target ?? 0) * 60) : "";
       return {
         id: it.id,
         kind: "exercise",
@@ -140,7 +152,7 @@ export default async function WorkoutLogPage({
         notes: it.notes,
         cues: ex.cues,
         videoUrl: ex.video_url,
-        loadChip: load ? `${load.addedToBodyweight ? "+" : "~"}${load.kg} kg` : null,
+        loadChip: load ? `${load.addedToBodyweight ? "+" : "~"}${suggestedDisplayWeight(load.kg, units)} ${units.weight_unit}` : null,
         warn:
           it.load_type === "percent" && !base
             ? "Save a 1RM in the calculator to see your load."
@@ -149,21 +161,35 @@ export default async function WorkoutLogPage({
               : null,
         prev: prev
           ? `${formatDate(prev.date)}: ` +
-            prev.sets
-              .map((x) => (timed ? `${x.value ?? "?"} ${UNIT[ex.measure]}` : `${x.reps ?? "?"}${x.kg != null ? ` × ${x.kg} kg` : ""}`))
-              .join(", ")
+            prev.sets.map((x) => describeSet(x, fields, units) || "?").join(", ")
           : null,
-        measure: ex.measure,
+        fields: fields.map((f) => ({ key: f, unit: unitLabel(f, units, ex.measure === "bodyweight" || !!load?.addedToBodyweight) })),
         restSec: it.rest_sec,
         sets: Array.from({ length: rows }, (_, k) => {
           const no = k + 1;
           const x = logged.find((y) => y.set_no === no);
-          const target = targetReps(it.reps);
+          const m = (x?.metrics ?? {}) as Record<string, number | null>;
+          const v: Record<string, string> = {};
+          if (x)
+            for (const f of fields)
+              v[f] =
+                f === "reps" ? (x.reps != null ? String(x.reps) : "")
+                : f === "weight" ? fromCanonical("weight", x.load_kg != null ? Number(x.load_kg) : null, units)
+                : fromCanonical(f, m[f] ?? (f === fields[0] && x.value != null ? Number(x.value) : null), units);
+          const hint: Record<string, string> = {};
+          for (const f of fields) {
+            if (f === "reps" && target != null && !timeTarget) hint.reps = String(target);
+            if (f === "weight" && load) hint.weight = suggestedDisplayWeight(load.kg, units);
+            if (f === "time" && timeTarget) hint.time = timeTarget;
+            if (f === "rpe" && it.rpe != null) hint.rpe = String(Number(it.rpe));
+            if (f === "calories" && it.reps && /\d+\s*cal$/i.test(it.reps)) hint.calories = String(target);
+            if (f === "distance" && it.reps && /\d+\s*m$/i.test(it.reps) && target != null)
+              hint.distance = fromCanonical("distance", target, units);
+          }
           return {
             setNo: no,
-            reps: String(x?.reps ?? (timed ? "" : target ?? "")),
-            kg: String(x ? (x.load_kg != null ? Number(x.load_kg) : "") : (load?.kg ?? "")),
-            value: String(x?.value != null ? Number(x.value) : timed ? (target ?? "") : ""),
+            v,
+            hint,
             done: !!x?.done,
           };
         }),

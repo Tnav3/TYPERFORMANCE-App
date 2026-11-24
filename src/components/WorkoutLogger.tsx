@@ -16,10 +16,16 @@ import {
 
 export interface LoggerSet {
   setNo: number;
-  reps: string;
-  kg: string;
-  value: string;
   done: boolean;
+  /** What the client typed, by field (display units) */
+  v: Record<string, string>;
+  /** Prescribed / suggested values, shown faded; used when a box is left empty */
+  hint: Record<string, string>;
+}
+
+export interface LoggerField {
+  key: string;
+  unit: string;
 }
 
 export interface LoggerItem {
@@ -36,7 +42,7 @@ export interface LoggerItem {
   loadChip: string | null;
   warn: string | null;
   prev: string | null;
-  measure: "load" | "bodyweight" | "time" | "distance" | "calories";
+  fields: LoggerField[];
   restSec: number | null;
   sets: LoggerSet[];
   comment: string;
@@ -50,7 +56,6 @@ export interface LoggerBlock {
   items: LoggerItem[];
 }
 
-const UNIT = { time: "sec", distance: "m", calories: "cal" } as const;
 const RPE = [
   [10, "Max effort"],
   [9, "Really hard"],
@@ -131,16 +136,8 @@ export function WorkoutLogger({
   async function saveSet(item: LoggerItem, s: LoggerSet) {
     const key = `${item.id}:${s.setNo}`;
     setStatus((st) => ({ ...st, [key]: "saving" }));
-    const timed = item.measure === "time" || item.measure === "distance" || item.measure === "calories";
-    const r = await logSet({
-      workoutId,
-      itemId: item.id,
-      setNo: s.setNo,
-      done: s.done,
-      reps: timed ? null : s.reps,
-      kg: timed ? null : s.kg,
-      value: timed ? s.value : null,
-    });
+    const values = Object.fromEntries(item.fields.map((f) => [f.key, (s.v[f.key] ?? "").trim() || (s.hint[f.key] ?? "")]));
+    const r = await logSet({ workoutId, itemId: item.id, setNo: s.setNo, done: s.done, values });
     setStatus((st) => ({ ...st, [key]: r.ok ? "idle" : "error" }));
   }
 
@@ -155,10 +152,10 @@ export function WorkoutLogger({
     if (changed.done && cur.restSec) setRest({ until: Date.now() + cur.restSec * 1000, total: cur.restSec });
   }
 
-  function editSet(item: LoggerItem, setNo: number, field: "reps" | "kg" | "value", v: string) {
+  function editSet(item: LoggerItem, setNo: number, field: string, val: string) {
     update(item.id, (i) => ({
       ...i,
-      sets: i.sets.map((s) => (s.setNo === setNo ? { ...s, [field]: v } : s)),
+      sets: i.sets.map((x) => (x.setNo === setNo ? { ...x, v: { ...x.v, [field]: val } } : x)),
     }));
   }
 
@@ -172,10 +169,7 @@ export function WorkoutLogger({
       const last = i.sets[i.sets.length - 1];
       return {
         ...i,
-        sets: [
-          ...i.sets,
-          { setNo: (last?.setNo ?? 0) + 1, reps: last?.reps ?? "", kg: last?.kg ?? "", value: last?.value ?? "", done: false },
-        ],
+        sets: [...i.sets, { setNo: (last?.setNo ?? 0) + 1, done: false, v: { ...(last?.v ?? {}) }, hint: { ...(last?.hint ?? {}) } }],
       };
     });
   }
@@ -306,63 +300,53 @@ export function WorkoutLogger({
                     )}
 
                     <div className="mt-2 space-y-1.5">
+                      <div
+                        className="grid items-end gap-2 px-1 text-[11px] uppercase tracking-wide text-muted"
+                        style={{ gridTemplateColumns: `1.75rem repeat(${it.fields.length}, minmax(0, 1fr)) 3rem` }}
+                      >
+                        <span className="text-center">Set</span>
+                        {it.fields.map((f) => (
+                          <span key={f.key} className="text-center">{f.unit}</span>
+                        ))}
+                        <span />
+                      </div>
                       {it.sets.map((s) => {
                         const key = `${it.id}:${s.setNo}`;
                         const st = status[key];
-                        const timed = it.measure === "time" || it.measure === "distance" || it.measure === "calories";
                         return (
                           <div
                             key={s.setNo}
-                            className={`grid grid-cols-[1.75rem_1fr_1fr_3rem] items-center gap-2 rounded-xl p-1 transition ${s.done ? "bg-ok/10" : ""}`}
+                            className={`grid items-center gap-2 rounded-xl p-1 transition ${s.done ? "bg-ok/10" : ""}`}
+                            style={{ gridTemplateColumns: `1.75rem repeat(${it.fields.length}, minmax(0, 1fr)) 3rem` }}
                           >
                             <span className="text-center text-sm font-bold text-muted">{s.setNo}</span>
-                            {timed ? (
-                              <label className="col-span-2 flex items-center gap-2">
-                                {it.measure === "time" && !readOnly && (
-                                  <Stopwatch
-                                    onStop={(sec) => {
-                                      editSet(it, s.setNo, "value", String(sec));
-                                    }}
-                                  />
-                                )}
-                                <input
-                                  value={s.value}
-                                  onChange={(e) => editSet(it, s.setNo, "value", e.target.value)}
-                                  onBlur={() => commitSet(it, s.setNo)}
-                                  inputMode="decimal"
-                                  disabled={readOnly}
-                                  className={cell}
-                                  aria-label={`Set ${s.setNo} ${UNIT[it.measure as keyof typeof UNIT]}`}
-                                />
-                                <span className="w-8 text-xs text-muted">{UNIT[it.measure as keyof typeof UNIT]}</span>
-                              </label>
-                            ) : (
-                              <>
-                                <label className="flex items-center gap-1">
+                            {it.fields.map((f) =>
+                              f.key === "time" && !readOnly ? (
+                                <div key={f.key} className="flex min-w-0 items-center gap-1">
+                                  <Stopwatch onStop={(sec) => editSet(it, s.setNo, "time", String(sec))} />
                                   <input
-                                    value={s.reps}
-                                    onChange={(e) => editSet(it, s.setNo, "reps", e.target.value)}
-                                    onBlur={() => commitSet(it, s.setNo)}
-                                    inputMode="numeric"
-                                    disabled={readOnly}
-                                    className={cell}
-                                    aria-label={`Set ${s.setNo} reps`}
-                                  />
-                                  <span className="w-7 text-xs text-muted">reps</span>
-                                </label>
-                                <label className="flex items-center gap-1">
-                                  <input
-                                    value={s.kg}
-                                    onChange={(e) => editSet(it, s.setNo, "kg", e.target.value)}
+                                    value={s.v.time ?? ""}
+                                    placeholder={s.hint.time ?? ""}
+                                    onChange={(e) => editSet(it, s.setNo, "time", e.target.value)}
                                     onBlur={() => commitSet(it, s.setNo)}
                                     inputMode="decimal"
-                                    disabled={readOnly}
-                                    className={cell}
-                                    aria-label={`Set ${s.setNo} kg`}
+                                    className={`${cell} placeholder:text-muted/50`}
+                                    aria-label={`Set ${s.setNo} seconds`}
                                   />
-                                  <span className="w-7 text-xs text-muted">{it.measure === "bodyweight" ? "+kg" : "kg"}</span>
-                                </label>
-                              </>
+                                </div>
+                              ) : (
+                                <input
+                                  key={f.key}
+                                  value={s.v[f.key] ?? ""}
+                                  placeholder={s.hint[f.key] ?? ""}
+                                  onChange={(e) => editSet(it, s.setNo, f.key, e.target.value)}
+                                  onBlur={() => commitSet(it, s.setNo)}
+                                  inputMode={f.key === "reps" || f.key === "heart_rate" || f.key === "watts" || f.key === "calories" ? "numeric" : "decimal"}
+                                  disabled={readOnly}
+                                  className={`${cell} placeholder:text-muted/50`}
+                                  aria-label={`Set ${s.setNo} ${f.unit}`}
+                                />
+                              ),
                             )}
                             <button
                               type="button"

@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { titleCase } from "@/lib/calculator";
 import { coachOnly, friendly, str, UUID } from "@/lib/programming/server";
+import { FIELD_KEYS } from "@/lib/programming/fields";
 import {
   cleanVideoUrl,
   EXERCISE_CATEGORIES,
@@ -35,8 +36,17 @@ function fields(fd: FormData) {
   if (!CATS.includes(category)) return { error: "Pick a category." };
   if (!MEAS.includes(measure)) return { error: "Pick how it's measured." };
   if (videoRaw && !video_url) return { error: "Video link must start with https://" };
+  const fieldsPicked = fd.getAll("fields").map(String).filter((f) => (FIELD_KEYS as readonly string[]).includes(f));
+  if (fieldsPicked.length > 4) return { error: "Pick up to 4 things to record." };
+  const wu = String(fd.get("weight_unit") ?? "kg");
+  const du = String(fd.get("distance_unit") ?? "m");
+  const su = String(fd.get("speed_unit") ?? "kmh");
   return {
     row: {
+      fields: fieldsPicked.length ? FIELD_KEYS.filter((k) => fieldsPicked.includes(k)) : null,
+      weight_unit: wu === "lb" ? "lb" : "kg",
+      distance_unit: ["m", "km", "mi"].includes(du) ? du : "m",
+      speed_unit: su === "mph" ? "mph" : "kmh",
       name,
       category,
       measure,

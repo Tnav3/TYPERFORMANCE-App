@@ -29,6 +29,10 @@ export interface Exercise {
   video_url: string | null;
   cues: string | null;
   active: boolean;
+  fields?: string[] | null;
+  weight_unit?: "kg" | "lb";
+  distance_unit?: "m" | "km" | "mi";
+  speed_unit?: "kmh" | "mph";
 }
 
 export interface Program {
@@ -116,6 +120,7 @@ export interface SetLog {
   reps: number | null;
   load_kg: number | string | null;
   value: number | string | null;
+  metrics?: Record<string, number | null> | null;
   done: boolean;
 }
 

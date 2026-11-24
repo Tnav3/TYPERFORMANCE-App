@@ -5,6 +5,7 @@ import { formatDate } from "@/lib/dates";
 import { formatPrescription, itemLabel } from "@/lib/prescription";
 import { byBlock, ITEM_COLUMNS, type ItemFields, type ItemLog, type SetLog } from "@/lib/programming/types";
 import { BackLink, Card, Heading, Screen } from "@/components/ui";
+import { DEFAULT_UNITS, describeSet, fieldsFor, type Units } from "@/lib/programming/fields";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +19,7 @@ export default async function CoachLogPage({ params }: { params: Promise<{ id: s
     .maybeSingle();
   if (!log) notFound();
   const [{ data: items }, { data: sets }, { data: itemLogs }] = await Promise.all([
-    supabase.from("workout_items").select(`${ITEM_COLUMNS}, exercises(name, measure)`).eq("workout_id", log.workout_id).order("position"),
+    supabase.from("workout_items").select(`${ITEM_COLUMNS}, exercises(name, measure, fields, weight_unit, distance_unit, speed_unit)`).eq("workout_id", log.workout_id).order("position"),
     supabase.from("set_logs").select("*").eq("log_id", id).order("set_no"),
     supabase.from("item_logs").select("*").eq("log_id", id),
   ]);
@@ -35,8 +36,7 @@ export default async function CoachLogPage({ params }: { params: Promise<{ id: s
   const w = log.workouts as { id: string; title: string } | null;
   const setList = (sets ?? []) as SetLog[];
   const notes = new Map(((itemLogs ?? []) as ItemLog[]).map((l) => [l.item_id, l]));
-  const list = (items ?? []) as unknown as (ItemFields & { exercises: { name: string; measure: string } | null })[];
-  const unit: Record<string, string> = { time: "s", distance: "m", calories: "cal" };
+  const list = (items ?? []) as unknown as (ItemFields & { exercises: { name: string; measure: string; fields?: string[] | null } | null })[];
 
   return (
     <Screen wide>
@@ -93,11 +93,17 @@ export default async function CoachLogPage({ params }: { params: Promise<{ id: s
                         Actual:{" "}
                         {done.length
                           ? done
-                              .map((s) =>
-                                s.value != null
-                                  ? `${Number(s.value)}${unit[it.exercises?.measure ?? ""] ?? ""}`
-                                  : `${s.reps ?? "?"}${s.load_kg != null ? ` × ${Number(s.load_kg)}kg` : ""}`,
-                              )
+                              .map((s) => {
+                                const ex = it.exercises ?? { measure: "load" };
+                                const u = { ...DEFAULT_UNITS, ...Object.fromEntries(Object.entries(ex).filter(([k, v]) => k.endsWith("_unit") && v)) } as Units;
+                                return (
+                                  describeSet(
+                                    { reps: s.reps, load_kg: s.load_kg != null ? Number(s.load_kg) : null, value: s.value != null ? Number(s.value) : null, metrics: s.metrics ?? {} },
+                                    fieldsFor(ex as { measure: string; fields?: string[] | null }),
+                                    u,
+                                  ) || "✓"
+                                );
+                              })
                               .join(", ")
                           : <span className="text-warn">nothing logged</span>}
                         {it.sets && done.length > 0 && done.length < it.sets && (

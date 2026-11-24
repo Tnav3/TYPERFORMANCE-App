@@ -4,15 +4,17 @@
 import { revalidatePath } from "next/cache";
 import { todayISO } from "@/lib/dates";
 import { friendly, signedIn, UUID } from "@/lib/programming/server";
+import {
+  DEFAULT_UNITS,
+  fieldsFor,
+  primaryValue,
+  toCanonical,
+  type FieldKey,
+  type Units,
+} from "@/lib/programming/fields";
 
 type Result = { ok: true } | { ok: false; error: string };
 type Ctx = Awaited<ReturnType<typeof signedIn>>;
-
-const clampNum = (v: unknown, max: number): number | null => {
-  if (v === null || v === undefined || v === "") return null;
-  const n = Number(String(v).replace(",", "."));
-  return Number.isFinite(n) && n >= 0 && n <= max ? n : null;
-};
 
 async function ensureLog({ supabase, user }: Ctx, workoutId: string) {
   const { data } = await supabase
@@ -30,15 +32,17 @@ async function ensureLog({ supabase, user }: Ctx, workoutId: string) {
   return { log: created, error: error?.message ?? null };
 }
 
-/** Tick / untick / edit one set. Unticked sets are removed. */
+/**
+ * Tick / untick / edit one set. `values` are what the client typed, in the
+ * exercise's display units; they're converted to canonical units here.
+ * Unticked sets are removed.
+ */
 export async function logSet(input: {
   workoutId: string;
   itemId: string;
   setNo: number;
   done: boolean;
-  reps?: number | string | null;
-  kg?: number | string | null;
-  value?: number | string | null;
+  values?: Record<string, string>;
 }): Promise<Result> {
   if (!UUID.test(input.workoutId) || !UUID.test(input.itemId)) return { ok: false, error: "Not found." };
   if (!Number.isInteger(input.setNo) || input.setNo < 1 || input.setNo > 30)
@@ -56,16 +60,35 @@ export async function logSet(input: {
       .eq("set_no", input.setNo);
     return e ? { ok: false, error: friendly(e.message) } : { ok: true };
   }
-  const reps = clampNum(input.reps, 1000);
+  const { data: item } = await ctx.supabase
+    .from("workout_items")
+    .select("exercises(measure, fields, weight_unit, distance_unit, speed_unit)")
+    .eq("id", input.itemId)
+    .maybeSingle();
+  const ex = (item?.exercises ?? { measure: "load" }) as unknown as {
+    measure: string;
+    fields?: string[] | null;
+  } & Partial<Units>;
+  const units: Units = { ...DEFAULT_UNITS, ...Object.fromEntries(Object.entries(ex).filter(([k, v]) => k.endsWith("_unit") && v)) } as Units;
+  const metrics: Partial<Record<FieldKey, number | null>> = {};
+  let reps: number | null = null;
+  let kg: number | null = null;
+  for (const f of fieldsFor(ex)) {
+    const v = toCanonical(f, String(input.values?.[f] ?? ""), units);
+    if (f === "reps") reps = v == null ? null : Math.min(1000, v);
+    else if (f === "weight") kg = v == null ? null : Math.min(600, v);
+    else if (v != null) metrics[f] = Math.min(100000, v);
+  }
   const { error: e } = await ctx.supabase.from("set_logs").upsert(
     {
       log_id: log.id,
       item_id: input.itemId,
       set_no: input.setNo,
       done: true,
-      reps: reps === null ? null : Math.round(reps),
-      load_kg: clampNum(input.kg, 600),
-      value: clampNum(input.value, 100000),
+      reps,
+      load_kg: kg,
+      value: primaryValue(metrics),
+      metrics,
     },
     { onConflict: "log_id,item_id,set_no" },
   );

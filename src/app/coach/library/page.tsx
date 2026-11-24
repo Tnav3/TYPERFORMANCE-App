@@ -7,6 +7,7 @@ import {
   type Exercise,
 } from "@/lib/programming/types";
 import { Alert, BackLink, Card, Heading, Screen } from "@/components/ui";
+import { FIELD_KEYS, FIELD_LABEL } from "@/lib/programming/fields";
 import { addExercise, setExerciseActive, updateExercise } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -73,6 +74,36 @@ function ExerciseFields({
           ))}
         </select>
       </label>
+      <fieldset className="rounded-xl border border-line p-3">
+        <legend className="px-1 text-sm text-muted">What to record each set (up to 4; none ticked = default for its type)</legend>
+        <div className="flex flex-wrap gap-1.5">
+          {FIELD_KEYS.map((k) => (
+            <label key={k} className="cursor-pointer">
+              <input type="checkbox" name="fields" value={k} defaultChecked={e?.fields?.includes(k)} className="peer sr-only" />
+              <span className="inline-flex min-h-9 items-center rounded-full border border-line px-3 text-xs font-bold text-muted peer-checked:border-brand peer-checked:bg-brand peer-checked:text-white">
+                {FIELD_LABEL[k]}
+              </span>
+            </label>
+          ))}
+        </div>
+        <div className="mt-2 grid grid-cols-3 gap-2 text-xs text-muted">
+          <label>Weight in
+            <select name="weight_unit" defaultValue={e?.weight_unit ?? "kg"} className={input}>
+              <option value="kg">kg</option><option value="lb">lb</option>
+            </select>
+          </label>
+          <label>Distance in
+            <select name="distance_unit" defaultValue={e?.distance_unit ?? "m"} className={input}>
+              <option value="m">metres</option><option value="km">km</option><option value="mi">miles</option>
+            </select>
+          </label>
+          <label>Speed in
+            <select name="speed_unit" defaultValue={e?.speed_unit ?? "kmh"} className={input}>
+              <option value="kmh">km/h</option><option value="mph">mph</option>
+            </select>
+          </label>
+        </div>
+      </fieldset>
       <input
         name="video_url"
         type="url"

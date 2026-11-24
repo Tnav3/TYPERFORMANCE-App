@@ -21,6 +21,7 @@ Principles
 
 ## Segment A: Exercise library
 - `exercises`: name (unique), category (strength, power, plyometric, conditioning, mobility, core, accessory), optional link to a calculator lift (`lift_key`) so %1RM can auto-load, video URL (YouTube/Vimeo), coaching cues, measure (`load`, `bodyweight`, `time`, `distance`, `calories`), active flag.
+- **What to record** (per exercise, up to 4, chosen when adding/editing): reps, weight, time, distance, speed, watts, calories, heart rate, RPE, height. **Units** per exercise: weight kg/lb, distance m/km/miles, speed km/h/mph. Stored in metric behind the scenes so e1RM, PBs and leaderboards stay comparable; shown in the exercise's units. Defaults if nothing is picked: weights → reps + weight; timed → time; etc.
 - Seeded with every calculator lift plus common accessories.
 - Coach screen `/coach/library`: search, filter by category, add/edit, archive (hidden from pickers, old workouts keep it).
 - Clients can read active exercises (to show video and cues).
@@ -52,6 +53,7 @@ Principles
 - Home shows **Today**: the workout(s) for today plus the next 6 days.
 - Each exercise shows the prescription, cues, an **in-app video player** (YouTube/Vimeo links play embedded, privacy-enhanced mode; other links open in a new tab), and the **calculated load**: percent × the client's latest e1RM for the linked lift, rounded to 2.5 kg (shown as "~kg"; editable).
 - Logging per set: reps, kg, done tick (pre-filled from the prescription, one tap to confirm). Text blocks get a done tick.
+  - Prescribed/suggested values show as **faded placeholder text** in each box. Ticking a set with an empty box logs the prescribed value; typing overrides it.
 - **Comments**: one on the whole workout, plus one per exercise.
 - Finish: session RPE (1–10) + duration. If the client has Weekly Check-In on, this also logs an S&C session automatically, so training load charts stay correct with no double entry.
 - Logs are editable for 4 weeks (same lock as weekly logging).
@@ -98,6 +100,7 @@ Cards (each can be shown/hidden by the coach; choice saved on the coach's profil
 ## Segment G: General-population tools
 - **Habits**: coach sets habits per client (e.g. "8k steps", "3 L water"); client ticks daily; coach sees a 4-week grid.
 - **Macros**: coach sets protein/carb/fat/calorie targets; client logs a daily total in about 10 seconds; weekly adherence shown. No food database.
+- **Meal plan builder** (premium toggle `feat_mealplan`, off by default): calculates energy and macro targets from bodyweight, height, age, sex, activity and goal (and training vs rest days), then lays out a sample day (meals × macros) from a food list the coach can edit. Clearly labelled general guidance, not an individualised dietetic plan.
 - **Progress photos**: private storage bucket, folder per client, front/side/back with date; only the client and coach can view.
 
 ## Segment H: GHL payments → access
