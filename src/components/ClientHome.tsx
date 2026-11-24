@@ -1,5 +1,6 @@
 // Client home screen (display only): Today, To do, This week, tab bar.
 import Link from "next/link";
+import { MiniChart } from "./MiniChart";
 import type { ReactNode } from "react";
 import { Bell } from "lucide-react";
 import { ClientTabBar } from "@/components/ClientTabBar";
@@ -16,6 +17,7 @@ export interface HomeProps {
   next: { date: string; title: string } | null;
   todo: { href: string; title: string; sub: string; tone: "warn" | "brand" | "plain" }[];
   showTodo: boolean;
+  trend: { title: string; message: string | null; latest: string; kind: "bars" | "line"; points: { label: string; value: number | null }[] } | null;
   week: { days: { date: string; st: "done" | "missed" | "planned" | "rest" }[]; done: number; total: number } | null;
   empty: boolean;
   tabs: { train: boolean; chat: boolean; progress: boolean; chatBadge: number; moreBadge: number };
@@ -134,6 +136,17 @@ export function ClientHome(p: HomeProps) {
               </div>
             ))}
           </div>
+        </Link>
+      )}
+
+      {p.trend && (
+        <Link href="/train/history" className="mb-5 block rounded-2xl border border-line bg-surface p-4">
+          <div className="flex items-baseline justify-between gap-3">
+            <h2 className="text-xs font-semibold uppercase tracking-widest text-muted">Your trend</h2>
+            <span className="text-sm font-black">{p.trend.latest}</span>
+          </div>
+          <p className="mt-1 font-extrabold">{p.trend.message ?? `${p.trend.title}: keep logging to see your trend`}</p>
+          <MiniChart points={p.trend.points} kind={p.trend.kind} className="mt-3 !h-14" />
         </Link>
       )}
 

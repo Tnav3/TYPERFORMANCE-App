@@ -1,3 +1,5 @@
+import { loadWidgets } from "@/lib/programming/widgets-data";
+import { defaultHomeTrend, trendMessage, type HomeTrend } from "@/lib/programming/widgets";
 import { requireState } from "@/lib/session";
 import { hasFeature } from "@/lib/features";
 import { planned } from "@/lib/planned-fights";
@@ -104,8 +106,25 @@ export default async function AthleteHome() {
     ...(fightToLog ? [{ href: "/fights#log", title: "How did your fight go?", sub: `${formatDate(profile.next_fight_date!)} · log the result`, tone: "brand" as const }] : []),
     ...(on.checkin && !cur.submitted ? [{ href: `/week/${thisWeek}`, title: "Log this week's training", sub: `${cur.count} session${cur.count === 1 ? "" : "s"} so far`, tone: "plain" as const }] : []),
   ];
+  const prefs = profile as unknown as { home_trend: HomeTrend | null; feat_fights: boolean | null; feat_bodyweight: boolean | null; weight_class: string | null; discipline_id: string | null };
+  const trendKey = prefs.home_trend ?? defaultHomeTrend({ fighter: prefs.feat_fights !== false && !!(prefs.weight_class || prefs.discipline_id), bodyweight: prefs.feat_bodyweight !== false });
+  let trend = null;
+  if (programOn && trendKey !== "off") {
+    const [w] = await loadWidgets(supabase, user!.id, today, [trendKey], { coach: false });
+    if (w && w.points.some((x) => x.value)) {
+      const title = w.key === "volume" ? "Volume" : w.title.replace(/ e1RM$/, "");
+      trend = {
+        title,
+        message: trendMessage(title, w.kind, w.points),
+        latest: w.latest == null ? "" : `${Math.round(w.latest * 10) / 10}${w.unit === "kg/wk" ? " kg" : ` ${w.unit}`}`,
+        kind: w.kind,
+        points: w.points,
+      };
+    }
+  }
   return (
     <ClientHome
+      trend={trend}
       tour={!profile.tutorial_done_at ? <WelcomeTour steps={welcomeSteps(profile)} /> : null}
       first={first}
       fightLabel={nextFight ? nextFight.label.replace(" out", "") : null}

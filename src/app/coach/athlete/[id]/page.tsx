@@ -26,6 +26,9 @@ import { WeightChart } from "@/components/WeightChart";
 import { CoachNoteForm } from "@/components/CoachNoteForm";
 import { setAthleteFeature, setAthleteStatus } from "../../actions";
 import { FEATURES } from "@/lib/features";
+import { ClientWidgets } from "@/components/ClientWidgets";
+import { loadWidgets } from "@/lib/programming/widgets-data";
+import { defaultHomeTrend, defaultWidgets, type HomeTrend, type WidgetKey } from "@/lib/programming/widgets";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const WEEKS = 12;
@@ -151,6 +154,14 @@ export default async function AthleteDetail({
   const limit =
     p.weight_class_limit_kg != null ? Number(p.weight_class_limit_kg) : null;
 
+  const prefs = p as unknown as { coach_widgets: WidgetKey[] | null; home_trend: HomeTrend | null; feat_fights: boolean | null; feat_bodyweight: boolean | null };
+  const kind = {
+    fighter: prefs.feat_fights !== false && !!(p.weight_class || p.discipline?.name),
+    bodyweight: prefs.feat_bodyweight !== false,
+  };
+  const chosenWidgets = prefs.coach_widgets?.length ? prefs.coach_widgets : defaultWidgets(kind);
+  const widgets = await loadWidgets(supabase, id, todayISO(), chosenWidgets);
+
   return (
     <Screen wide>
       <ClientTabs id={id} name={p.full_name ?? p.email} active="overview" />
@@ -177,6 +188,10 @@ export default async function AthleteDetail({
           </span>
         </div>
       </header>
+      {pageError === "widgets" && (
+        <p className="mb-3 rounded-xl border border-brand/60 bg-brand/10 px-4 py-3 text-sm font-bold text-brand">Those graphs didn&apos;t save. Please try again.</p>
+      )}
+      <ClientWidgets id={id} widgets={widgets} chosen={chosenWidgets} trend={prefs.home_trend} trendAuto={defaultHomeTrend(kind)} />
       <details className="mb-6 rounded-xl border border-line bg-surface p-3" open={(followUps ?? []).length > 0}>
         <summary className="cursor-pointer text-sm font-bold">
           Follow-ups{(followUps ?? []).length ? ` · ${(followUps ?? []).length}` : ""}
