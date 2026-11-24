@@ -11,6 +11,7 @@ import {
   ClipboardList,
   CreditCard,
   Dumbbell,
+  Gift,
   Bell,
   HeartPulse,
   House,
@@ -53,7 +54,7 @@ export function CoachNav({ unread }: { unread: number }) {
       "Clients & messaging",
       [
         { href: "/coach/forms", label: "Check-in forms", icon: ClipboardList },
-        { href: "/coach/messages", label: "Scheduled messages", icon: CalendarClock },
+        { href: "/coach/messages", label: "Announcements & scheduled", icon: CalendarClock },
         { href: "/coach/sequences", label: "Onboarding sequences", icon: Workflow },
       ],
     ],
@@ -61,6 +62,7 @@ export function CoachNav({ unread }: { unread: number }) {
       "Business",
       [
         { href: "/coach/invites", label: "Invites & payments", icon: CreditCard },
+        { href: "/coach/referrals", label: "Referrals", icon: Gift },
         { href: "/coach/fights", label: "Competition tracker", icon: Trophy },
       ],
     ],

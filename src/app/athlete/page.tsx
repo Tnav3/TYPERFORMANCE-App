@@ -9,6 +9,7 @@ import {
   Camera,
   ClipboardList,
   ClipboardCheck,
+  Gift,
   ListChecks,
   MessageCircle,
   Salad,
@@ -121,6 +122,7 @@ export default async function AthleteHome() {
     const due = currentDue({ repeat: a.repeat as Repeat, starts_on: a.starts_on }, today);
     return !!due && !(fResp ?? []).some((r) => r.form_id === a.form_id && r.due_on === due);
   }).length;
+  const { data: offer } = await supabase.from("referral_offers").select("id").eq("active", true).limit(1).maybeSingle();
   const doneIds = new Set((todayLogs ?? []).filter((l) => l.completed_at).map((l) => l.workout_id));
   // Their planned fight date has passed: ask how it went
   const fightToLog =
@@ -253,6 +255,7 @@ export default async function AthleteHome() {
           [on.mobility, "/mobility", "Mobility", <PersonStanding key="mo" size={28} />],
           [tools.length > 0, "/tools", "Tools", <Wrench key="w" size={28} />],
           [on.fights, "/fights", "My Fights", <Trophy key="f" size={28} />],
+          [!!offer, "/refer", "Refer a friend", <Gift key="r" size={28} />],
         ];
         const shown = tiles.filter((t) => t[0]);
         return shown.length ? (

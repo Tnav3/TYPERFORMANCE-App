@@ -31,7 +31,13 @@ export default function SignupPage() {
       email,
       password,
       options: {
-        data: { full_name },
+        data: {
+          full_name,
+          ...(() => {
+            const ref = new URLSearchParams(window.location.search).get("ref");
+            return ref && /^[a-z0-9]{4,12}$/i.test(ref) ? { ref: ref.toLowerCase() } : {};
+          })(),
+        },
         emailRedirectTo: `${window.location.origin}/auth/callback`,
       },
     });
