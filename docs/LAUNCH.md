@@ -40,6 +40,8 @@ What happens: paid → account active (or an invite is created if they haven't s
      ('push_secret', 'SAME VALUE AS PUSH_DISPATCH_SECRET')
    on conflict (key) do update set value = excluded.value;
    ```
+   Preview links are protected by Vercel, so for the **test** project also add the bypass key from Vercel → Settings → Deployment Protection → Protection Bypass for Automation:
+   `insert into private.settings values ('vercel_bypass', 'THE KEY') on conflict (key) do update set value = excluded.value;`
 3. Supabase → Database → Extensions: **pg_net** and **pg_cron** on (the test project already has both).
 4. On your phone: open the app from the Home Screen → Notifications → Turn on. Send yourself a chat message from a second account to check.
 
@@ -51,7 +53,7 @@ What happens: paid → account active (or an invite is created if they haven't s
 5. Run both systems for one full block. Cancel Trainerize after that.
 
 ## 5. Going live
-1. Load migrations `029`–`044` into the **live** Supabase project (SQL editor, in order). They only add things; nothing existing is removed.
+1. Load migrations `029`–`045` into the **live** Supabase project (SQL editor, in order). They only add things; nothing existing is removed.
 2. In Supabase (live) check **Database → Extensions → pg_cron** is enabled (needed for scheduled messages), then run:
    `select cron.schedule('send-due-messages', '* * * * *', 'select public.send_due_messages()');`
 3. **Database → Publications → supabase_realtime**: make sure `messages` is included (live chat).
