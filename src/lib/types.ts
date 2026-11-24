@@ -31,6 +31,7 @@ export interface Profile {
   feat_macros: boolean;
   feat_photos: boolean;
   feat_bodyweight: boolean;
+  feat_mealplan: boolean;
   tutorial_done_at: string | null;
   tips_seen: string[] | null;
   last_seen_at: string | null;

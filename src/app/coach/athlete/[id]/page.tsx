@@ -193,8 +193,14 @@ export default async function AthleteDetail({
           Progress
         </Link>
         <Link
+          href={`/coach/athlete/${id}/lifestyle`}
+          className="flex min-h-12 items-center justify-center rounded-xl border border-line bg-surface-2 px-3 text-sm font-extrabold uppercase"
+        >
+          Habits &amp; nutrition
+        </Link>
+        <Link
           href={`/coach/chat/${id}`}
-          className="col-span-2 flex min-h-12 items-center justify-center rounded-xl border border-line bg-surface-2 px-3 text-sm font-extrabold uppercase"
+          className="flex min-h-12 items-center justify-center rounded-xl border border-line bg-surface-2 px-3 text-sm font-extrabold uppercase"
         >
           Chat
         </Link>

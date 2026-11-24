@@ -27,6 +27,7 @@ type Client = {
   last_seen_at: string | null;
   feat_program: boolean;
   feat_checkin: boolean;
+  feat_macros: boolean;
 };
 
 export async function CoachOverview({
@@ -48,7 +49,7 @@ export async function CoachOverview({
     await Promise.all([
       supabase
         .from("profiles")
-        .select("id, full_name, email, status, consent_version, profile_completed_at, last_seen_at, feat_program, feat_checkin")
+        .select("id, full_name, email, status, consent_version, profile_completed_at, last_seen_at, feat_program, feat_checkin, feat_macros")
         .eq("role", "athlete")
         .neq("status", "inactive"),
       supabase.from("workouts").select("id, athlete_id, group_id, workout_date, overrides_id").gte("workout_date", monthAgo),
@@ -68,6 +69,9 @@ export async function CoachOverview({
         : Promise.resolve({ data: [] }),
       supabase.from("workouts").select("athlete_id, group_id").limit(5000),
     ]);
+  const { data: macroRows } = show("compliance")
+    ? await supabase.from("macro_logs").select("athlete_id, day").gte("day", weekAgo).lt("day", today)
+    : { data: [] };
 
   const all = (profiles ?? []) as Client[];
   const active = all.filter((c) => c.status === "active");
@@ -118,6 +122,12 @@ export async function CoachOverview({
 
   // Compliance (last 7 days, not today)
   const comp = workoutCompliance(programmed, scheduledFor(w, m, weekAgo, addDays(today, -1)), logs ?? []);
+  const macroClients = active.filter((c) => c.feat_macros).map((c) => c.id);
+  const macroDays = new Map<string, number>();
+  for (const r of macroRows ?? []) macroDays.set(r.athlete_id, (macroDays.get(r.athlete_id) ?? 0) + 1);
+  const nutritionAvg = macroClients.length
+    ? Math.round((macroClients.reduce((a, c) => a + Math.min(7, macroDays.get(c) ?? 0), 0) / (macroClients.length * 7)) * 100)
+    : null;
   const sign = signInSummary(active.map((c) => c.id), opens ?? []);
 
   // New PBs (last 7 days)
@@ -221,7 +231,14 @@ export async function CoachOverview({
             : none}
         </Card>
         <Card k="compliance" count={comp.average == null ? "—" : `${comp.average}%`} tone={comp.average == null || comp.average >= 80 ? "ok" : comp.average >= 60 ? "warn" : "brand"}>
-          <p className="mb-1 text-xs text-muted">Workouts completed, last 7 days. Nutrition joins once macro logging is on.</p>
+          <p className="mb-1 text-xs text-muted">
+            Workouts completed, last 7 days
+            {nutritionAvg != null && (
+              <>
+                {" "}· Nutrition: <span className="font-bold text-text">{nutritionAvg}%</span> of days logged ({macroClients.length} on macros)
+              </>
+            )}
+          </p>
           {comp.per
             .filter((p) => p.pct != null)
             .sort((a, b) => a.pct! - b.pct!)

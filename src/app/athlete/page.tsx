@@ -5,8 +5,12 @@ import { planned } from "@/lib/planned-fights";
 import { NextFightCard } from "@/components/NextFightCard";
 import {
   CircleHelp,
+  Camera,
   ClipboardList,
+  ListChecks,
   MessageCircle,
+  Salad,
+  Utensils,
   Scale,
   TrendingUp,
   PersonStanding,
@@ -240,6 +244,19 @@ export default async function AthleteHome() {
           description="Daily weigh-in and 7-day trend"
           icon={<Scale size={22} strokeWidth={2.25} />}
         />
+      )}
+
+      {hasFeature(profile, "habits") && (
+        <FeatureLink href="/habits" title="Habits" description="Tick off today's habits" icon={<ListChecks size={22} strokeWidth={2.25} />} />
+      )}
+      {hasFeature(profile, "macros") && (
+        <FeatureLink href="/macros" title="Macros" description="Log today's totals against your targets" icon={<Utensils size={22} strokeWidth={2.25} />} />
+      )}
+      {hasFeature(profile, "mealplan") && (
+        <FeatureLink href="/meal-plan" title="Meal Plan" description="Your targets and a sample day of eating" icon={<Salad size={22} strokeWidth={2.25} />} />
+      )}
+      {hasFeature(profile, "photos") && (
+        <FeatureLink href="/photos" title="Progress Photos" description="Private front, side and back photos" icon={<Camera size={22} strokeWidth={2.25} />} />
       )}
 
       {on.testing && (

@@ -17,7 +17,8 @@ export type Feature =
   | "habits"
   | "macros"
   | "photos"
-  | "bodyweight";
+  | "bodyweight"
+  | "mealplan";
 
 export const FEATURES: {
   key: Feature;
@@ -120,6 +121,12 @@ export const FEATURES: {
     column: "feat_photos",
     label: "Progress Photos",
     hint: "Private front, side and back photos",
+  },
+  {
+    key: "mealplan",
+    column: "feat_mealplan",
+    label: "Meal Plan Builder (premium)",
+    hint: "Energy/macro calculator and a sample day of eating",
   },
 ];
 

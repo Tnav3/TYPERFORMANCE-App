@@ -13,7 +13,7 @@ Migrations for this module start at `029_`. They are tested locally with PGlite 
 | D Workout logging + comments | Done: tap-to-save logger, rest timer, progress bar, in-app video, e1RM loads, coach feed + log review |
 | E Progress tracking | Done |
 | F Chat | Done: live chat, inbox, unread badges, announcements |
-| G Habits, macros, photos | Not started |
+| G Habits, macros, photos | Done (+ meal plan builder, premium toggle; nutrition in compliance card) |
 | H GHL payments | Not started |
 | I Trainerize move | Not started |
 | J Periodisation | Done: seasons, phase timeline, load:deload bars, fights, assigned-vs-planned, client phase banner |
@@ -31,3 +31,4 @@ Migrations for this module start at `029_`. They are tested locally with PGlite 
 - Scheduled + recurring chat messages are IN-APP only (not email)
 - Launch-first priority suggested: logging, chat, coach dashboard, payments; announcements/referrals/forms in phase 2
 - Later: review Tyrell's Trainerize account (read-only, via his Chrome) for features to match, esp. Settings → Auto Messages & Events onboarding sequences
+- Also done: per-exercise fields/units, faded prescribed values, master templates, exercise swap, program instructions, one-week-at-a-time, block labels, timers
