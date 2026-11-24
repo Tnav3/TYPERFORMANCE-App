@@ -6,6 +6,9 @@ import { NextFightCard } from "@/components/NextFightCard";
 import {
   CircleHelp,
   ClipboardList,
+  MessageCircle,
+  Scale,
+  TrendingUp,
   PersonStanding,
   Trophy,
   Wrench,
@@ -94,6 +97,15 @@ export default async function AthleteHome() {
         .eq("athlete_id", user!.id)
         .in("workout_id", todayWorkouts.map((w) => w.id))
     : { data: [] };
+  const chatOn = hasFeature(profile, "chat");
+  const { count: unreadChat } = chatOn
+    ? await supabase
+        .from("messages")
+        .select("id", { count: "exact", head: true })
+        .eq("athlete_id", user!.id)
+        .neq("sender_id", user!.id)
+        .is("read_at", null)
+    : { count: 0 };
   const doneIds = new Set((todayLogs ?? []).filter((l) => l.completed_at).map((l) => l.workout_id));
   // Their planned fight date has passed: ask how it went
   const fightToLog =
@@ -201,6 +213,33 @@ export default async function AthleteHome() {
 
       {(on.fights || plannedFights.length > 0) && (
         <NextFightCard fights={plannedFights} today={today} />
+      )}
+
+      {chatOn && (
+        <FeatureLink
+          href="/chat"
+          title={unreadChat ? `Chat · ${unreadChat} new` : "Chat"}
+          description="Message your coach"
+          icon={<MessageCircle size={22} strokeWidth={2.25} />}
+        />
+      )}
+
+      {programOn && (
+        <FeatureLink
+          href="/train/history"
+          title="My Progress"
+          description="Exercise history, PBs and leaderboards"
+          icon={<TrendingUp size={22} strokeWidth={2.25} />}
+        />
+      )}
+
+      {hasFeature(profile, "bodyweight") && (
+        <FeatureLink
+          href="/bodyweight"
+          title="Bodyweight"
+          description="Daily weigh-in and 7-day trend"
+          icon={<Scale size={22} strokeWidth={2.25} />}
+        />
       )}
 
       {on.testing && (

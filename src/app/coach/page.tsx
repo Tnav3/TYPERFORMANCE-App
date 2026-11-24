@@ -56,12 +56,14 @@ export default async function CoachHome() {
         <SignOutButton />
       </header>
 
-      <div className="mb-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+      <div className="mb-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
         {[
           ["/coach/programs", "Programs"],
           ["/coach/feed", "Workout Feed"],
           ["/coach/groups", "Groups"],
           ["/coach/library", "Exercises"],
+          ["/coach/chat", "Inbox"],
+          ["/coach/messages", "Scheduled Msgs"],
         ].map(([href, label]) => (
           <Link
             key={href}

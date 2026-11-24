@@ -26,6 +26,11 @@ export async function getSessionProfile() {
         .from("profiles")
         .update({ last_seen_at: new Date().toISOString() })
         .eq("id", user.id);
+      // One row per day for the coach's "average sign-in" card
+      if (profile.role === "athlete" && profile.status === "active")
+        await supabase
+          .from("app_opens")
+          .upsert({ athlete_id: user.id }, { onConflict: "athlete_id,opened_on", ignoreDuplicates: true });
     });
   }
   return { supabase, user, profile: profile ?? null };
