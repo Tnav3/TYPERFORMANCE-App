@@ -57,6 +57,7 @@ export default async function TrainPage() {
               </p>
               <p className="truncate text-lg font-black uppercase tracking-tight">{w.title}</p>
             </div>
+            {w.created_by === user!.id && !state && <span className="rounded-full bg-surface-2 px-3 py-1 text-xs font-bold text-muted">Added by you</span>}
             {state && (
               <span className={`rounded-full px-3 py-1 text-xs font-bold ${state === "Done" ? "bg-ok/15 text-ok" : "bg-surface-2 text-muted"}`}>
                 {state}
@@ -97,6 +98,9 @@ export default async function TrainPage() {
         {todays.length ? todays.map((w) => <Row key={w.id} w={w} />) : (
           <p className="rounded-xl border border-dashed border-line p-4 text-center text-muted">Rest day. Recover well.</p>
         )}
+        <Link href="/train/new" className="flex min-h-12 items-center justify-center gap-2 rounded-xl border border-line bg-surface-2 text-sm font-extrabold">
+          + {todays.length ? "Log extra work" : "Trained anyway? Add a workout"}
+        </Link>
       </section>
 
       {missed.length > 0 && (

@@ -1,3 +1,4 @@
+import { DeleteOwnWorkout } from "@/components/DeleteOwnWorkout";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { requireFeature } from "@/lib/session";
@@ -57,6 +58,11 @@ export default async function WorkoutLogPage({
         duration={log?.duration_min ?? null}
         readOnly={locked || early || !!viewAs}
       />
+      {workout.created_by === user!.id && !viewAs && (
+        <div className="mt-6 text-center">
+          <DeleteOwnWorkout id={workout.id} />
+        </div>
+      )}
     </Screen>
   );
 }

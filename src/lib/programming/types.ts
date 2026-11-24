@@ -122,6 +122,8 @@ export interface Workout {
   position: number;
   title: string;
   notes: string | null;
+  /** Set when the client made it themselves */
+  created_by?: string | null;
 }
 
 export interface Group {
