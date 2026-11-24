@@ -24,6 +24,13 @@ export interface Profile {
   feat_fights: boolean;
   feat_mobility: boolean;
   feat_nutrition: boolean;
+  feat_program: boolean;
+  feat_chat: boolean;
+  feat_leaderboard: boolean;
+  feat_habits: boolean;
+  feat_macros: boolean;
+  feat_photos: boolean;
+  feat_bodyweight: boolean;
   tutorial_done_at: string | null;
   tips_seen: string[] | null;
   last_seen_at: string | null;

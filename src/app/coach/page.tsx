@@ -55,6 +55,23 @@ export default async function CoachHome() {
         <SignOutButton />
       </header>
 
+      <div className="mb-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+        {[
+          ["/coach/programs", "Programs"],
+          ["/coach/feed", "Workout Feed"],
+          ["/coach/groups", "Groups"],
+          ["/coach/library", "Exercises"],
+        ].map(([href, label]) => (
+          <Link
+            key={href}
+            href={href}
+            className="flex min-h-12 items-center justify-center rounded-xl bg-brand text-sm font-extrabold uppercase tracking-wide text-white"
+          >
+            {label}
+          </Link>
+        ))}
+      </div>
+
       <div className="mb-6 grid grid-cols-2 gap-2">
         <Link
           href="/week"

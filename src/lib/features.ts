@@ -10,7 +10,14 @@ export type Feature =
   | "hr"
   | "fights"
   | "mobility"
-  | "nutrition";
+  | "nutrition"
+  | "program"
+  | "chat"
+  | "leaderboard"
+  | "habits"
+  | "macros"
+  | "photos"
+  | "bodyweight";
 
 export const FEATURES: {
   key: Feature;
@@ -72,29 +79,58 @@ export const FEATURES: {
     label: "Nutrition Guide",
     hint: "Daily carb and protein ranges for training and rest days",
   },
+  {
+    key: "program",
+    column: "feat_program",
+    label: "Training Program",
+    hint: "Today's workout, calendar, logging and exercise history",
+  },
+  {
+    key: "chat",
+    column: "feat_chat",
+    label: "Chat",
+    hint: "Messages with the coach",
+  },
+  {
+    key: "leaderboard",
+    column: "feat_leaderboard",
+    label: "Leaderboards",
+    hint: "Shows their name on group leaderboards",
+  },
+  {
+    key: "bodyweight",
+    column: "feat_bodyweight",
+    label: "Bodyweight",
+    hint: "Daily bodyweight log and trend",
+  },
+  {
+    key: "habits",
+    column: "feat_habits",
+    label: "Habits",
+    hint: "Daily habit checklist set by the coach",
+  },
+  {
+    key: "macros",
+    column: "feat_macros",
+    label: "Macros",
+    hint: "Macro targets and a daily total log",
+  },
+  {
+    key: "photos",
+    column: "feat_photos",
+    label: "Progress Photos",
+    hint: "Private front, side and back photos",
+  },
 ];
 
 /** Coaches always have every feature. Missing columns (older rows) count as on. */
 export function hasFeature(
-  p: Partial<
-    Pick<
-      Profile,
-      | "role"
-      | "feat_checkin"
-      | "feat_testing"
-      | "feat_1rm"
-      | "feat_mas"
-      | "feat_rpe"
-      | "feat_hr"
-      | "feat_fights"
-      | "feat_mobility"
-    >
-  > | null,
+  p: Partial<Profile> | null,
   f: Feature,
 ): boolean {
   if (!p) return false;
   if (p.role === "coach") return true;
-  const col = FEATURES.find((x) => x.key === f)!.column as "feat_checkin";
+  const col = FEATURES.find((x) => x.key === f)!.column;
   return p[col] !== false;
 }
 
