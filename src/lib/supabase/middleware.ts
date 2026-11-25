@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 // Paths anyone can open without logging in
-export const PUBLIC_PATHS = ["/login", "/signup", "/forgot-password", "/auth", "/api/ghl", "/api/push"]; // /api/ghl checks its own secret
+export const PUBLIC_PATHS = ["/login", "/signup", "/forgot-password", "/auth", "/api/ghl", "/api/push", "/shop"]; // /api/ghl checks its own secret
 
 export function isPublicPath(pathname: string): boolean {
   return PUBLIC_PATHS.some(

@@ -47,3 +47,15 @@ export function matchPlanKey(raw: unknown, plans: { key: string; name: string }[
   const hit = [...plans].sort((a, b) => b.name.length - a.name.length).find((p) => ` ${n} `.includes(` ${norm(p.name)} `) || ` ${n} `.includes(` ${norm(p.key)} `));
   return hit?.key ?? null;
 }
+
+/** A paid order's product name → a shop product (exact match on its MxP name, title or slug; no fuzzy guessing). */
+export function matchProduct(
+  raw: unknown,
+  products: { id: string; slug: string; title: string; match_name: string | null }[],
+): string | null {
+  const norm = (x: string) => x.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+  const n = norm(String(raw ?? ""));
+  if (!n) return null;
+  const hit = products.find((p) => [p.match_name, p.title, p.slug].some((v) => v && norm(v) === n));
+  return hit?.id ?? null;
+}

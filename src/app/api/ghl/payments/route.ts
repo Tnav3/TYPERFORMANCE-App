@@ -5,7 +5,7 @@
 // x-typ-secret: <GHL_WEBHOOK_SECRET> and JSON body { event, email, plan }.
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { cleanEmail, decide, matchPlanKey, safeEqual } from "@/lib/programming/payments";
+import { cleanEmail, decide, matchPlanKey, matchProduct, safeEqual } from "@/lib/programming/payments";
 
 export const dynamic = "force-dynamic";
 
@@ -51,7 +51,17 @@ export async function POST(req: NextRequest) {
   else if (action.kind === "ignore") result = action.reason;
   else {
     const { data: profile } = await db.from("profiles").select("id, role, status").ilike("email", email).maybeSingle();
-    if (action.kind === "activate") {
+    // A program from the shop: record the order and assign the program (or invite them to sign up)
+    const { data: products } = action.kind === "activate" ? await db.from("shop_products").select("id, slug, title, match_name") : { data: [] };
+    const productId = action.kind === "activate" ? matchProduct(planRaw, (products ?? []) as { id: string; slug: string; title: string; match_name: string | null }[]) : null;
+    if (productId) {
+      const { data: pur, error: pErr } = await db.from("shop_purchases").insert({ product_id: productId, email }).select("id").single();
+      if (pErr) result = "shop order not saved";
+      else {
+        const { data: r } = await db.rpc("fulfil_shop_purchase", { p_purchase: pur.id });
+        result = `shop order: ${String(r ?? "saved")}`;
+      }
+    } else if (action.kind === "activate") {
       if (profile && profile.role === "athlete") {
         const patch: Record<string, unknown> = { status: "active", payment_hold: false };
         if (action.plan) patch.feat_mealplan = action.plan === "premium";

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { cleanEmail, decide, planOf, safeEqual } from "@/lib/programming/payments";
+import { cleanEmail, decide, matchProduct, planOf, safeEqual } from "@/lib/programming/payments";
 
 describe("GHL payments", () => {
   it("maps events", () => {
@@ -37,5 +37,22 @@ describe("matchPlanKey", () => {
     expect(matchPlanKey("1-on-1 (in person)", plans)).toBe("one_on_one");
     expect(matchPlanKey("Gift card", plans)).toBeNull();
     expect(matchPlanKey("", plans)).toBeNull();
+  });
+});
+
+describe("matchProduct", () => {
+  const products = [
+    { id: "p1", slug: "power-puncher", title: "Power Puncher Program", match_name: "Power Puncher (8 wk)" },
+    { id: "p2", slug: "base-builder-novice", title: "Base Builder - Novice", match_name: null },
+  ];
+  it("matches the MxP name, title or slug exactly", () => {
+    expect(matchProduct("power puncher (8 WK)", products)).toBe("p1");
+    expect(matchProduct("Power Puncher Program", products)).toBe("p1");
+    expect(matchProduct("base-builder-novice", products)).toBe("p2");
+  });
+  it("never guesses", () => {
+    expect(matchProduct("Power", products)).toBeNull();
+    expect(matchProduct("Online Performance Coaching", products)).toBeNull();
+    expect(matchProduct(null, products)).toBeNull();
   });
 });

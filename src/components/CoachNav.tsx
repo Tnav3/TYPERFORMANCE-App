@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import {
   Activity,
+  ShoppingBag,
   BookOpen,
   CalendarClock,
   Calculator,
@@ -78,6 +79,7 @@ export function CoachNav({ unread, notes = 0 }: { unread: number; notes?: number
       "Business",
       [
         { href: "/coach/invites", label: "Invites & payments", icon: CreditCard },
+        { href: "/coach/shop", label: "Program shop", icon: ShoppingBag },
         { href: "/coach/referrals", label: "Referrals", icon: Gift },
         { href: "/coach/fights", label: "Competition tracker", icon: Trophy },
       ],
