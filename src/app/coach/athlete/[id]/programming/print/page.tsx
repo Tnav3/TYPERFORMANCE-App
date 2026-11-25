@@ -83,7 +83,7 @@ export default async function ProgramPrintPage({
         <Link href={q({ notes: showNotes ? "0" : undefined })} className="rounded-lg border border-[#ddd] bg-white px-2.5 py-1.5 font-bold">
           {showNotes ? "✓ " : ""}Coach notes
         </Link>
-        <PrintButton />
+        <PrintButton light />
         <p className="w-full text-xs text-[#666]">Print, then choose “Save as PDF” to email it. Landscape fits more weeks.</p>
       </div>
 

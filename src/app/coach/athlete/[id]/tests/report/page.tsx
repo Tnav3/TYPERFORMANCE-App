@@ -75,7 +75,7 @@ export default async function AssessmentReport({
         <div className="mb-2 flex flex-wrap items-center gap-2">
           <Link href={`/coach/athlete/${id}/tests`} className="font-bold underline underline-offset-4">← Back to tests</Link>
           <span className="flex-1" />
-          <PrintButton />
+          <PrintButton light />
         </div>
         <p className="mb-2 font-bold">Testing dates to include <span className="font-normal text-[#666]">(changes are measured from the earliest ticked date)</span></p>
         {all.length === 0 ? (
