@@ -14,7 +14,7 @@ export interface TourStep {
 type P = Parameters<typeof hasFeature>[0] & Partial<Profile>;
 
 /** Keys the coach can attach a how-to clip to (see /coach/tour). */
-export const TOUR_KEYS = ["welcome", "today", "during", "week", "chat", "weigh", "meals", "checkin", "testing", "tools", "fights", "trophies", "done"] as const;
+export const TOUR_KEYS = ["welcome", "today", "during", "week", "learn", "chat", "weigh", "meals", "checkin", "testing", "tools", "fights", "trophies", "done"] as const;
 
 export function welcomeSteps(p: P, videos: Record<string, string> = {}): TourStep[] {
   const on = (f: Parameters<typeof hasFeature>[1]) => hasFeature(p, f);
@@ -39,6 +39,11 @@ export function welcomeSteps(p: P, videos: Record<string, string> = {}): TourSte
       key: "week",
       title: "Your week, your way",
       body: "Need to shuffle? Move a session to another day from the Train tab. Did extra work? Add your own workout so your coach sees it.",
+    },
+    on("program") && {
+      key: "learn",
+      title: "What does that mean?",
+      body: "Not sure what AMRAP, tempo or RIR means? Tap the ? under the exercise, or open Learn in More to look anything up.",
     },
     on("chat") && {
       key: "chat",
@@ -78,7 +83,7 @@ export function welcomeSteps(p: P, videos: Record<string, string> = {}): TourSte
     {
       key: "trophies",
       title: "Trophy cabinet",
-      body: "Sessions, streaks and PBs earn trophies. Find them in More.",
+      body: "Sessions, streaks and PBs earn trophies, and your player card levels up. Tap the trophy at the top of Home.",
     },
     {
       key: "done",

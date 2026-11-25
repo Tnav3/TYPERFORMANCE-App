@@ -11,7 +11,7 @@ const off = {
 describe("welcome tour", () => {
   it("only shows switched-on features; always starts and ends the same", () => {
     expect(welcomeSteps(off).map((s) => s.key)).toEqual(["welcome", "trophies", "done"]);
-    expect(welcomeSteps({ ...off, feat_program: true }).map((s) => s.key)).toEqual(["welcome", "today", "during", "week", "trophies", "done"]);
+    expect(welcomeSteps({ ...off, feat_program: true }).map((s) => s.key)).toEqual(["welcome", "today", "during", "week", "learn", "trophies", "done"]);
   });
   it("attaches coach clips", () => {
     expect(welcomeSteps(off, { welcome: "https://youtu.be/x" })[0].video).toBe("https://youtu.be/x");
