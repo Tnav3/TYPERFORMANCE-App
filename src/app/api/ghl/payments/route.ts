@@ -4,7 +4,7 @@
 // x-typ-secret: <GHL_WEBHOOK_SECRET> and JSON body { event, email, plan }.
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { cleanEmail, decide, safeEqual } from "@/lib/programming/payments";
+import { cleanEmail, decide, matchPlanKey, safeEqual } from "@/lib/programming/payments";
 
 export const dynamic = "force-dynamic";
 
@@ -42,6 +42,8 @@ export async function POST(req: NextRequest) {
   const email = cleanEmail(pick(body, "email", "contact.email", "customer.email", "contact_email"));
   const planRaw = pick(body, "plan", "product_name", "product.name", "price_name", "offer");
   const action = decide(event, planRaw);
+  const { data: plans } = await db.from("coaching_plans").select("key, name").eq("active", true);
+  const planKey = matchPlanKey(planRaw, (plans ?? []) as { key: string; name: string }[]);
 
   let result = "ignored";
   if (!email) result = "no valid email";
@@ -52,11 +54,12 @@ export async function POST(req: NextRequest) {
       if (profile && profile.role === "athlete") {
         const patch: Record<string, unknown> = { status: "active" };
         if (action.plan) patch.feat_mealplan = action.plan === "premium";
+        if (planKey) patch.plan_key = planKey;
         await db.from("profiles").update(patch).eq("id", profile.id);
-        result = `activated (${action.plan ?? "plan unchanged"})`;
+        result = `activated (${planKey ?? action.plan ?? "plan unchanged"})`;
       } else if (!profile) {
-        await db.from("invites").upsert({ email, plan: action.plan, auto_approve: true, note: "From GHL payment" }, { onConflict: "email" });
-        result = "invite created (will be approved on signup)";
+        await db.from("invites").upsert({ email, plan: action.plan, plan_key: planKey, auto_approve: true, note: "From GHL payment" }, { onConflict: "email" });
+        result = `invite created${planKey ? ` on ${planKey}` : ""} (will be approved on signup)`;
       } else result = "coach account: no change";
     } else {
       if (profile && profile.role === "athlete") {

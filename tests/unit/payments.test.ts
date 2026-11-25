@@ -20,3 +20,22 @@ describe("GHL payments", () => {
     expect(safeEqual("", "")).toBe(false);
   });
 });
+
+import { matchPlanKey } from "@/lib/programming/payments";
+describe("matchPlanKey", () => {
+  const plans = [
+    { key: "foundation", name: "Foundation" },
+    { key: "performance", name: "Performance" },
+    { key: "elite", name: "Elite" },
+    { key: "one_on_one", name: "1-on-1 (in person)" },
+    { key: "semi_private", name: "Semi-private group" },
+  ];
+  it("matches keys, names and product titles that contain a plan name", () => {
+    expect(matchPlanKey("elite", plans)).toBe("elite");
+    expect(matchPlanKey("Semi-Private Group", plans)).toBe("semi_private");
+    expect(matchPlanKey("TYPERFORMANCE Performance Coaching - Monthly", plans)).toBe("performance");
+    expect(matchPlanKey("1-on-1 (in person)", plans)).toBe("one_on_one");
+    expect(matchPlanKey("Gift card", plans)).toBeNull();
+    expect(matchPlanKey("", plans)).toBeNull();
+  });
+});

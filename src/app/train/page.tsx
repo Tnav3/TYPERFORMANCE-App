@@ -1,5 +1,7 @@
 import { MoveWorkout } from "@/components/MoveWorkout";
 import { WeekBoard } from "@/components/WeekBoard";
+import { MonthCalendar } from "@/components/MonthCalendar";
+import { statusFor } from "@/components/WorkoutCalendar";
 import Link from "next/link";
 import { requireFeature } from "@/lib/session";
 import { clientMenu } from "@/lib/client/menu";
@@ -15,8 +17,11 @@ export default async function TrainPage() {
   const { supabase, user, profile, viewAs } = await requireFeature(["athlete"], "program");
   const menu = await clientMenu(supabase, profile, user!.id, todayISO());
   const today = todayISO();
-  const from = addDays(today, -7);
-  const to = addDays(today, 13);
+  const monthFirst = today.slice(0, 8) + "01";
+  const nextFirst = (() => { const d = new Date(monthFirst + "T00:00:00Z"); d.setUTCMonth(d.getUTCMonth() + 1); return d.toISOString().slice(0, 10); })();
+  const nextEnd = (() => { const d = new Date(nextFirst + "T00:00:00Z"); d.setUTCMonth(d.getUTCMonth() + 1); d.setUTCDate(0); return d.toISOString().slice(0, 10); })();
+  const from = monthFirst < addDays(today, -7) ? monthFirst : addDays(today, -7);
+  const to = nextEnd;
   const [{ data: workouts }, { data: logs }] = await Promise.all([
     supabase.rpc("my_workouts", { p_from: from, p_to: to }),
     supabase
@@ -42,9 +47,7 @@ export default async function TrainPage() {
   const list = (workouts ?? []) as Workout[];
   const logBy = new Map((logs ?? []).map((l) => [l.workout_id, l]));
   const todays = list.filter((w) => w.workout_date === today);
-  const upcoming = list.filter((w) => w.workout_date > today);
   const missed = list.filter((w) => w.workout_date < today && !logBy.get(w.id)?.completed_at);
-  const doneRecent = list.filter((w) => w.workout_date < today && logBy.get(w.id)?.completed_at);
 
   const moveDays = Array.from({ length: 8 }, (_, i) => {
     const iso = addDays(today, i - 1);
@@ -132,19 +135,11 @@ export default async function TrainPage() {
         </section>
       )}
 
-      <section className="mb-6 space-y-2">
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted">Coming up</h2>
-        {upcoming.length ? upcoming.map((w) => <Row key={w.id} w={w} />) : (
-          <p className="text-sm text-muted">Nothing scheduled yet. Your coach will add more soon.</p>
-        )}
-      </section>
-
-      {doneRecent.length > 0 && (
-        <section className="mb-6 space-y-2">
-          <h2 className="text-xs font-semibold uppercase tracking-widest text-muted">Done this past week</h2>
-          {doneRecent.reverse().map((w) => <Row key={w.id} w={w} />)}
-        </section>
-      )}
+      <MonthCalendar
+        today={today}
+        months={[monthFirst, nextFirst].map((first) => ({ first, label: new Intl.DateTimeFormat("en-AU", { month: "long", timeZone: "UTC" }).format(new Date(first + "T00:00:00Z")) }))}
+        workouts={list.map((w) => ({ id: w.id, date: w.workout_date, title: w.title, status: statusFor(w.workout_date, today, logBy.get(w.id)) }))}
+      />
 
       <Link href="/train/history" className="text-sm text-muted underline underline-offset-4">
         Exercise history & PRs

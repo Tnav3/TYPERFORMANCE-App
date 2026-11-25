@@ -1,4 +1,4 @@
-import { BellRing, PersonStanding, SlidersHorizontal, Swords, UserPen } from "lucide-react";
+import { BellRing, PersonStanding, SlidersHorizontal, Swords, Trophy, UserPen } from "lucide-react";
 import { ClientTabs } from "@/components/ClientTabs";
 import { FightCampCard } from "@/components/FightCampCard";
 import { campStatus } from "@/lib/fight-camp";
@@ -167,6 +167,7 @@ export default async function AthleteDetail({
   const { data: campW } = p.next_fight_date
     ? await supabase.from("body_metrics").select("measured_on, weight_kg").eq("athlete_id", id).not("weight_kg", "is", null).gte("measured_on", addDays(today, -28)).order("measured_on")
     : { data: null };
+  const { data: cardRow } = await supabase.from("player_cards").select("overall, tier, stats, updated_on").eq("athlete_id", id).maybeSingle();
   const camp = campStatus({ fight: p.next_fight_date, today, limitKg: limit, weights: (campW ?? []).map((r) => ({ date: r.measured_on as string, kg: Number(r.weight_kg) })) });
 
   return (
@@ -240,6 +241,25 @@ export default async function AthleteDetail({
         </form>
           </div>
         </details>
+        {cardRow?.overall != null && (
+          <details data-popover className="relative">
+            <summary className="flex min-h-9 cursor-pointer list-none items-center gap-1.5 rounded-full border border-line bg-surface px-3 text-sm font-bold">
+              <Trophy size={15} /> {cardRow.overall} OVR <span className="text-xs font-normal capitalize text-muted">{cardRow.tier}</span>
+            </summary>
+            <div className="absolute left-0 z-30 mt-2 w-[min(92vw,340px)] rounded-2xl border border-line bg-surface p-4 shadow-2xl">
+              <p className="text-xs font-semibold uppercase tracking-widest text-muted">Player card</p>
+              <div className="mt-2 grid grid-cols-5 gap-1 text-center">
+                {(["str", "pwr", "eng", "con", "grt"] as const).map((k) => (
+                  <div key={k}>
+                    <p className="text-xl font-black">{(cardRow.stats as Record<string, number | null>)?.[k] ?? "–"}</p>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted">{k}</p>
+                  </div>
+                ))}
+              </div>
+              <p className="mt-2 text-xs text-muted">STR, PWR, ENG from testing and lifts; CON from sessions finished; GRT from streaks and PBs. Updates when they open the app{cardRow.updated_on > "2000-01-01" ? `, last on ${cardRow.updated_on}` : ""}.</p>
+            </div>
+          </details>
+        )}
         <Link href={`/coach/athlete/${id}/fights`} className="flex min-h-9 items-center gap-1.5 rounded-full border border-line bg-surface px-3 text-sm font-bold">
           <Swords size={15} /> Competitions
         </Link>

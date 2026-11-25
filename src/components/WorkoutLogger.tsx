@@ -583,6 +583,12 @@ export function WorkoutLogger({
           )}
         </div>
       )}
+      {readOnly && (
+        <div className="mt-4 space-y-2 rounded-2xl border border-dashed border-line bg-surface p-4">
+          <IntensityDial name="rpe_preview" initial={rpe} last={null} disabled />
+          <p className="text-xs text-muted">{finished ? "What they rated this session." : "Clients rate the session here before tapping Finish workout. It's required."}</p>
+        </div>
+      )}
 
       </>)}
 

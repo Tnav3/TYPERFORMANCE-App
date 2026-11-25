@@ -10,12 +10,14 @@ import { pbEvents, sessions } from "@/lib/programming/history";
 import { badgesFor, readinessTone, weeklyStreak } from "@/lib/programming/rewards";
 import type { Workout } from "@/lib/programming/types";
 import { Celebrate } from "@/components/Celebrate";
+import { CardChange } from "@/components/CardChange";
+import { cardChangeForLog } from "@/lib/player-card-data";
 import { Card, Heading, Screen } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
 
 export default async function SummaryPage({ params }: { params: Promise<{ id: string }> }) {
-  const { supabase, user } = await requireFeature(["athlete"], "program");
+  const { supabase, user, profile, viewAs } = await requireFeature(["athlete"], "program");
   const { id } = await params;
   const me = user!.id;
   const [{ data: workout }, { data: log }] = await Promise.all([
@@ -72,7 +74,11 @@ export default async function SummaryPage({ params }: { params: Promise<{ id: st
   const fresh = badgesFor({ workouts: workoutsDone ?? 0, streakWeeks: streak, pbs: pbEvents(all).length }).filter((b) => !have.has(b.key));
   if (fresh.length)
     await supabase.from("badges").insert(fresh.map((b) => ({ athlete_id: me, key: b.key, detail: b.title })));
-  const celebrate = fresh.length > 0 || pbsToday.length > 0;
+  const change = viewAs
+    ? null
+    : await cardChangeForLog(supabase, me, log.id, profile as never, today, { pbs: pbEvents(all).length, sessions: workoutsDone ?? 0 }).catch(() => null);
+  const cardUp = !!change && change.after.overall != null && change.before?.overall != null && change.after.overall > change.before.overall;
+  const celebrate = fresh.length > 0 || pbsToday.length > 0 || cardUp;
 
   return (
     <Screen>
@@ -111,6 +117,8 @@ export default async function SummaryPage({ params }: { params: Promise<{ id: st
           </span>
         )}
       </div>
+
+      {change && <CardChange before={change.before} after={change.after} />}
 
       {(pbsToday.length > 0 || fresh.length > 0) && (
         <Card className="mb-4 border-ok/60">

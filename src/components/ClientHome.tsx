@@ -131,7 +131,7 @@ export function ClientHome(p: HomeProps) {
           </div>
           <div className="divide-y divide-line">
             {p.newNotes.map((n) => (
-              <Link key={n.id} href={n.url} className="flex min-h-14 items-center gap-3 px-4 py-2.5 active:bg-surface-2">
+              <Link key={n.id} href={`/notifications/open/${n.id}`} prefetch={false} className="flex min-h-14 items-center gap-3 px-4 py-2.5 active:bg-surface-2">
                 <span className="h-2 w-2 shrink-0 rounded-full bg-brand" />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate font-extrabold leading-tight">{n.title}</span>

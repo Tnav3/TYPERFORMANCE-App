@@ -35,3 +35,15 @@ export function safeEqual(a: string, b: string): boolean {
   for (let i = 0; i < a.length; i++) r |= a.charCodeAt(i) ^ b.charCodeAt(i);
   return r === 0;
 }
+
+/** Match a GHL product/price name to one of the app's coaching plans (key or name). */
+export function matchPlanKey(raw: unknown, plans: { key: string; name: string }[]): string | null {
+  const s = String(raw ?? "").toLowerCase().trim();
+  if (!s) return null;
+  const norm = (x: string) => x.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+  const n = norm(s);
+  const exact = plans.find((p) => p.key.toLowerCase() === s || norm(p.name) === n || norm(p.key) === n);
+  if (exact) return exact.key;
+  const hit = [...plans].sort((a, b) => b.name.length - a.name.length).find((p) => ` ${n} `.includes(` ${norm(p.name)} `) || ` ${n} `.includes(` ${norm(p.key)} `));
+  return hit?.key ?? null;
+}

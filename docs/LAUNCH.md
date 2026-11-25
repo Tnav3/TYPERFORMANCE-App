@@ -26,7 +26,8 @@ Test-project login settings: **Authentication → Sign In / Providers → Email*
    Body (JSON): `{"event": "payment_received", "email": "{{contact.email}}", "plan": "{{product.name}}"}`
    (use `subscription_cancelled` or `payment_failed` as the event for the other workflows).
    If your GHL plan can't add headers, add `?secret=<GHL_WEBHOOK_SECRET>` to the URL instead.
-4. Plans: a product name containing "premium", "elite" or "VIP" turns on the meal plan builder; anything else is basic.
+4. Plans: name each GHL product so it contains one of your app plan names (Foundation, Performance, Elite, Hybrid, 1-on-1 (in person), Semi-private group), e.g. "Performance Coaching - Monthly". The client is put on that plan (also for people who pay before signing up). A product name containing "premium", "elite" or "VIP" also turns on the meal plan builder.
+   Ask GHL to send the product name in `plan` (the `{{...}}` field name varies by GHL version; check the webhook test data).
 5. Check results at **Dashboard → Invites & Payments → Recent payment events**.
 
 What happens: paid → account active (or an invite is created if they haven't signed up yet, so they skip the approval queue). Cancelled/failed → account inactive (their data is kept; paying again reactivates it).
@@ -62,7 +63,7 @@ What happens: paid → account active (or an invite is created if they haven't s
 
 
 ## Added 2026-11-25
-- Load migrations 046–084 into live with the others.
+- Load migrations 046–090 into live with the others.
 - Exercise library from Trainerize: after the test import is checked, copy exercises to live with
   `insert into exercises (...) select ... ` from a CSV export of the test table (Supabase → Table editor → export), or rerun the import against live.
 - Remove the temporary import pieces from TEST once finished: edge function `tz-import`, `public.import_trainerize_svc`, `private.import_trainerize`.

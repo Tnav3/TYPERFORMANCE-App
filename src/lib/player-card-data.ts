@@ -76,3 +76,37 @@ export async function homeCard(
     .upsert({ athlete_id: athleteId, overall: card.overall, tier: card.tier, stats: card.stats, seen_overall: seen, updated_on: today }, { onConflict: "athlete_id" });
   return { ...card, seen };
 }
+
+export interface CardSnap {
+  overall: number | null;
+  tier: Card["tier"];
+  stats: Card["stats"];
+}
+
+/**
+ * Card before and after one finished session (workout summary).
+ * The "before" is frozen per log, so reloading the summary shows the same change.
+ */
+export async function cardChangeForLog(
+  supabase: SupabaseClient,
+  athleteId: string,
+  logId: string,
+  profile: { sex?: string | null; weight_class_limit_kg?: number | string | null },
+  today: string,
+  extra: { pbs: number; sessions: number },
+): Promise<{ before: CardSnap | null; after: CardSnap } | null> {
+  const { data: row, error } = await supabase
+    .from("player_cards")
+    .select("overall, tier, stats, prev, last_log")
+    .eq("athlete_id", athleteId)
+    .maybeSingle();
+  if (error) return null;
+  const after = await loadPlayerCard(supabase, athleteId, profile, today, extra);
+  const before: CardSnap | null =
+    row?.last_log === logId ? ((row.prev as CardSnap | null) ?? null) : row ? { overall: row.overall, tier: row.tier, stats: row.stats as Card["stats"] } : null;
+  await supabase.from("player_cards").upsert(
+    { athlete_id: athleteId, overall: after.overall, tier: after.tier, stats: after.stats, seen_overall: after.overall, updated_on: today, prev: before, last_log: logId },
+    { onConflict: "athlete_id" },
+  );
+  return { before, after };
+}

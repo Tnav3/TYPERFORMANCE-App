@@ -9,6 +9,10 @@ export const CHANGELOG: Release[] = [
     version: "0.9.0",
     date: "2026-11-25",
     items: [
+      { who: "client", text: "After each workout, see what it did to your player card." },
+      { who: "client", text: "Training shows a compact month calendar instead of a long list. Tap a day to see its sessions." },
+      { who: "coach", text: "GHL payments now put clients on the matching coaching plan (Foundation, Performance, Elite and more)." },
+      { who: "coach", text: "Client overview shows their player card rating." },
       { who: "client", text: "Pick amateur or pro. Each fight keeps its level, so the two records stay separate." },
       { who: "client", text: "Titles and belts (WBC, ISKA and more) show as badges on your player card, plus your heaviest lift." },
       { who: "client", text: "Home shows your newest notifications up top, plus a trophy button that lights up when your card improves." },
