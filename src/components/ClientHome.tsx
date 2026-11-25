@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { MiniChart } from "./MiniChart";
 import { Avatar } from "./Avatar";
+import { QuickWeight } from "./QuickWeight";
 import type { ReactNode } from "react";
 import { Bell } from "lucide-react";
 import { ClientTabBar } from "@/components/ClientTabBar";
@@ -19,6 +20,7 @@ export interface HomeProps {
   next: { date: string; title: string } | null;
   todo: { href: string; title: string; sub: string; tone: "warn" | "brand" | "plain" }[];
   showTodo: boolean;
+  weight: { today: number | null; last: { kg: number; label: string } | null; week: number | null } | null;
   booking: { label: string; cadence: string | null } | null;
   trend: { title: string; message: string | null; latest: string; kind: "bars" | "line"; points: { label: string; value: number | null }[] } | null;
   week: { days: { date: string; st: "done" | "missed" | "planned" | "rest" }[]; done: number; total: number } | null;
@@ -144,6 +146,8 @@ export function ClientHome(p: HomeProps) {
           </div>
         </Link>
       )}
+
+      {p.weight && <QuickWeight {...p.weight} />}
 
       {p.booking && (
         <Link href="/book" className="mb-5 flex items-center justify-between gap-3 rounded-2xl border border-line bg-surface p-4">

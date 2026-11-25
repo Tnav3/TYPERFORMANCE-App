@@ -127,8 +127,29 @@ export default async function AthleteHome() {
     ? await supabase.from("coaching_plans").select("booking_label, booking_url, cadence, active").eq("key", planKey).maybeSingle()
     : { data: null };
   const booking = plan?.booking_url && plan.active ? { label: plan.booking_label ?? "Book a session", cadence: plan.cadence } : null;
+  let weight = null;
+  if ((profile as unknown as { feat_bodyweight: boolean | null }).feat_bodyweight !== false) {
+    const { data: wts } = await supabase
+      .from("body_metrics")
+      .select("measured_on, weight_kg")
+      .eq("athlete_id", user!.id)
+      .not("weight_kg", "is", null)
+      .gte("measured_on", addDays(today, -30))
+      .order("measured_on", { ascending: false })
+      .limit(14);
+    const rows = (wts ?? []).map((r) => ({ d: r.measured_on as string, kg: Number(r.weight_kg) }));
+    const todayKg = rows.find((r) => r.d === today)?.kg ?? null;
+    const prev = rows.find((r) => r.d !== today) ?? null;
+    const recent = rows.filter((r) => r.d > addDays(today, -7));
+    weight = {
+      today: todayKg,
+      last: prev ? { kg: prev.kg, label: formatDate(prev.d) } : null,
+      week: recent.length >= 3 ? Math.round((recent.reduce((a, r) => a + r.kg, 0) / recent.length) * 10) / 10 : null,
+    };
+  }
   return (
     <ClientHome
+      weight={weight}
       booking={booking}
       trend={trend}
       tour={!profile.tutorial_done_at ? <WelcomeTour steps={welcomeSteps(profile)} /> : null}

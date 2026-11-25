@@ -68,3 +68,16 @@ export async function deleteBodyweight(fd: FormData) {
   revalidatePath("/bodyweight");
   redirect("/bodyweight");
 }
+
+/** One-tap weigh-in from the home screen. */
+export async function quickWeight(kgRaw: string): Promise<{ ok: true } | { ok: false; error: string }> {
+  const kg = Number(String(kgRaw).replace(",", "."));
+  if (!Number.isFinite(kg) || kg < 30 || kg > 250) return { ok: false, error: "Enter a weight between 30 and 250 kg." };
+  const { supabase, user } = await signedIn();
+  const { error } = await supabase
+    .from("body_metrics")
+    .upsert({ athlete_id: user.id, measured_on: todayISO(), weight_kg: Math.round(kg * 10) / 10 }, { onConflict: "athlete_id,measured_on" });
+  revalidatePath("/athlete");
+  revalidatePath("/bodyweight");
+  return error ? { ok: false, error: friendly(error.message) } : { ok: true };
+}
