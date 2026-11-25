@@ -27,7 +27,8 @@ export default async function ProgramPrintPage({
   ]);
   if (!client) notFound();
   const list = blocks ?? [];
-  const pick = list.find((b) => b.id === sp.block) ?? list[0];
+  // Default to the block running now (newest that has started), not an empty upcoming one
+  const pick = list.find((b) => b.id === sp.block) ?? list.find((b) => b.start_date <= todayISO()) ?? list[0];
   const name = client.full_name ?? client.email;
   const guide = sp.guide === "1";
   const showNotes = sp.notes !== "0";
