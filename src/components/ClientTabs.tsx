@@ -4,11 +4,12 @@ import { Eye, MessageCircle, Timer } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Avatar } from "./Avatar";
 
-export type ClientTab = "overview" | "program" | "progress" | "forms" | "tests" | "lifestyle" | "meals" | "mobility" | "fights" | "profile";
+export type ClientTab = "overview" | "program" | "programming" | "progress" | "forms" | "tests" | "lifestyle" | "meals" | "mobility" | "fights" | "profile";
 
 const TABS: [ClientTab, string, string][] = [
-  ["program", "Calendar", "/program"],
   ["overview", "Overview", ""],
+  ["program", "Calendar", "/program"],
+  ["programming", "Programming", "/programming"],
   ["progress", "Progress", "/progress"],
   ["forms", "Check-ins", "/forms"],
   ["lifestyle", "Habits & food", "/lifestyle"],
@@ -18,11 +19,13 @@ const TABS: [ClientTab, string, string][] = [
   ["fights", "Fights", "/fights"],
   ["profile", "Profile", "/profile"],
 ];
+const PRIMARY = 4; // shown on phones; the rest go under "More"
 
 export async function ClientTabs({ id, name, active, sub }: { id: string; name: string; active: ClientTab; sub?: string }) {
   const supabase = await createClient();
   const { data: me } = await supabase.from("profiles").select("avatar_path, nickname, goal_text").eq("id", id).maybeSingle();
   const line = sub ?? [me?.nickname && `\u201c${me.nickname}\u201d`, me?.goal_text && `Goal: ${me.goal_text}`].filter(Boolean).join(" · ");
+  const moreActive = TABS.slice(PRIMARY).find(([k]) => k === active)?.[1] ?? null;
   return (
     <div className="mb-5">
       <div className="mb-3 flex items-center gap-3">
@@ -53,18 +56,34 @@ export async function ClientTabs({ id, name, active, sub }: { id: string; name: 
           <MessageCircle size={16} /> <span className="hidden sm:inline">Message</span>
         </Link>
       </div>
-      <nav className="-mx-5 flex gap-1 overflow-x-auto border-b border-line px-5 [scrollbar-width:none]">
-        {TABS.map(([k, label, path]) => (
+      <nav className="-mx-5 flex items-stretch gap-0 border-b border-line px-5 lg:flex-wrap">
+        {TABS.map(([k, label, path], n) => (
           <Link
             key={k}
             href={`/coach/athlete/${id}${path}`}
-            className={`shrink-0 border-b-2 px-3 py-3 text-sm font-bold ${
+            className={`shrink-0 whitespace-nowrap border-b-2 px-2 py-3 text-[13px] font-bold sm:px-2.5 sm:text-sm lg:px-3 ${n >= PRIMARY ? "hidden lg:block" : ""} ${
               active === k ? "border-brand text-text" : "border-transparent text-muted hover:text-text"
             }`}
           >
             {label}
           </Link>
         ))}
+        <details className="relative ml-auto lg:hidden">
+          <summary
+            className={`flex h-full cursor-pointer list-none items-center whitespace-nowrap border-b-2 px-2 text-[13px] font-bold sm:text-sm ${
+              moreActive ? "border-brand text-text" : "border-transparent text-muted"
+            }`}
+          >
+            {moreActive ?? "More"} ▾
+          </summary>
+          <div className="absolute right-0 top-full z-30 mt-1 w-48 overflow-hidden rounded-xl border border-line bg-surface shadow-2xl">
+            {TABS.slice(PRIMARY).map(([k, label, path]) => (
+              <Link key={k} href={`/coach/athlete/${id}${path}`} className={`block px-4 py-3 text-sm font-bold ${active === k ? "text-brand" : ""}`}>
+                {label}
+              </Link>
+            ))}
+          </div>
+        </details>
       </nav>
     </div>
   );

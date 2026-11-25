@@ -17,6 +17,7 @@ export async function moveWorkout(athleteId: string, workoutId: string, date: st
   const { error } = await supabase.from("workouts").update({ workout_date: date }).eq("id", workoutId);
   if (error) return { error: friendly(error.message) };
   revalidatePath(`/coach/athlete/${athleteId}/program`);
+  revalidatePath(`/coach/athlete/${athleteId}/programming`);
   return {};
 }
 
@@ -45,6 +46,7 @@ export async function copyWorkout(athleteId: string, workoutId: string, date: st
     if (e2) return { error: friendly(e2.message) };
   }
   revalidatePath(`/coach/athlete/${athleteId}/program`);
+  revalidatePath(`/coach/athlete/${athleteId}/programming`);
   return {};
 }
 
@@ -60,6 +62,7 @@ export async function assignProgramOn(athleteId: string, programId: string, star
   });
   if (error) return { error: friendly(error.message) };
   revalidatePath(`/coach/athlete/${athleteId}/program`);
+  revalidatePath(`/coach/athlete/${athleteId}/programming`);
   return {};
 }
 
@@ -73,6 +76,7 @@ export async function duplicateProgramQuick(programId: string, athleteId: string
   const { error } = await supabase.rpc("duplicate_program", { p_program: programId, p_name: name });
   if (error) return { error: friendly(error.message) };
   revalidatePath(`/coach/athlete/${athleteId}/program`);
+  revalidatePath(`/coach/athlete/${athleteId}/programming`);
   revalidatePath("/coach/programs");
   return {};
 }
@@ -86,6 +90,7 @@ export async function renameProgramQuick(programId: string, athleteId: string, n
   const { error } = await supabase.from("programs").update({ name: clean }).eq("id", programId);
   if (error) return { error: friendly(error.message) };
   revalidatePath(`/coach/athlete/${athleteId}/program`);
+  revalidatePath(`/coach/athlete/${athleteId}/programming`);
   revalidatePath("/coach/programs");
   return {};
 }
@@ -97,6 +102,7 @@ export async function deleteProgramQuick(programId: string, athleteId: string): 
   const { error } = await supabase.from("programs").delete().eq("id", programId);
   if (error) return { error: friendly(error.message) };
   revalidatePath(`/coach/athlete/${athleteId}/program`);
+  revalidatePath(`/coach/athlete/${athleteId}/programming`);
   revalidatePath("/coach/programs");
   return {};
 }
@@ -123,12 +129,13 @@ export async function copyWeekForward(athleteId: string, monday: string): Promis
     if (r.error) return r;
   }
   revalidatePath(`/coach/athlete/${athleteId}/program`);
+  revalidatePath(`/coach/athlete/${athleteId}/programming`);
   return { count: ws.length };
 }
 
 // ---------- Blocks built or imported straight onto this client ----------
 const back = (athleteId: string, error?: string) =>
-  redirect(`/coach/athlete/${athleteId}/program${error ? `?error=${encodeURIComponent(error)}` : ""}#blocks`);
+  redirect(error ? `/coach/athlete/${athleteId}/programming?error=${encodeURIComponent(error)}` : `/coach/athlete/${athleteId}/program`);
 
 export async function createClientBlock(fd: FormData) {
   const athleteId = String(fd.get("athlete_id") ?? "");
@@ -141,6 +148,7 @@ export async function createClientBlock(fd: FormData) {
   const supabase = await coachOnly();
   const { error } = await supabase.rpc("create_client_block", { p_athlete: athleteId, p_name: name, p_start: start, p_weeks: weeks, p_days: days });
   revalidatePath(`/coach/athlete/${athleteId}/program`);
+  revalidatePath(`/coach/athlete/${athleteId}/programming`);
   back(athleteId, error ? (/Coach only/.test(error.message) ? "Coach only." : error.message.replace(/^.*?: /, "")) : undefined);
 }
 
@@ -158,5 +166,6 @@ export async function importBlock(fd: FormData) {
       ? await supabase.rpc("assign_program", { p_program: sid, p_athlete: athleteId, p_group: null, p_start: start })
       : await supabase.rpc("copy_assignment_to", { p_assignment: sid, p_athlete: athleteId, p_start: start });
   revalidatePath(`/coach/athlete/${athleteId}/program`);
+  revalidatePath(`/coach/athlete/${athleteId}/programming`);
   back(athleteId, error ? "That didn't import. Please try again." : undefined);
 }
