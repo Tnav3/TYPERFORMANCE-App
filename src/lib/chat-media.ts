@@ -37,4 +37,4 @@ export function fmtSec(s: number): string {
 
 /** Columns the chat screens load for each message (with reactions). */
 export const MESSAGE_COLUMNS =
-  "id, athlete_id, sender_id, body, created_at, read_at, announcement, attachment_path, attachment_kind, attachment_name, attachment_size, duration_sec, reply_to, keep, message_reactions(user_id, emoji)";
+  "id, athlete_id, sender_id, body, created_at, read_at, announcement, attachment_path, attachment_kind, attachment_name, attachment_size, duration_sec, reply_to, keep, file_id, coach_files(name, path, mime, size), message_reactions(user_id, emoji)";

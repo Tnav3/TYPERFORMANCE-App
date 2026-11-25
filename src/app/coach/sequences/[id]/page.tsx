@@ -2,14 +2,16 @@ import { notFound } from "next/navigation";
 import { requireState } from "@/lib/session";
 import { formatDate, todayISO } from "@/lib/dates";
 import { Alert, BackLink, Card, Heading, Screen } from "@/components/ui";
-import { deleteSequence, deleteStep, enrol, saveStep, stopEnrolment, updateSequence } from "../actions";
+import { deleteSequence, deleteStep, enrol, saveStep, stopEnrolment, toggleStep, updateSequence } from "../actions";
+import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
 const input = "min-h-11 w-full min-w-0 rounded-xl border border-line bg-surface-2 px-3 text-text placeholder:text-muted/60 focus:border-brand focus:outline-none";
 const smallBtn = "min-h-11 shrink-0 rounded-xl border border-line bg-surface-2 px-3 text-sm font-bold";
 
-function StepFields({ s }: { s?: { day_offset: number; send_time: string; body: string } }) {
+type Opt = { id: string; name: string };
+function StepFields({ s, forms, files }: { s?: { day_offset: number; send_time: string; body: string; form_id?: string | null; file_id?: string | null }; forms: Opt[]; files: Opt[] }) {
   return (
     <>
       <div className="flex flex-wrap items-center gap-2 text-sm">
@@ -17,9 +19,19 @@ function StepFields({ s }: { s?: { day_offset: number; send_time: string; body: 
         <input name="day_offset" type="number" min={0} max={365} defaultValue={s?.day_offset ?? 0} className={`${input} !w-20`} aria-label="Day" />
         at
         <input name="send_time" type="time" defaultValue={s?.send_time.slice(0, 5) ?? "09:00"} className={`${input} !w-32`} aria-label="Time" />
-        <span className="text-xs text-muted">(day 0 = the day they start)</span>
+        <span className="text-xs text-muted">(day 0 at 00:00 = straight away)</span>
       </div>
-      <textarea name="body" required rows={3} maxLength={2000} defaultValue={s?.body} placeholder="Hey {first_name}, …" className={`${input} mt-2 py-2`} aria-label="Message" />
+      <textarea name="body" rows={4} maxLength={2000} defaultValue={s?.body} placeholder="Hey {first_name}, …" className={`${input} mt-2 py-2`} aria-label="Message" />
+      <div className="mt-2 grid gap-2 sm:grid-cols-2">
+        <select name="file_id" defaultValue={s?.file_id ?? ""} className={input} aria-label="Attach a file">
+          <option value="">No file attached</option>
+          {files.map((f) => <option key={f.id} value={f.id}>📎 {f.name}</option>)}
+        </select>
+        <select name="form_id" defaultValue={s?.form_id ?? ""} className={input} aria-label="Send a form">
+          <option value="">No form</option>
+          {forms.map((f) => <option key={f.id} value={f.id}>📝 {f.name}</option>)}
+        </select>
+      </div>
     </>
   );
 }
@@ -28,13 +40,17 @@ export default async function SequencePage({ params, searchParams }: { params: P
   const { supabase } = await requireState(["coach"]);
   const { id } = await params;
   const { error } = await searchParams;
-  const [{ data: seq }, { data: steps }, { data: enrolled }, { data: clients }, { data: sends }] = await Promise.all([
+  const [{ data: seq }, { data: steps }, { data: enrolled }, { data: clients }, { data: sends }, { data: formRows }, { data: fileRows }] = await Promise.all([
     supabase.from("sequences").select("*").eq("id", id).maybeSingle(),
     supabase.from("sequence_steps").select("*").eq("sequence_id", id).order("day_offset").order("send_time"),
     supabase.from("sequence_enrollments").select("athlete_id, started_on, stopped_at, profiles(full_name, email)").eq("sequence_id", id).order("started_on", { ascending: false }),
     supabase.from("profiles").select("id, full_name, email").eq("role", "athlete").eq("status", "active").order("full_name"),
     supabase.from("sequence_sends").select("athlete_id, step_id"),
+    supabase.from("forms").select("id, name").eq("archived", false).order("name"),
+    supabase.from("coach_files").select("id, name").order("name"),
   ]);
+  const forms = (formRows ?? []) as Opt[];
+  const files = (fileRows ?? []) as Opt[];
   if (!seq) notFound();
   const stepIds = new Set((steps ?? []).map((s) => s.id));
   const sentBy = new Map<string, number>();
@@ -48,14 +64,25 @@ export default async function SequencePage({ params, searchParams }: { params: P
         {seq.name}
       </Heading>
       {error && <Alert>{error}</Alert>}
+      <p className="mb-3 text-sm text-muted">
+        Files (PARQ, waiver, start-up guide) live in your <Link href="/coach/files" className="font-bold text-text underline underline-offset-4">file library</Link>. Clients open them in one tap from the message.
+      </p>
 
       <div className="mb-6 space-y-2">
         {(steps ?? []).map((s) => (
-          <Card key={s.id} className="!p-3">
+          <Card key={s.id} className={`!p-3 ${s.active ? "" : "opacity-60"}`}>
+            <form action={toggleStep} className="mb-2 flex justify-end">
+              <input type="hidden" name="sequence_id" value={id} />
+              <input type="hidden" name="id" value={s.id} />
+              <input type="hidden" name="on" value={String(!s.active)} />
+              <button className={`min-h-9 rounded-full px-3 text-xs font-extrabold ${s.active ? "bg-ok text-ink" : "border border-line text-muted"}`} aria-label={s.active ? "Switch this message off" : "Switch this message on"}>
+                {s.active ? "On" : "Off"}
+              </button>
+            </form>
             <form action={saveStep}>
               <input type="hidden" name="sequence_id" value={id} />
               <input type="hidden" name="id" value={s.id} />
-              <StepFields s={s} />
+              <StepFields s={s} forms={forms} files={files} />
               <div className="mt-2 flex gap-2">
                 <button className={smallBtn}>Save</button>
               </div>
@@ -71,7 +98,7 @@ export default async function SequencePage({ params, searchParams }: { params: P
           <p className="mb-2 font-bold">Add a message</p>
           <form action={saveStep}>
             <input type="hidden" name="sequence_id" value={id} />
-            <StepFields />
+            <StepFields forms={forms} files={files} />
             <button className={`${smallBtn} mt-2`}>Add</button>
           </form>
         </Card>

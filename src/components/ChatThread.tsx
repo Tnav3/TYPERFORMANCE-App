@@ -22,6 +22,8 @@ export interface ChatMessage {
   duration_sec?: number | null;
   reply_to?: string | null;
   keep?: boolean;
+  file_id?: string | null;
+  coach_files?: { name: string; path: string; mime: string; size: number } | null;
   message_reactions?: { user_id: string; emoji: string }[];
 }
 
@@ -112,6 +114,23 @@ export function ChatThread({
       clearInterval(poll);
     };
   }, [supabase, athleteId, me, merge, markRead, refresh]);
+
+  // Library files (PARQ, guides) from the coach-files bucket
+  useEffect(() => {
+    const need = msgs.map((m) => m.coach_files?.path).filter((p): p is string => !!p && !urls[`lib:${p}`]);
+    if (!need.length) return;
+    supabase.storage
+      .from("coach-files")
+      .createSignedUrls([...new Set(need)], 60 * 60 * 6)
+      .then(({ data }) => {
+        if (!data) return;
+        setUrls((u) => {
+          const n = { ...u };
+          for (const x of data) if (x.signedUrl && x.path) n[`lib:${x.path}`] = x.signedUrl;
+          return n;
+        });
+      });
+  }, [msgs, urls, supabase]);
 
   // Signed links for attachments (private bucket), fetched in one go
   useEffect(() => {
@@ -310,6 +329,19 @@ export function ChatThread({
                     {m.attachment_kind === "file" && (
                       <a href={url ?? "#"} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className="flex items-center gap-2 font-bold underline underline-offset-4">
                         <FileText size={18} /> {m.attachment_name ?? "File"} {m.attachment_size ? <span className="font-normal opacity-70">· {fmtBytes(m.attachment_size)}</span> : null}
+                      </a>
+                    )}
+                    {m.coach_files && (
+                      <a
+                        href={urls[`lib:${m.coach_files.path}`] ?? "#"}
+                        target="_blank"
+                        rel="noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className={`mb-1 flex items-center gap-2 rounded-xl px-3 py-2 font-bold ${mine ? "bg-white/15" : "bg-surface"}`}
+                      >
+                        <FileText size={18} className="shrink-0" />
+                        <span className="min-w-0 flex-1 truncate">{m.coach_files.name}</span>
+                        <span className="text-xs font-normal opacity-80">Open</span>
                       </a>
                     )}
                     {m.body && <p className={m.attachment_kind === "image" || m.attachment_kind === "video" ? "px-3.5 pt-2" : m.attachment_kind ? "mt-1" : ""}>{m.body}</p>}

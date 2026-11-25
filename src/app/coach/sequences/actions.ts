@@ -54,12 +54,14 @@ export async function saveStep(fd: FormData) {
   const id = String(fd.get("id") ?? "");
   const day = int(fd.get("day_offset"));
   const time = String(fd.get("send_time") ?? "09:00");
-  const body = str(fd.get("body"), 2000);
+  const body = str(fd.get("body"), 2000) ?? "";
+  const form = String(fd.get("form_id") ?? "");
+  const file = String(fd.get("file_id") ?? "");
   if (!UUID.test(seq)) go(LIST);
   if (day == null || day < 0 || day > 365) go(page(seq), "Day must be 0–365.");
   if (!/^\d{2}:\d{2}$/.test(time)) go(page(seq), "Pick a time.");
-  if (!body) go(page(seq), "Write the message.");
-  const row = { sequence_id: seq, day_offset: day, send_time: time, body };
+  if (!body && !UUID.test(form) && !UUID.test(file)) go(page(seq), "Write a message, or attach a file or form.");
+  const row = { sequence_id: seq, day_offset: day, send_time: time, body, form_id: UUID.test(form) ? form : null, file_id: UUID.test(file) ? file : null };
   const { error } = UUID.test(id)
     ? await supabase.from("sequence_steps").update(row).eq("id", id)
     : await supabase.from("sequence_steps").insert(row);
@@ -92,5 +94,14 @@ export async function stopEnrolment(fd: FormData) {
   const athlete = String(fd.get("athlete_id") ?? "");
   if (UUID.test(seq) && UUID.test(athlete))
     await supabase.from("sequence_enrollments").update({ stopped_at: new Date().toISOString() }).eq("sequence_id", seq).eq("athlete_id", athlete);
+  go(page(seq));
+}
+
+/** Switch one step on or off without deleting it. */
+export async function toggleStep(fd: FormData) {
+  const supabase = await coachOnly();
+  const seq = String(fd.get("sequence_id") ?? "");
+  const id = String(fd.get("id") ?? "");
+  if (UUID.test(id)) await supabase.from("sequence_steps").update({ active: fd.get("on") === "true" }).eq("id", id);
   go(page(seq));
 }
