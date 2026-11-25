@@ -14,6 +14,7 @@ import { formatPrescription, itemLabel } from "@/lib/prescription";
 import { SeasonList } from "@/components/SeasonList";
 import { Alert, Card, Screen } from "@/components/ui";
 import { shiftAssignment, swapInAssignment, unassign, renameAssignment } from "@/app/coach/workouts/actions";
+import { createClientBlock, importBlock } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -59,9 +60,25 @@ export default async function ClientProgramPage({
       supabase.from("group_members").select("groups(id, name)").eq("athlete_id", id),
     ]);
   if (!client) notFound();
+  const blockInput = "mt-1 min-h-11 w-full min-w-0 rounded-xl border border-line bg-surface-2 px-3 text-text placeholder:text-muted/60 focus:border-brand focus:outline-none";
   const wl = (workouts ?? []) as Workout[];
   const { data: folderRows } = await supabase.from("program_folders").select("id, name, parent_id, sort_order");
   const folderLabel = new Map(folderOptions((folderRows ?? []) as Folder[]).map((o) => [o.id, o.label]));
+  const { data: otherBlocks } = await supabase
+    .from("assignments")
+    .select("id, program_name, start_date, athlete_id, profiles(full_name, email)")
+    .not("athlete_id", "is", null)
+    .neq("athlete_id", id)
+    .gte("start_date", addDays(todayISO(), -365))
+    .order("start_date", { ascending: false })
+    .limit(200);
+  const blocksByClient = new Map<string, { id: string; program_name: string; start_date: string }[]>();
+  for (const b of (otherBlocks ?? []) as unknown as { id: string; program_name: string; start_date: string; profiles: { full_name: string | null; email: string } | null }[]) {
+    const who = b.profiles?.full_name ?? b.profiles?.email ?? "Client";
+    blocksByClient.set(who, [...(blocksByClient.get(who) ?? []), b]);
+  }
+  const t0 = todayISO();
+  const nextMonday = addDays(t0, ((8 - new Date(t0 + "T00:00:00Z").getUTCDay()) % 7) || 7);
   const [{ data: exList }, { data: progs }, { data: items }] = await Promise.all([
     supabase.from("exercises").select("id, name").eq("active", true).order("name"),
     supabase.from("programs").select("id, name, weeks, is_master, folder_id").eq("archived", false).order("is_master", { ascending: false }).order("name"),
@@ -104,6 +121,11 @@ export default async function ClientProgramPage({
     month: `${base}?view=month&d=${anchor}`,
     label: view === "week" ? `${fmtL(from, { day: "numeric", month: "short" })} – ${fmtL(to, { day: "numeric", month: "short", year: "numeric" })}` : fmtL(`${monthKey}-01`, { month: "long", year: "numeric" }),
   };
+  const progByFolder = new Map<string, { id: string; name: string; weeks: number }[]>();
+  for (const p of progs ?? []) {
+    const f = p.folder_id ? folderLabel.get(p.folder_id) ?? "Programs" : "Not in a folder";
+    progByFolder.set(f, [...(progByFolder.get(f) ?? []), p]);
+  }
   const planWorkouts: PlanWorkout[] = wl.map((w) => ({
     id: w.id,
     date: w.workout_date,
@@ -138,7 +160,56 @@ export default async function ClientProgramPage({
         nav={nav}
       />
 
-      <div className="mt-8 grid gap-3 lg:max-w-2xl">
+      <div id="blocks" className="mt-8 grid gap-3 lg:grid-cols-2">
+        <Card className="!p-4">
+          <h2 className="font-extrabold">Build a new block for {client.full_name?.split(" ")[0] ?? "this client"}</h2>
+          <p className="mb-3 text-sm text-muted">Goes straight onto their calendar. Then tap each day to add exercises, and use &quot;copy week forward&quot; to repeat it.</p>
+          <form action={createClientBlock} className="space-y-3">
+            <input type="hidden" name="athlete_id" value={id} />
+            <input name="name" required minLength={2} maxLength={60} placeholder="Block name, e.g. Strength Block 1" className={blockInput} aria-label="Block name" />
+            <div className="grid grid-cols-2 gap-2">
+              <label className="text-xs text-muted">Starts<input type="date" name="start" required defaultValue={nextMonday} className={blockInput} /></label>
+              <label className="text-xs text-muted">Weeks<input type="number" name="weeks" min={1} max={16} defaultValue={4} className={blockInput} /></label>
+            </div>
+            <fieldset>
+              <legend className="mb-1 text-xs text-muted">Training days</legend>
+              <div className="flex flex-wrap gap-1.5">
+                {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d, i) => (
+                  <label key={d} className="cursor-pointer">
+                    <input type="checkbox" name="days" value={i + 1} defaultChecked={[0, 2, 4].includes(i)} className="peer sr-only" />
+                    <span className="inline-flex min-h-10 min-w-12 items-center justify-center rounded-xl border border-line text-sm font-bold text-muted peer-checked:border-brand peer-checked:bg-brand peer-checked:text-white">{d}</span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+            <button className="min-h-11 w-full rounded-xl bg-brand font-extrabold uppercase text-white">Create block</button>
+          </form>
+        </Card>
+        <Card className="!p-4">
+          <h2 className="font-extrabold">Import a program</h2>
+          <p className="mb-3 text-sm text-muted">Copy a program from your folders, or a block another client is doing. It&apos;s theirs to edit after that; the original doesn&apos;t change.</p>
+          <form action={importBlock} className="space-y-3">
+            <input type="hidden" name="athlete_id" value={id} />
+            <select name="source" required defaultValue="" className={blockInput} aria-label="What to import">
+              <option value="" disabled>Choose…</option>
+              {[...progByFolder.entries()].map(([folder, list]) => (
+                <optgroup key={folder} label={`📁 ${folder}`}>
+                  {list.map((p) => <option key={p.id} value={`p:${p.id}`}>{p.name} · {p.weeks} wk</option>)}
+                </optgroup>
+              ))}
+              {[...blocksByClient.entries()].map(([who, list]) => (
+                <optgroup key={who} label={`👤 ${who}`}>
+                  {list.map((b) => <option key={b.id} value={`a:${b.id}`}>{b.program_name} · from {b.start_date}</option>)}
+                </optgroup>
+              ))}
+            </select>
+            <label className="block text-xs text-muted">Start on<input type="date" name="start" required defaultValue={nextMonday} className={blockInput} /></label>
+            <button className="min-h-11 w-full rounded-xl border border-line bg-surface-2 font-extrabold uppercase">Import</button>
+          </form>
+        </Card>
+      </div>
+
+      <div className="mt-3 grid gap-3 lg:max-w-2xl">
         <Card className="!p-4">
           <h2 className="mb-2 font-extrabold">Assigned programs</h2>
           {(assignments ?? []).length === 0 && <p className="text-sm text-muted">None assigned yet.</p>}

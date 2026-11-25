@@ -1,5 +1,6 @@
 "use server";
 // Calendar actions called from the drag-and-drop planner. They return errors instead of redirecting.
+import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { coachOnly, friendly, ISO_DATE, UUID } from "@/lib/programming/server";
 
@@ -123,4 +124,39 @@ export async function copyWeekForward(athleteId: string, monday: string): Promis
   }
   revalidatePath(`/coach/athlete/${athleteId}/program`);
   return { count: ws.length };
+}
+
+// ---------- Blocks built or imported straight onto this client ----------
+const back = (athleteId: string, error?: string) =>
+  redirect(`/coach/athlete/${athleteId}/program${error ? `?error=${encodeURIComponent(error)}` : ""}#blocks`);
+
+export async function createClientBlock(fd: FormData) {
+  const athleteId = String(fd.get("athlete_id") ?? "");
+  if (!UUID.test(athleteId)) return;
+  const name = String(fd.get("name") ?? "").trim().slice(0, 60);
+  const start = String(fd.get("start") ?? "");
+  const weeks = Number(fd.get("weeks"));
+  const days = fd.getAll("days").map(Number).filter((d) => d >= 1 && d <= 7);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(start)) back(athleteId, "Pick a start date.");
+  const supabase = await coachOnly();
+  const { error } = await supabase.rpc("create_client_block", { p_athlete: athleteId, p_name: name, p_start: start, p_weeks: weeks, p_days: days });
+  revalidatePath(`/coach/athlete/${athleteId}/program`);
+  back(athleteId, error ? (/Coach only/.test(error.message) ? "Coach only." : error.message.replace(/^.*?: /, "")) : undefined);
+}
+
+export async function importBlock(fd: FormData) {
+  const athleteId = String(fd.get("athlete_id") ?? "");
+  if (!UUID.test(athleteId)) return;
+  const source = String(fd.get("source") ?? ""); // "p:<programId>" or "a:<assignmentId>"
+  const start = String(fd.get("start") ?? "");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(start)) back(athleteId, "Pick a start date.");
+  const [kind, sid] = source.split(":");
+  if (!UUID.test(sid ?? "")) back(athleteId, "Pick what to import.");
+  const supabase = await coachOnly();
+  const { error } =
+    kind === "p"
+      ? await supabase.rpc("assign_program", { p_program: sid, p_athlete: athleteId, p_group: null, p_start: start })
+      : await supabase.rpc("copy_assignment_to", { p_assignment: sid, p_athlete: athleteId, p_start: start });
+  revalidatePath(`/coach/athlete/${athleteId}/program`);
+  back(athleteId, error ? "That didn't import. Please try again." : undefined);
 }

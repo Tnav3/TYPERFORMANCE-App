@@ -209,7 +209,7 @@ export function PlanCalendar({
                 <span className="hidden lg:inline">Drag a program onto the day it should start.</span>
                 <span className="lg:hidden">Tap a program, then tap the day it should start.</span>
               </p>
-              <Link href="/coach/programs" className="shrink-0 text-xs font-bold text-brand">Build a new one →</Link>
+              <a href="#blocks" className="shrink-0 text-xs font-bold text-brand">New block / import →</a>
             </div>
             {programs.length === 0 && <p className="text-sm text-muted">No programs yet.</p>}
             {folderList.length > 0 && (
