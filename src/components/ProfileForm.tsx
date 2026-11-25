@@ -1,6 +1,7 @@
 "use client";
 import { useActionState, useState, useTransition } from "react";
 import { saveProfile, type ProfileFormState } from "@/app/onboarding/actions";
+import { actionErrorMessage } from "@/lib/action-error";
 import type { Discipline, Profile } from "@/lib/types";
 import { Alert, Button, Field, Input, Select } from "./ui";
 
@@ -10,6 +11,7 @@ export function ProfileForm({
   submitLabel,
   today,
   athleteId,
+  readOnly,
 }: {
   profile: Profile;
   disciplines: Discipline[];
@@ -17,9 +19,19 @@ export function ProfileForm({
   today: string;
   /** Coach editing someone else's profile. */
   athleteId?: string;
+  /** Coach viewing as the client: show, don't save. */
+  readOnly?: boolean;
 }) {
   const [state, action, pending] = useActionState<ProfileFormState, FormData>(
-    saveProfile,
+    // A failed call (app just updated, no signal, view-as) shows a message instead of crashing the page
+    async (prev, fd) => {
+      try {
+        return await saveProfile(prev, fd);
+      } catch (e) {
+        if (e instanceof Error && /NEXT_REDIRECT/.test(e.message + String((e as { digest?: string }).digest ?? ""))) throw e;
+        return { message: actionErrorMessage(e) };
+      }
+    },
     {},
   );
   const [, startTransition] = useTransition();
@@ -39,6 +51,7 @@ export function ProfileForm({
 
   return (
     <form onSubmit={onSubmit} noValidate>
+      <fieldset disabled={readOnly} className="m-0 min-w-0 border-0 p-0">
       {state.message && <Alert>{state.message}</Alert>}
       {state.saved && <Alert tone="ok">Saved.</Alert>}
       {athleteId && <input type="hidden" name="athlete_id" value={athleteId} />}
@@ -166,6 +179,7 @@ export function ProfileForm({
       <Button type="submit" disabled={pending} className="mt-6">
         {pending ? "Saving…" : submitLabel}
       </Button>
+      </fieldset>
     </form>
   );
 }

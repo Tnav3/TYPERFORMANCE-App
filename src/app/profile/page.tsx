@@ -12,7 +12,7 @@ const field = "min-h-11 w-full min-w-0 rounded-xl border border-line bg-surface-
 
 // Athletes update fight date, weight class etc. as things change.
 export default async function EditProfilePage({ searchParams }: { searchParams: Promise<{ saved?: string; error?: string }> }) {
-  const { supabase, profile, state } = await requireState([
+  const { supabase, profile, state, viewAs } = await requireState([
     "athlete",
     "pending",
   ]);
@@ -34,10 +34,17 @@ export default async function EditProfilePage({ searchParams }: { searchParams: 
     <Screen>
       <BackLink href={home} />
       <Heading>My profile</Heading>
+      {viewAs && (
+        <div className="mb-4 rounded-2xl border border-warn/50 bg-warn/10 p-4 text-sm">
+          You&apos;re viewing as this client, so their profile can&apos;t be saved here.{" "}
+          <Link href={`/coach/athlete/${profile.id}/profile`} className="font-bold underline">Edit it from the coach side →</Link>
+        </div>
+      )}
       <section id="about" className="mb-6 rounded-2xl border border-line bg-surface p-4">
         <h2 className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted">About you</h2>
         <AvatarUploader userId={me.id} name={me.full_name ?? me.email} path={me.avatar_path} />
-        <form action={saveAboutMe} className="mt-4 space-y-3">
+        <form action={saveAboutMe} className="mt-4">
+          <fieldset disabled={!!viewAs} className="m-0 min-w-0 space-y-3 border-0 p-0">
           <label className="block">
             <span className="mb-1 block text-sm font-bold">Fight name / nickname</span>
             <input name="nickname" maxLength={40} defaultValue={me.nickname ?? ""} placeholder="e.g. The Hammer" className={field} />
@@ -52,7 +59,8 @@ export default async function EditProfilePage({ searchParams }: { searchParams: 
           </label>
           {sp.saved === "about" && <p className="text-sm font-bold text-ok">Saved.</p>}
           {sp.error === "about" && <p className="text-sm font-bold text-brand">That didn&apos;t save. Please try again.</p>}
-          <button className="min-h-11 w-full rounded-xl bg-brand font-extrabold uppercase text-white">Save about you</button>
+          <button className="min-h-11 w-full rounded-xl bg-brand font-extrabold uppercase text-white disabled:opacity-50">Save about you</button>
+          </fieldset>
         </form>
       </section>
       <h2 className="mb-2 px-1 text-xs font-semibold uppercase tracking-widest text-muted">Training & competition</h2>
@@ -60,6 +68,7 @@ export default async function EditProfilePage({ searchParams }: { searchParams: 
         profile={profile}
         disciplines={list}
         submitLabel="Save training details"
+        readOnly={!!viewAs}
         today={todayISO()}
       />
       {state === "athlete" && (
