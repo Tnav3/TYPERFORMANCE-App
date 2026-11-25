@@ -83,6 +83,9 @@ export default async function CoachLogPage({ params }: { params: Promise<{ id: s
     };
   };
   const halaxyLines: HalaxyLine[] = byBlock(list).flatMap(([, blk]) => blk.map((it) => detail(it, blk.length)));
+  // Hidden timer (migration 067): first entry to first finish. Ignore anything over 5 hours (left open overnight).
+  const trackedRaw = log.first_completed_at ? (Date.parse(log.first_completed_at) - Date.parse(log.created_at)) / 60000 : null;
+  const tracked = trackedRaw != null && trackedRaw >= 1 && trackedRaw <= 300 ? Math.round(trackedRaw) : null;
   const summaryText = halaxySummary({
     date: new Intl.DateTimeFormat("en-AU", { weekday: "short", day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }).format(new Date(log.workout_date + "T00:00:00Z")),
     title: w?.title ?? "Workout",
@@ -107,6 +110,13 @@ export default async function CoachLogPage({ params }: { params: Promise<{ id: s
         <Link href={`/coach/chat/${log.athlete_id}`} className="font-bold text-brand">Reply in chat →</Link>
         {w && <Link href={`/coach/workouts/${w.id}`} className="underline underline-offset-4">Edit workout</Link>}
       </div>
+      {tracked != null && (
+        <p className="mb-3 text-sm text-muted" title="Only you see this">
+          ⏱ Tracked time <b className="text-text">{tracked} min</b> (first entry → finished)
+          {log.duration_min != null && Math.abs(tracked - log.duration_min) >= 10 && <> · they entered {log.duration_min} min</>}
+          <span className="ml-1 text-xs">· coach only</span>
+        </p>
+      )}
       <div className="mb-4 lg:max-w-xl">
         <CopyText text={summaryText} label="Copy for Halaxy (SOAP plan)" />
       </div>

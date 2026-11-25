@@ -46,3 +46,17 @@ describe("pain swap alert (058)", () => {
     expect(String(n.rows[0].body)).toMatch(/^Alice swapped .*: left knee$/);
   });
 });
+
+describe("hidden workout timer (067)", () => {
+  it("keeps the first finish time even after a reopen", async () => {
+    const w = (await q(`insert into workouts (athlete_id, workout_date, title) values ($1, sydney_today(), 'X') returning id`, [alice])).rows[0].id;
+    const l = (await q(`insert into workout_logs (workout_id, athlete_id, workout_date, created_at) values ($1, $2, sydney_today(), now() - interval '50 minutes') returning id`, [w, alice])).rows[0].id;
+    await q(`update workout_logs set completed_at = now(), session_rpe = 7, duration_min = 60 where id = $1`, [l]);
+    const first = (await q(`select first_completed_at from workout_logs where id = $1`, [l])).rows[0].first_completed_at;
+    await q(`update workout_logs set completed_at = null, session_rpe = null, duration_min = null where id = $1`, [l]);
+    await q(`update workout_logs set completed_at = now() + interval '1 hour', session_rpe = 7, duration_min = 60 where id = $1`, [l]);
+    const r = await q(`select first_completed_at, round(extract(epoch from first_completed_at - created_at) / 60)::int mins from workout_logs where id = $1`, [l]);
+    expect(r.rows[0].first_completed_at).toEqual(first);
+    expect(r.rows[0].mins).toBe(50);
+  });
+});
