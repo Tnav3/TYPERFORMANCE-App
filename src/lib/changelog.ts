@@ -9,6 +9,7 @@ export const CHANGELOG: Release[] = [
     version: "0.9.0",
     date: "2026-11-25",
     items: [
+      { who: "client", text: "New welcome tour for how the app works now, with how-to clips." },
       { who: "client", text: "Trophy cabinet in More: every badge, plus progress to the next one." },
       { who: "client", text: "A daily line from your coach on Home." },
       { who: "client", text: "Fight camp mode: countdown, camp phase and your weight-make tracker on Home." },

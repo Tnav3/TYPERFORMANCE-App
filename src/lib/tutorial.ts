@@ -8,61 +8,85 @@ export interface TourStep {
   key: string;
   title: string;
   body: string;
+  video?: string | null;
 }
 
 type P = Parameters<typeof hasFeature>[0] & Partial<Profile>;
 
-export function welcomeSteps(p: P): TourStep[] {
+/** Keys the coach can attach a how-to clip to (see /coach/tour). */
+export const TOUR_KEYS = ["welcome", "today", "during", "week", "chat", "weigh", "meals", "checkin", "testing", "tools", "fights", "trophies", "done"] as const;
+
+export function welcomeSteps(p: P, videos: Record<string, string> = {}): TourStep[] {
   const on = (f: Parameters<typeof hasFeature>[1]) => hasFeature(p, f);
   const tools = toolsFor(p);
   const steps: (TourStep | false)[] = [
     {
       key: "welcome",
       title: "Welcome to TYPERFORMANCE",
-      body: "This app helps your coach plan around how you're really training and recovering. This quick tour takes about a minute. You can skip it any time.",
+      body: "Your training, check-ins and coach in one place. This tour takes about a minute. Skip it any time.",
     },
-    on("checkin") && {
-      key: "log",
-      title: "Log every session",
-      body: "After training, tap This week → Log training. Pick the discipline, how long it went and how hard it felt. It takes about 20 seconds.",
+    on("program") && {
+      key: "today",
+      title: "Today's session",
+      body: "Home shows what's on today. Tap it to start. You'll see what equipment you need before you begin.",
     },
-    on("checkin") && {
-      key: "rpe",
-      title: "How hard was it? (RPE)",
-      body: "Rate the whole session from 1 (very easy) to 10 (max effort), not just your hardest round. Be honest: it's how your coach spots when you need a lighter week.",
+    on("program") && {
+      key: "during",
+      title: "Logging as you go",
+      body: "Tick off each set with the weight and reps you did. Machine taken or something hurts? Tap Swap and pick a similar exercise. At the end, slide 1 to 10 for how hard the whole session was.",
+    },
+    on("program") && {
+      key: "week",
+      title: "Your week, your way",
+      body: "Need to shuffle? Move a session to another day from the Train tab. Did extra work? Add your own workout so your coach sees it.",
+    },
+    on("chat") && {
+      key: "chat",
+      title: "Message your coach",
+      body: "Send texts, photos, voice notes or a quick video of a set for feedback.",
+    },
+    on("bodyweight") && {
+      key: "weigh",
+      title: "Weigh-ins",
+      body: "Tap the weight box on Home to log your bodyweight. Same time each morning gives the cleanest trend.",
+    },
+    on("mealplan") && {
+      key: "meals",
+      title: "Food",
+      body: "The fork icon at the bottom has your meal plan and nutrition targets once your coach sets them.",
     },
     on("checkin") && {
       key: "checkin",
-      title: "Finish your week",
-      body: "At the end of each week, submit your check-in: sleep, soreness, stress, mood and (if you like) bodyweight. A reminder shows on your home screen if you miss one.",
+      title: "Check-ins",
+      body: "When a check-in is due it shows on Home. A couple of minutes, and it's how your coach adjusts your plan.",
     },
     on("testing") && {
       key: "testing",
       title: "Testing",
-      body: "Each test has a video and steps. Do it, enter your best result, and see where you sit against Bronze, Silver and Gold standards.",
+      body: "Each test has a video and steps. Enter your best result and see where you sit against Bronze, Silver and Gold.",
     },
     tools.length > 0 && {
       key: "tools",
-      title: "Training Tools",
-      body: `Calculators and guides for your training: ${tools.map((t) => t.title).join(", ")}.`,
+      title: "Training tools",
+      body: `In More: ${tools.map((t) => t.title).join(", ")}.`,
     },
     on("fights") && {
       key: "fights",
-      title: "Competition Tracker",
-      body: "Add your next fight to see a countdown, then log the result and rounds afterwards.",
+      title: "Fights",
+      body: "Add your next fight and Home switches to fight camp mode: countdown, camp phase and your weight-make tracker.",
     },
-    on("mobility") && {
-      key: "mobility",
-      title: "Mobility",
-      body: "After your coach screens your range of motion, your results show here against healthy norms.",
+    {
+      key: "trophies",
+      title: "Trophy cabinet",
+      body: "Sessions, streaks and PBs earn trophies. Find them in More.",
     },
     {
       key: "done",
       title: "You're set",
-      body: "Stuck on something? The FAQ on your home screen has quick answers. You can replay this tour any time from your profile.",
+      body: "Stuck? Help is in More, or just message your coach. You can replay this tour from your profile.",
     },
   ];
-  return steps.filter((s): s is TourStep => !!s);
+  return steps.filter((s): s is TourStep => !!s).map((s) => (videos[s.key] ? { ...s, video: videos[s.key] } : s));
 }
 
 /** One-time tip at the top of each feature page. */

@@ -162,6 +162,8 @@ export default async function AthleteHome() {
       .order("measured_on");
     camp = campStatus({ fight: profile.next_fight_date, today, limitKg: limitKg == null ? null : Number(limitKg), weights: (cw ?? []).map((r) => ({ date: r.measured_on as string, kg: Number(r.weight_kg) })) });
   }
+  const { data: tv } = !profile.tutorial_done_at ? await supabase.from("tour_videos").select("key, url") : { data: null };
+  const tourVideos = Object.fromEntries((tv ?? []).map((r) => [r.key, r.url]));
   const { data: quoteRows } = await supabase.from("quotes").select("id, body, author").eq("active", true);
   const quote = quoteOfDay(quoteRows ?? [], today);
   return (
@@ -171,7 +173,7 @@ export default async function AthleteHome() {
       weight={weight}
       booking={booking}
       trend={trend}
-      tour={!profile.tutorial_done_at ? <WelcomeTour steps={welcomeSteps(profile)} /> : null}
+      tour={!profile.tutorial_done_at ? <WelcomeTour steps={welcomeSteps(profile, tourVideos)} /> : null}
       first={first}
       me={{ name: profile.full_name ?? profile.email, avatar: (profile as unknown as { avatar_path: string | null }).avatar_path ?? null, nickname: (profile as unknown as { nickname: string | null }).nickname ?? null, goal: (profile as unknown as { goal_text: string | null }).goal_text ?? null }}
       fightLabel={nextFight ? nextFight.label.replace(" out", "") : null}

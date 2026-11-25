@@ -50,6 +50,11 @@ export function WelcomeTour({ steps }: { steps: TourStep[] }) {
           {step.title}
         </h2>
         <p className="mt-3 min-h-24 text-[15px] leading-relaxed">{step.body}</p>
+        {step.video && (
+          <a href={step.video} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex min-h-11 items-center gap-2 rounded-xl border border-brand px-4 text-sm font-bold text-brand">
+            ▶ Watch how
+          </a>
+        )}
         <div className="mt-5 flex gap-1.5" aria-hidden>
           {steps.map((s, k) => (
             <span
