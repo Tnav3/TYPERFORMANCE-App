@@ -1,3 +1,5 @@
+import { PopoverCloser } from "@/components/PopoverCloser";
+import { BellRing, PersonStanding, SlidersHorizontal, Swords, UserPen } from "lucide-react";
 import { ClientTabs } from "@/components/ClientTabs";
 import { FightCampCard } from "@/components/FightCampCard";
 import { campStatus } from "@/lib/fight-camp";
@@ -171,103 +173,15 @@ export default async function AthleteDetail({
   return (
     <Screen wide>
       <ClientTabs id={id} name={p.full_name ?? p.email} active="overview" />
-
-      <header className="mb-6 flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <p className="text-muted">
-            {[
-              p.discipline?.name,
-              p.weight_class &&
-                `${p.weight_class}${limit ? ` (${limit} kg)` : ""}`,
-              p.training_age_years != null &&
-                `${Number(p.training_age_years)} yrs training`,
-            ]
-              .filter(Boolean)
-              .join(" · ")}
-          </p>
-          <p className="text-sm text-muted">{p.email}</p>
-        </div>
-        <div className="flex flex-col items-end gap-2">
-          <TrafficLight level={headlineLight.level} size="lg" />
-          <span className="text-xs text-muted">
-            {headlineLight.reasons.join(" · ") || "Last week on track"}
-          </span>
-        </div>
-      </header>
-      {camp && <div className="max-w-xl"><FightCampCard s={camp} limitKg={limit} coach /></div>}
-      {pageError === "widgets" && (
-        <p className="mb-3 rounded-xl border border-brand/60 bg-brand/10 px-4 py-3 text-sm font-bold text-brand">Those graphs didn&apos;t save. Please try again.</p>
-      )}
-      <ClientWidgets id={id} widgets={widgets} chosen={chosenWidgets} trend={prefs.home_trend} trendAuto={defaultHomeTrend(kind)} />
-      <details className="mb-6 rounded-xl border border-line bg-surface p-3" open={(followUps ?? []).length > 0}>
-        <summary className="cursor-pointer text-sm font-bold">
-          Follow-ups{(followUps ?? []).length ? ` · ${(followUps ?? []).length}` : ""}
-        </summary>
-        <ul className="mt-2 space-y-1 text-sm">
-          {(followUps ?? []).map((f) => (
-            <li key={f.id} className="flex items-center justify-between gap-2">
-              <span>
-                <span className="text-muted">{f.due_on}</span> · {f.note}
-              </span>
-              <form action={clearFollowUp}>
-                <input type="hidden" name="id" value={f.id} />
-                <input type="hidden" name="back" value={`/coach/athlete/${id}`} />
-                <button className="min-h-9 rounded-lg border border-line px-2 text-xs font-bold">Done</button>
-              </form>
-            </li>
-          ))}
-        </ul>
-        <form action={addFollowUp} className="mt-2 grid grid-cols-[9.5rem_1fr_auto] gap-2">
-          <input type="hidden" name="athlete_id" value={id} />
-          <input type="hidden" name="back" value={`/coach/athlete/${id}`} />
-          <input type="date" name="due_on" required className="min-h-11 rounded-xl border border-line bg-surface-2 px-2 text-text" aria-label="Follow up on" />
-          <input name="note" required maxLength={500} placeholder="e.g. Check shoulder after sparring" className="min-h-11 min-w-0 rounded-xl border border-line bg-surface-2 px-3 text-text" aria-label="Note" />
-          <button className="min-h-11 rounded-xl border border-line bg-surface-2 px-3 text-sm font-bold">Add</button>
-        </form>
-      </details>
-      <Link
-        href={`/coach/athlete/${id}/fights`}
-        className="-mt-4 mb-6 flex min-h-12 items-center justify-between rounded-xl border border-line bg-surface-2 px-4 font-extrabold"
-      >
-        Competition tracker <span aria-hidden>→</span>
-      </Link>
-      <Link
-        href={`/coach/athlete/${id}/mobility`}
-        className="-mt-4 mb-6 flex min-h-12 items-center justify-between rounded-xl border border-line bg-surface-2 px-4 font-extrabold"
-      >
-        Mobility screen <span aria-hidden>→</span>
-      </Link>
-      <Link
-        href={`/coach/athlete/${id}/profile`}
-        className="-mt-4 mb-6 flex min-h-12 items-center justify-between rounded-xl border border-line bg-surface-2 px-4 font-extrabold"
-      >
-        Edit profile <span aria-hidden>→</span>
-      </Link>
-
-      {pageError === "feature" && (
-        <p className="mb-3 rounded-xl border border-brand/60 bg-brand/10 px-4 py-3 text-sm font-bold text-brand">
-          That switch didn&apos;t save. Please try again.
-        </p>
-      )}
-      <details
-        className="mb-6 rounded-xl border border-line bg-surface"
-        open={
-          pageError === "feature" || FEATURES.some((f) => p[f.column] === false)
-        }
-      >
-        <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between px-4 font-extrabold">
-          <span>
-            Features{" "}
-            <span className="text-sm font-normal text-muted">
-              · {FEATURES.filter((f) => p[f.column] !== false).length} of{" "}
-              {FEATURES.length} on
-            </span>
-          </span>
-          <span className="text-sm text-muted" aria-hidden>
-            ▾
-          </span>
-        </summary>
-        <ul className="divide-y divide-line border-t border-line">
+      <PopoverCloser />
+      {/* Quick tools: compact chips; panels open only when tapped */}
+      <div className="-mt-1 mb-5 flex flex-wrap items-center gap-2">
+        <details data-popover className="relative" open={pageError === "feature"}>
+          <summary className="flex min-h-9 cursor-pointer list-none items-center gap-1.5 rounded-full border border-line bg-surface px-3 text-sm font-bold">
+            <SlidersHorizontal size={15} /> Features <span className="text-xs font-normal text-muted">{FEATURES.filter((f) => p[f.column] !== false).length}/{FEATURES.length}</span>
+          </summary>
+          <div className="absolute left-0 z-30 mt-2 max-h-[70vh] w-[min(92vw,460px)] overflow-y-auto rounded-2xl border border-line bg-surface shadow-2xl">
+        <ul className="divide-y divide-line ">
           {FEATURES.map((f) => {
             const on = p[f.column] !== false;
             return (
@@ -298,7 +212,80 @@ export default async function AthleteDetail({
             );
           })}
         </ul>
-      </details>
+          </div>
+        </details>
+        <details data-popover className="relative">
+          <summary className="flex min-h-9 cursor-pointer list-none items-center gap-1.5 rounded-full border border-line bg-surface px-3 text-sm font-bold">
+            <BellRing size={15} /> Follow-ups{(followUps ?? []).length ? <span className="rounded-full bg-brand px-1.5 text-[11px] text-white">{(followUps ?? []).length}</span> : null}
+          </summary>
+          <div className="absolute left-0 z-30 mt-2 w-[min(92vw,520px)] rounded-2xl border border-line bg-surface p-3 shadow-2xl">
+        <ul className="mt-2 space-y-1 text-sm">
+          {(followUps ?? []).map((f) => (
+            <li key={f.id} className="flex items-center justify-between gap-2">
+              <span>
+                <span className="text-muted">{f.due_on}</span> · {f.note}
+              </span>
+              <form action={clearFollowUp}>
+                <input type="hidden" name="id" value={f.id} />
+                <input type="hidden" name="back" value={`/coach/athlete/${id}`} />
+                <button className="min-h-9 rounded-lg border border-line px-2 text-xs font-bold">Done</button>
+              </form>
+            </li>
+          ))}
+        </ul>
+        <form action={addFollowUp} className="mt-2 grid grid-cols-[9.5rem_1fr_auto] gap-2">
+          <input type="hidden" name="athlete_id" value={id} />
+          <input type="hidden" name="back" value={`/coach/athlete/${id}`} />
+          <input type="date" name="due_on" required className="min-h-11 rounded-xl border border-line bg-surface-2 px-2 text-text" aria-label="Follow up on" />
+          <input name="note" required maxLength={500} placeholder="e.g. Check shoulder after sparring" className="min-h-11 min-w-0 rounded-xl border border-line bg-surface-2 px-3 text-text" aria-label="Note" />
+          <button className="min-h-11 rounded-xl border border-line bg-surface-2 px-3 text-sm font-bold">Add</button>
+        </form>
+          </div>
+        </details>
+        <Link href={`/coach/athlete/${id}/fights`} className="flex min-h-9 items-center gap-1.5 rounded-full border border-line bg-surface px-3 text-sm font-bold">
+          <Swords size={15} /> Competitions
+        </Link>
+        <Link href={`/coach/athlete/${id}/mobility`} className="flex min-h-9 items-center gap-1.5 rounded-full border border-line bg-surface px-3 text-sm font-bold">
+          <PersonStanding size={15} /> Mobility screen
+        </Link>
+        <Link href={`/coach/athlete/${id}/profile`} className="flex min-h-9 items-center gap-1.5 rounded-full border border-line bg-surface px-3 text-sm font-bold">
+          <UserPen size={15} /> Edit profile
+        </Link>
+      </div>
+
+      <header className="mb-6 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-muted">
+            {[
+              p.discipline?.name,
+              p.weight_class &&
+                `${p.weight_class}${limit ? ` (${limit} kg)` : ""}`,
+              p.training_age_years != null &&
+                `${Number(p.training_age_years)} yrs training`,
+            ]
+              .filter(Boolean)
+              .join(" · ")}
+          </p>
+          <p className="text-sm text-muted">{p.email}</p>
+        </div>
+        <div className="flex flex-col items-end gap-2">
+          <TrafficLight level={headlineLight.level} size="lg" />
+          <span className="text-xs text-muted">
+            {headlineLight.reasons.join(" · ") || "Last week on track"}
+          </span>
+        </div>
+      </header>
+      {camp && <div className="max-w-xl"><FightCampCard s={camp} limitKg={limit} coach /></div>}
+      {pageError === "widgets" && (
+        <p className="mb-3 rounded-xl border border-brand/60 bg-brand/10 px-4 py-3 text-sm font-bold text-brand">Those graphs didn&apos;t save. Please try again.</p>
+      )}
+      <ClientWidgets id={id} widgets={widgets} chosen={chosenWidgets} trend={prefs.home_trend} trendAuto={defaultHomeTrend(kind)} />
+
+      {pageError === "feature" && (
+        <p className="mb-3 rounded-xl border border-brand/60 bg-brand/10 px-4 py-3 text-sm font-bold text-brand">
+          That switch didn&apos;t save. Please try again.
+        </p>
+      )}
 
       <div className="mb-6 grid grid-cols-2 gap-2 sm:grid-cols-4">
         <Tile

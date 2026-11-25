@@ -68,7 +68,7 @@ export async function ClientTabs({ id, name, active, sub }: { id: string; name: 
             {label}
           </Link>
         ))}
-        <details className="relative ml-auto lg:hidden">
+        <details data-popover className="relative ml-auto lg:hidden">
           <summary
             className={`flex h-full cursor-pointer list-none items-center whitespace-nowrap border-b-2 px-2 text-[13px] font-bold sm:text-sm ${
               moreActive ? "border-brand text-text" : "border-transparent text-muted"
