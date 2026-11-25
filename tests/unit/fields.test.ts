@@ -12,14 +12,11 @@ const lb = { ...DEFAULT_UNITS, weight_unit: "lb" as const };
 const mi = { ...DEFAULT_UNITS, distance_unit: "mi" as const, speed_unit: "mph" as const };
 
 describe("exercise fields", () => {
-  it("defaults by measure, custom list wins (max 4)", () => {
+  it("defaults by measure, custom list wins (max 8)", () => {
     expect(fieldsFor({ measure: "load" })).toEqual(["reps", "weight"]);
     expect(fieldsFor({ measure: "calories" })).toEqual(["calories"]);
-    expect(fieldsFor({ measure: "load", fields: ["calories", "time", "watts", "heart_rate", "rpe"] })).toEqual([
-      "calories",
-      "time",
-      "watts",
-      "heart_rate",
+    expect(fieldsFor({ measure: "load", fields: ["calories", "time", "watts", "heart_rate", "rpe", "reps", "weight", "speed", "distance"] })).toEqual([
+      "calories", "time", "watts", "heart_rate", "rpe", "reps", "weight", "speed",
     ]);
   });
   it("converts units both ways", () => {

@@ -9,6 +9,8 @@ export const CHANGELOG: Release[] = [
     version: "0.9.0",
     date: "2026-11-25",
     items: [
+      { who: "coach", text: "Exercises can record up to 8 things per set. Distance in metres, km, miles or yards, set right in the builder." },
+      { who: "coach", text: "New Keiser exercises record reps, resistance and peak watts automatically; new band exercises record band tension." },
       { who: "client", text: "Your player card (draft) in the Trophy cabinet: ratings that grow as you train." },
       { who: "client", text: "My notes: keep rack heights and machine settings, shown right on each exercise." },
       { who: "client", text: "Log band tension (Light to X-Heavy) and Keiser resistance + peak watts." },

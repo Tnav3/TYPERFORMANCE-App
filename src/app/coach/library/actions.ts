@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { titleCase } from "@/lib/calculator";
 import { coachOnly, friendly, str, UUID } from "@/lib/programming/server";
-import { FIELD_KEYS } from "@/lib/programming/fields";
+import { FIELD_KEYS, MAX_FIELDS } from "@/lib/programming/fields";
 import { EQUIPMENT_KEYS } from "@/lib/programming/equipment";
 import {
   cleanVideoUrl,
@@ -86,7 +86,7 @@ function fields(fd: FormData) {
   if (!MEAS.includes(measure)) return { error: "Pick how it's measured." };
   if (videoRaw && !video_url) return { error: "Video link must start with https://" };
   const fieldsPicked = fd.getAll("fields").map(String).filter((f) => (FIELD_KEYS as readonly string[]).includes(f));
-  if (fieldsPicked.length > 4) return { error: "Pick up to 4 things to record." };
+  if (fieldsPicked.length > MAX_FIELDS) return { error: `Pick up to ${MAX_FIELDS} things to record.` };
   const d = defaults(fd);
   if ("error" in d) return { error: d.error };
   const wu = String(fd.get("weight_unit") ?? "kg");
@@ -96,7 +96,7 @@ function fields(fd: FormData) {
     row: {
       fields: fieldsPicked.length ? FIELD_KEYS.filter((k) => fieldsPicked.includes(k)) : null,
       weight_unit: wu === "lb" ? "lb" : "kg",
-      distance_unit: ["m", "km", "mi"].includes(du) ? du : "m",
+      distance_unit: ["m", "km", "mi", "yd"].includes(du) ? du : "m",
       speed_unit: su === "mph" ? "mph" : su === "kmh" ? "kmh" : "ms",
       name,
       ...pat,

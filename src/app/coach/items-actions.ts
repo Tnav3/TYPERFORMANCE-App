@@ -4,7 +4,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { parsePrescription } from "@/lib/prescription";
-import { FIELD_KEYS } from "@/lib/programming/fields";
+import { FIELD_KEYS, MAX_FIELDS } from "@/lib/programming/fields";
 import { coachOnly, friendly, int, safePath, str, UUID } from "@/lib/programming/server";
 
 const TABLES = {
@@ -111,7 +111,7 @@ export async function updateItem(fd: FormData) {
     if (!ex) done(back, `"${name ?? ""}" isn't in the exercise library.`);
     const p = parsePrescription(String(fd.get("line") ?? ""));
     const picked = fd.getAll("fields").map(String).filter((f) => (FIELD_KEYS as readonly string[]).includes(f));
-    if (picked.length > 4) done(back, "Pick up to 4 things to record.");
+    if (picked.length > MAX_FIELDS) done(back, `Pick up to ${MAX_FIELDS} things to record.`);
     row = { exercise_id: ex!.id, block, slot, ...p, fields: picked.length ? FIELD_KEYS.filter((k) => picked.includes(k)) : null };
   }
   const { error } = await supabase.from(table).update(row).eq("id", id);

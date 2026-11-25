@@ -18,13 +18,16 @@ export const FIELD_KEYS = [
 ] as const;
 export type FieldKey = (typeof FIELD_KEYS)[number];
 
+/** Most things an exercise can record per set (the logger wraps past 4). */
+export const MAX_FIELDS = 8;
+
 export const FIELD_LABEL: Record<FieldKey, string> = {
   reps: "Reps",
   weight: "Weight",
   time: "Time",
   distance: "Distance",
   speed: "Speed",
-  watts: "Watts",
+  watts: "Power (watts)",
   calories: "Calories",
   heart_rate: "Heart rate",
   rpe: "RPE",
@@ -45,7 +48,7 @@ export const bandLabel = (n: number | null | undefined) => BAND_LEVELS.find(([v]
 
 export interface Units {
   weight_unit: "kg" | "lb";
-  distance_unit: "m" | "km" | "mi";
+  distance_unit: "m" | "km" | "mi" | "yd";
   speed_unit: "ms" | "kmh" | "mph";
 }
 
@@ -61,7 +64,7 @@ const BY_MEASURE: Record<string, FieldKey[]> = {
 
 export function fieldsFor(ex: { fields?: string[] | null; measure: string }, line?: { fields?: string[] | null } | null): FieldKey[] {
   const f = ((line?.fields?.length ? line.fields : ex.fields) ?? []).filter((x): x is FieldKey => (FIELD_KEYS as readonly string[]).includes(x));
-  return f.length ? f.slice(0, 4) : BY_MEASURE[ex.measure] ?? ["reps", "weight"];
+  return f.length ? f.slice(0, MAX_FIELDS) : BY_MEASURE[ex.measure] ?? ["reps", "weight"];
 }
 
 export function unitLabel(field: FieldKey, u: Units, bodyweight = false): string {
@@ -95,6 +98,7 @@ export function unitLabel(field: FieldKey, u: Units, bodyweight = false): string
 
 const LB = 0.45359237;
 const MI = 1609.344;
+const YD = 0.9144;
 const round = (n: number, dp: number) => Math.round(n * 10 ** dp) / 10 ** dp;
 
 /** Display value → canonical number (null if blank/invalid). Time accepts "1:30". */
@@ -117,7 +121,7 @@ export function toCanonical(field: FieldKey, raw: string, u: Units): number | nu
     case "weight":
       return round(u.weight_unit === "lb" ? n * LB : n, 2);
     case "distance":
-      return round(u.distance_unit === "km" ? n * 1000 : u.distance_unit === "mi" ? n * MI : n, 1);
+      return round(u.distance_unit === "km" ? n * 1000 : u.distance_unit === "mi" ? n * MI : u.distance_unit === "yd" ? n * YD : n, 1);
     case "speed":
       return round(u.speed_unit === "mph" ? n * (MI / 1000) : u.speed_unit === "kmh" ? n : n * 3.6, 2);
     case "velocity":
@@ -141,7 +145,7 @@ export function fromCanonical(field: FieldKey, v: number | null | undefined, u: 
     case "weight":
       return String(u.weight_unit === "lb" ? Math.round((v / LB) * 2) / 2 : round(v, 2));
     case "distance":
-      return String(u.distance_unit === "km" ? round(v / 1000, 2) : u.distance_unit === "mi" ? round(v / MI, 2) : round(v, 0));
+      return String(u.distance_unit === "km" ? round(v / 1000, 2) : u.distance_unit === "mi" ? round(v / MI, 2) : u.distance_unit === "yd" ? round(v / YD, 0) : round(v, 0));
     case "speed":
       return String(u.speed_unit === "mph" ? round(v / (MI / 1000), 1) : u.speed_unit === "kmh" ? round(v, 1) : round(v / 3.6, 2));
     case "velocity":

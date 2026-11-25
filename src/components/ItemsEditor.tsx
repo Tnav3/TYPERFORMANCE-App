@@ -7,7 +7,7 @@ import { formatPrescription, formatRest, formatSetPlan, itemLabel, parsePrescrip
 import { splitLine } from "@/lib/programming/exercise-search";
 import { ExercisePicker } from "./ExercisePicker";
 import { EXERCISE_CATEGORIES, type ItemFields } from "@/lib/programming/types";
-import { FIELD_KEYS, FIELD_LABEL, type FieldKey } from "@/lib/programming/fields";
+import { FIELD_KEYS, FIELD_LABEL, MAX_FIELDS, fieldsFor, type FieldKey } from "@/lib/programming/fields";
 import {
   builderAdd,
   builderApplyScheme,
@@ -15,6 +15,7 @@ import {
   builderDelete,
   builderDuplicate,
   builderOrder,
+  builderSetUnits,
   builderUpdate,
   deleteSavedBlock,
   insertBlock,
@@ -48,6 +49,7 @@ function restText(sec: number | null) {
 }
 
 type Order = { id: string; join: boolean }[];
+type LibEx = { id: string; name: string; active: boolean; category?: string | null; measure?: string; fields?: string[] | null; distance_unit?: string; speed_unit?: string };
 const orderOf = (list: ItemFields[]): Order => list.map((i, k) => ({ id: i.id, join: k > 0 && i.block === list[k - 1].block }));
 
 /** Move row `from` so it ends up at index `to` (index in the list after removal). */
@@ -74,7 +76,7 @@ export function ItemsEditor({
   parentId: string;
   back: string;
   items: ItemFields[];
-  exercises: { id: string; name: string; active: boolean; category?: string | null }[];
+  exercises: LibEx[];
 }) {
   const [items, setItems] = useState(initial);
   const [lib, setLib] = useState(exercises);
@@ -279,6 +281,15 @@ export function ItemsEditor({
                       label={itemLabel(i, sizes.get(i.block) ?? 1)}
                       name={i.kind === "exercise" ? exName.get(i.exercise_id!) ?? "" : i.title ?? ""}
                       lib={lib}
+                      onUnits={(exId, key, value) =>
+                        start(async () => {
+                          setError(null);
+                          const r = await builderSetUnits(exId, key, value, back);
+                          if (r.error) return setError(r.error);
+                          setLib((l) => l.map((e) => (e.id === exId ? { ...e, [key]: value } : e)));
+                          setNotice("Unit saved for this exercise everywhere.");
+                        })
+                      }
                       selecting={sel.size > 0}
                       schemes={schemes}
                       onScheme={(schemeId) =>
@@ -517,6 +528,7 @@ function Row({
   onDelete,
   onApplyWeeks,
   onScheme,
+  onUnits,
   dragProps,
   dropProps,
 }: {
@@ -524,7 +536,7 @@ function Row({
   k: number;
   label: string;
   name: string;
-  lib: { id: string; name: string; active: boolean; category?: string | null }[];
+  lib: LibEx[];
   checked: boolean;
   selecting: boolean;
   open: boolean;
@@ -539,6 +551,7 @@ function Row({
   onDelete: () => void;
   onApplyWeeks?: (o: { mode: "same" | "load" | "reps" | "sets"; step: string; skipLast: boolean }) => void;
   onScheme: (schemeId: string | null) => void;
+  onUnits: (exerciseId: string, key: "distance_unit" | "speed_unit", value: string) => void;
   dragProps: Record<string, unknown>;
   dropProps: Record<string, unknown>;
 }) {
@@ -660,26 +673,7 @@ function Row({
                 </select>
                 <span className="text-[11px] text-muted">Fills this line and the same exercise on this day in later weeks. Typing sets or reps by hand replaces it.</span>
               </div>
-              <details>
-                <summary className="cursor-pointer text-xs text-muted">What the client records</summary>
-                <div className="mt-1 flex flex-wrap gap-1">
-                  {FIELD_KEYS.map((f) => {
-                    const on = i.fields?.includes(f) ?? false;
-                    return (
-                      <button
-                        key={f}
-                        onClick={() => {
-                          const cur = i.fields ?? [];
-                          onSave({ fields: on ? cur.filter((x) => x !== f) : [...cur, f] });
-                        }}
-                        className={`min-h-8 rounded-full border px-2.5 text-[11px] font-bold ${on ? "border-brand bg-brand text-white" : "border-line text-muted"}`}
-                      >
-                        {FIELD_LABEL[f as FieldKey]}
-                      </button>
-                    );
-                  })}
-                </div>
-              </details>
+              <RecordFields i={i} ex={lib.find((e) => e.id === i.exercise_id)} onSave={onSave} onUnits={onUnits} />
               {onApplyWeeks && <ApplyWeeks onApply={onApplyWeeks} loadType={i.load_type ?? "none"} />}
             </>
           )}
@@ -691,6 +685,69 @@ function Row({
         </div>
       )}
     </div>
+  );
+}
+
+const UNIT_OPTS = {
+  distance_unit: [["m", "metres"], ["km", "km"], ["mi", "miles"], ["yd", "yards"]],
+  speed_unit: [["ms", "m/s"], ["kmh", "km/h"], ["mph", "mph"]],
+} as const;
+
+/** What the client logs each set, plus distance/speed units when those are picked. */
+function RecordFields({ i, ex, onSave, onUnits }: { i: ItemFields; ex?: LibEx; onSave: (p: RowPatch) => void; onUnits: (exerciseId: string, key: "distance_unit" | "speed_unit", value: string) => void }) {
+  const eff = fieldsFor({ fields: ex?.fields ?? null, measure: ex?.measure ?? "load" }, i);
+  const custom = !!i.fields?.length;
+  const full = eff.length >= MAX_FIELDS;
+  return (
+    <details>
+      <summary className="cursor-pointer text-xs text-muted">
+        What the client records: <span className="font-bold text-text">{eff.map((f) => FIELD_LABEL[f]).join(", ")}</span>
+      </summary>
+      <div className="mt-1 flex flex-wrap gap-1">
+        {FIELD_KEYS.map((f) => {
+          const on = eff.includes(f);
+          return (
+            <button
+              key={f}
+              type="button"
+              disabled={!on && full}
+              onClick={() => {
+                const next = on ? eff.filter((x) => x !== f) : [...eff, f];
+                onSave({ fields: next.length ? next : [] });
+              }}
+              className={`min-h-8 rounded-full border px-2.5 text-[11px] font-bold disabled:opacity-40 ${on ? "border-brand bg-brand text-white" : "border-line text-muted"}`}
+            >
+              {FIELD_LABEL[f as FieldKey]}
+            </button>
+          );
+        })}
+      </div>
+      <p className="mt-1 text-[11px] text-muted">
+        Up to {MAX_FIELDS}. {custom ? "Set for this line only." : "Using the exercise's default."}
+        {custom && (
+          <button type="button" onClick={() => onSave({ fields: [] })} className="ml-1 font-bold underline">Reset to default</button>
+        )}
+      </p>
+      {ex && (eff.includes("distance") || eff.includes("speed")) && (
+        <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-muted">
+          {(["distance_unit", "speed_unit"] as const)
+            .filter((k) => eff.includes(k === "distance_unit" ? "distance" : "speed"))
+            .map((k) => (
+              <label key={k} className="flex items-center gap-1">
+                {k === "distance_unit" ? "Distance in" : "Speed in"}
+                <select
+                  value={ex[k] ?? (k === "distance_unit" ? "m" : "ms")}
+                  onChange={(e) => onUnits(ex.id, k, e.target.value)}
+                  className="min-h-8 rounded-lg border border-line bg-surface px-2 text-xs font-bold text-text"
+                >
+                  {UNIT_OPTS[k].map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                </select>
+              </label>
+            ))}
+          <span>Applies to this exercise everywhere.</span>
+        </div>
+      )}
+    </details>
   );
 }
 

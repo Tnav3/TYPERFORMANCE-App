@@ -97,7 +97,7 @@ function ExerciseFields({
         </select>
       </label>
       <fieldset className="rounded-xl border border-line p-3">
-        <legend className="px-1 text-sm text-muted">What to record each set (up to 4; none ticked = default for its type)</legend>
+        <legend className="px-1 text-sm text-muted">What to record each set (up to 8; none ticked = default for its type)</legend>
         <div className="flex flex-wrap gap-1.5">
           {FIELD_KEYS.map((k) => (
             <label key={k} className="cursor-pointer">
@@ -116,7 +116,7 @@ function ExerciseFields({
           </label>
           <label>Distance in
             <select name="distance_unit" defaultValue={e?.distance_unit ?? "m"} className={input}>
-              <option value="m">metres</option><option value="km">km</option><option value="mi">miles</option>
+              <option value="m">metres</option><option value="km">km</option><option value="mi">miles</option><option value="yd">yards</option>
             </select>
           </label>
           <label>Speed in

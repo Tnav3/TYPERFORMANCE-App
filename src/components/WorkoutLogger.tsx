@@ -413,7 +413,7 @@ export function WorkoutLogger({
                     </div>
                     <div className="mt-2 space-y-1.5">
                       <div
-                        className="grid items-end gap-2 px-1 text-[11px] uppercase tracking-wide text-muted"
+                        className={`grid items-end gap-2 px-1 text-[11px] uppercase tracking-wide text-muted ${it.fields.length > 4 ? "hidden" : ""}`}
                         style={{ gridTemplateColumns: `1.75rem repeat(${it.fields.length}, minmax(0, 1fr)) 3rem` }}
                       >
                         <span className="text-center">Set</span>
@@ -429,10 +429,13 @@ export function WorkoutLogger({
                           <div
                             key={s.setNo}
                             className={`grid items-center gap-2 rounded-xl p-1 transition ${s.done ? "bg-ok/10" : ""}`}
-                            style={{ gridTemplateColumns: `1.75rem repeat(${it.fields.length}, minmax(0, 1fr)) 3rem` }}
+                            style={{ gridTemplateColumns: it.fields.length > 4 ? "1.75rem minmax(0, 1fr) 3rem" : `1.75rem repeat(${it.fields.length}, minmax(0, 1fr)) 3rem` }}
                           >
                             <span className="text-center text-sm font-bold text-muted">{s.setNo}</span>
-                            {it.fields.map((f) =>
+                            <Wrap on={it.fields.length > 4}>
+                            {it.fields.map((f) => (
+                              <Cell key={f.key} label={it.fields.length > 4 ? f.unit : null}>
+                              {
                               f.key === "time" && !readOnly ? (
                                 <div key={f.key} className="flex min-w-0 items-center gap-1">
                                   <Stopwatch onStop={(sec) => editSet(it, s.setNo, "time", String(sec))} />
@@ -473,8 +476,10 @@ export function WorkoutLogger({
                                   className={`${cell} placeholder:text-muted/50`}
                                   aria-label={`Set ${s.setNo} ${f.unit}`}
                                 />
-                              ),
-                            )}
+                              )}
+                              </Cell>
+                            ))}
+                            </Wrap>
                             <button
                               type="button"
                               onClick={() => (st === "error" ? saveSet(it, s) : toggleSet(it, s.setNo))}
@@ -804,5 +809,20 @@ function ClockBar({
         </button>
       </div>
     </div>
+  );
+}
+
+/** Past 4 things to record, a set's boxes wrap into a small grid, each labelled. */
+function Wrap({ on, children }: { on: boolean; children: React.ReactNode }) {
+  return on ? <div className="grid min-w-0 grid-cols-3 gap-1.5 sm:grid-cols-4">{children}</div> : <>{children}</>;
+}
+
+function Cell({ label, children }: { label: string | null; children: React.ReactNode }) {
+  if (!label) return <>{children}</>;
+  return (
+    <label className="min-w-0 text-[10px] font-bold uppercase tracking-wide text-muted">
+      {label}
+      {children}
+    </label>
   );
 }

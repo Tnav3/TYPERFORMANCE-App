@@ -2,7 +2,7 @@
 // Actions for the spreadsheet-style workout builder. They return results (no redirects)
 // so the list can update in place. Shared by program days and dated workouts.
 import { revalidatePath } from "next/cache";
-import { FIELD_KEYS } from "@/lib/programming/fields";
+import { FIELD_KEYS, MAX_FIELDS } from "@/lib/programming/fields";
 import { ITEM_COLUMNS, isCategory, type ItemFields, type SetTarget } from "@/lib/programming/types";
 import { schemeRow } from "@/lib/programming/schemes";
 import { coachOnly, friendly, UUID } from "@/lib/programming/server";
@@ -116,7 +116,7 @@ function toRow(p: RowPatch): Res<Record<string, unknown>> {
   if (p.sets !== undefined || p.reps !== undefined || p.load_type !== undefined) row.set_plan = null;
   if (p.fields !== undefined) {
     const f = p.fields.filter((x) => (FIELD_KEYS as readonly string[]).includes(x));
-    if (f.length > 4) return { error: "Pick up to 4 things to record." };
+    if (f.length > MAX_FIELDS) return { error: `Pick up to ${MAX_FIELDS} things to record.` };
     row.fields = f.length ? FIELD_KEYS.filter((k) => f.includes(k)) : null;
   }
   return { data: row };
@@ -141,6 +141,18 @@ export async function builderUpdate(table: string, parent: string, id: string, p
   if (error) return { error: friendly(error.message) };
   touch(back);
   return { data: await fresh(supabase, table, parent) };
+}
+
+/** Change how an exercise shows distance or speed (applies to that exercise everywhere). */
+export async function builderSetUnits(exerciseId: string, key: "distance_unit" | "speed_unit", value: string, back: string): Promise<Res> {
+  if (!UUID.test(exerciseId)) return { error: "Not found." };
+  const ok = key === "distance_unit" ? ["m", "km", "mi", "yd"] : key === "speed_unit" ? ["ms", "kmh", "mph"] : [];
+  if (!ok.includes(value)) return { error: "Pick a unit." };
+  const supabase = await coachOnly();
+  const { error } = await supabase.from("exercises").update({ [key]: value }).eq("id", exerciseId);
+  if (error) return { error: friendly(error.message) };
+  touch(back);
+  return {};
 }
 
 export async function builderAdd(

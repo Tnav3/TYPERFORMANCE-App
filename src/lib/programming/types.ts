@@ -53,7 +53,7 @@ export interface Exercise {
   active: boolean;
   fields?: string[] | null;
   weight_unit?: "kg" | "lb";
-  distance_unit?: "m" | "km" | "mi";
+  distance_unit?: "m" | "km" | "mi" | "yd";
   speed_unit?: "ms" | "kmh" | "mph";
   default_sets?: number | null;
   default_reps?: string | null;
