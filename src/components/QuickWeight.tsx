@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { Scale } from "lucide-react";
 import { quickWeight } from "@/app/train/progress-actions";
+import { actionErrorMessage, needsReload } from "@/lib/action-error";
 
 export function QuickWeight({ today, last, week }: { today: number | null; last: { kg: number; label: string } | null; week: number | null }) {
   const [open, setOpen] = useState(false);
@@ -35,7 +36,13 @@ export function QuickWeight({ today, last, week }: { today: number | null; last:
             e.preventDefault();
             setError(null);
             start(async () => {
-              const r = await quickWeight(kg);
+              let r: Awaited<ReturnType<typeof quickWeight>>;
+              try {
+                r = await quickWeight(kg);
+              } catch (err) {
+                setError(actionErrorMessage(err));
+                return;
+              }
               if (!r.ok) setError(r.error);
               else {
                 setSaved(Math.round(Number(kg.replace(",", ".")) * 10) / 10);
@@ -58,7 +65,12 @@ export function QuickWeight({ today, last, week }: { today: number | null; last:
           </button>
         </form>
       )}
-      {error && <p className="mt-1 text-sm font-bold text-brand">{error}</p>}
+      {error && (
+        <p className="mt-1 text-sm font-bold text-brand">
+          {error}{" "}
+          {needsReload(error) && <button type="button" onClick={() => window.location.reload()} className="underline">Reload</button>}
+        </p>
+      )}
       <Link href="/bodyweight" className="mt-2 block text-right text-xs font-bold text-muted underline underline-offset-4">See trend</Link>
     </div>
   );
