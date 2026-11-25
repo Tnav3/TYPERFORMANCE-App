@@ -62,7 +62,7 @@ What happens: paid → account active (or an invite is created if they haven't s
 
 
 ## Added 2026-11-25
-- Load migrations 046–067 into live with the others.
+- Load migrations 046–068 into live with the others.
 - Exercise library from Trainerize: after the test import is checked, copy exercises to live with
   `insert into exercises (...) select ... ` from a CSV export of the test table (Supabase → Table editor → export), or rerun the import against live.
 - Remove the temporary import pieces from TEST once finished: edge function `tz-import`, `public.import_trainerize_svc`, `private.import_trainerize`.

@@ -81,3 +81,14 @@ export async function deleteOwnWorkout(id: string): Promise<{ ok: boolean }> {
   revalidatePath("/train");
   return { ok: !error };
 }
+
+/** Move a workout to another day (group workouts become the client's own copy). */
+export async function moveMyWorkout(id: string, date: string): Promise<{ ok: true } | { ok: false; error: string }> {
+  if (!UUID.test(id) || !isISODate(date)) return { ok: false, error: "Pick a day." };
+  const { supabase } = await signedIn();
+  const { error } = await supabase.rpc("move_my_workout", { p_workout: id, p_date: date });
+  if (error) return { ok: false, error: /finished|4 weeks|not found/.test(error.message) ? error.message : "That didn't move. Please try again." };
+  revalidatePath("/train");
+  revalidatePath("/athlete");
+  return { ok: true };
+}

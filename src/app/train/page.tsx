@@ -1,3 +1,4 @@
+import { MoveWorkout } from "@/components/MoveWorkout";
 import Link from "next/link";
 import { requireFeature } from "@/lib/session";
 import { clientMenu } from "@/lib/client/menu";
@@ -10,7 +11,7 @@ import { Card, Heading, Screen } from "@/components/ui";
 export const dynamic = "force-dynamic";
 
 export default async function TrainPage() {
-  const { supabase, user, profile } = await requireFeature(["athlete"], "program");
+  const { supabase, user, profile, viewAs } = await requireFeature(["athlete"], "program");
   const menu = await clientMenu(supabase, profile, user!.id, todayISO());
   const today = todayISO();
   const from = addDays(today, -7);
@@ -44,28 +45,35 @@ export default async function TrainPage() {
   const missed = list.filter((w) => w.workout_date < today && !logBy.get(w.id)?.completed_at);
   const doneRecent = list.filter((w) => w.workout_date < today && logBy.get(w.id)?.completed_at);
 
+  const moveDays = Array.from({ length: 8 }, (_, i) => {
+    const iso = addDays(today, i - 1);
+    return { iso, label: i === 1 ? "Today" : i === 2 ? "Tomorrow" : i === 0 ? "Yesterday" : `${dayShort(iso)} ${dayMonth(iso)}` };
+  });
   const Row = ({ w }: { w: Workout }) => {
     const log = logBy.get(w.id);
     const state = log?.completed_at ? "Done" : log ? "Started" : null;
     return (
-      <Link href={`/train/${w.id}`} className="block">
-        <Card className="!p-4 hover:border-muted">
-          <div className="flex items-center justify-between gap-3">
-            <div className="min-w-0">
-              <p className="text-xs uppercase tracking-widest text-muted">
-                {w.workout_date === today ? "Today" : `${dayShort(w.workout_date)} ${dayMonth(w.workout_date)}`}
-              </p>
-              <p className="truncate text-lg font-black uppercase tracking-tight">{w.title}</p>
-            </div>
-            {w.created_by === user!.id && !state && <span className="rounded-full bg-surface-2 px-3 py-1 text-xs font-bold text-muted">Added by you</span>}
-            {state && (
-              <span className={`rounded-full px-3 py-1 text-xs font-bold ${state === "Done" ? "bg-ok/15 text-ok" : "bg-surface-2 text-muted"}`}>
-                {state}
-              </span>
-            )}
+      <Card className="!p-4 hover:border-muted">
+        <Link href={`/train/${w.id}`} className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-xs uppercase tracking-widest text-muted">
+              {w.workout_date === today ? "Today" : `${dayShort(w.workout_date)} ${dayMonth(w.workout_date)}`}
+            </p>
+            <p className="truncate text-lg font-black uppercase tracking-tight">{w.title}</p>
           </div>
-        </Card>
-      </Link>
+          {w.created_by === user!.id && !state && <span className="rounded-full bg-surface-2 px-3 py-1 text-xs font-bold text-muted">Added by you</span>}
+          {state && (
+            <span className={`rounded-full px-3 py-1 text-xs font-bold ${state === "Done" ? "bg-ok/15 text-ok" : "bg-surface-2 text-muted"}`}>
+              {state}
+            </span>
+          )}
+        </Link>
+        {state !== "Done" && w.workout_date >= addDays(today, -7) && !viewAs && (
+          <div className="mt-1 flex flex-wrap">
+            <MoveWorkout id={w.id} from={w.workout_date} days={moveDays} min={addDays(today, -7)} max={addDays(today, 28)} />
+          </div>
+        )}
+      </Card>
     );
   };
 
