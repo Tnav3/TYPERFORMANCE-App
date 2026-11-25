@@ -17,13 +17,13 @@ beforeEach(async () => {
 
 describe("forms (049)", () => {
   it("ships a starter weekly check-in", async () => {
-    const r = await asUser(db, coach, () => q(`select f.name, count(q.*)::int n from forms f join form_questions q on q.form_id = f.id group by 1`));
+    const r = await asUser(db, coach, () => q(`select f.name, count(q.*)::int n from forms f join form_questions q on q.form_id = f.id where f.name = 'Weekly check-in' group by 1`));
     expect(r.rows).toEqual([{ name: "Weekly check-in", n: 9 }]);
   });
 
   it("clients only see and answer forms sent to them", async () => {
     const f = await asUser(db, coach, async () => {
-      const id = (await q(`select id from forms limit 1`)).rows[0].id;
+      const id = (await q(`select id from forms where name = 'Weekly check-in'`)).rows[0].id;
       await q(`insert into form_assignments (form_id, athlete_id, repeat, starts_on) values ($1, $2, 'weekly', '2026-11-02')`, [id, alice]);
       return id as string;
     });
