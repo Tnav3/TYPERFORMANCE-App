@@ -276,6 +276,7 @@ export default async function AthleteDetail({
                 ))}
               </div>
               <p className="mt-2 text-xs text-muted">STR, PWR, ENG from testing and lifts; CON from sessions finished; GRT from streaks and PBs. Updates when they open the app{cardRow.updated_on > "2000-01-01" ? `, last on ${cardRow.updated_on}` : ""}.</p>
+              <Link href="/trophies/leaderboard" className="mt-2 block text-sm font-bold text-brand">Card leaderboard →</Link>
             </div>
           </details>
         )}

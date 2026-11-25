@@ -5,6 +5,7 @@ import { loggedSets } from "@/lib/programming/history-data";
 import { pbEvents } from "@/lib/programming/history";
 import { cabinet, fightBadges, tracks } from "@/lib/trophies";
 import { PlayerCard } from "@/components/PlayerCard";
+import { CardBoardOptIn } from "@/components/CardBoardOptIn";
 import { loadPlayerCard, saveSeenCard } from "@/lib/player-card-data";
 import { heaviestLift, type Title } from "@/lib/titles";
 import { todayISO } from "@/lib/dates";
@@ -39,6 +40,8 @@ export default async function TrophiesPage() {
     supabase.from("titles").select("org, name, colour, won_on").eq("athlete_id", me).order("won_on", { ascending: false, nullsFirst: false }),
     top ? supabase.from("exercises").select("name").eq("id", top.exercise_id).maybeSingle() : Promise.resolve({ data: null }),
   ]);
+  const { data: boardRow } = await supabase.from("player_cards").select("on_board").eq("athlete_id", me).maybeSingle();
+  const onBoard = !!boardRow?.on_board;
   if (!viewAs) await saveSeenCard(supabase, me, card, todayISO());
   const who = me2 as unknown as { full_name: string | null; nickname: string | null; avatar_path: string | null; weight_class: string | null; disciplines: { name: string } | null } | null;
   const lvl = (me2 as unknown as { fight_level: "amateur" | "pro" | null } | null)?.fight_level ?? null;
@@ -69,6 +72,7 @@ export default async function TrophiesPage() {
           STR, PWR and ENG come from your testing and lifts against the Bronze–Silver–Gold standards. CON is how many planned sessions you finished in the last 8 weeks. GRT grows with streaks, PBs and sessions. A dash means there&apos;s nothing to rate yet: test it to unlock it.
         </p>
       </div>
+      <CardBoardOptIn on={onBoard} readOnly={!!viewAs} />
       <div className="space-y-3">
         {views.map((v) => (
           <section key={v.track.key} className="rounded-2xl border border-line bg-surface p-4">

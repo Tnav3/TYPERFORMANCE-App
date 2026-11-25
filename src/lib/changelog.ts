@@ -9,6 +9,7 @@ export const CHANGELOG: Release[] = [
     version: "0.9.0",
     date: "2026-11-25",
     items: [
+      { who: "client", text: "Card leaderboard (opt-in): top rated and movers this month. Opens once enough athletes join." },
       { who: "client", text: "Testing shows the tests you've done first; untried ones tuck away. Bodyweight chart dates no longer overlap." },
       { who: "client", text: "Fixed: the LAST line in a workout now shows your most recent session, not your oldest." },
       { who: "client", text: "Tidier workout screen, Progress page and Competition Tracker; the meal plan keeps the bottom tabs." },
