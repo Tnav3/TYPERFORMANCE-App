@@ -1,3 +1,4 @@
+import { usesE1rm } from "@/lib/programming/e1rm-scope";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { Award, Flame, Trophy } from "lucide-react";
@@ -30,7 +31,7 @@ export default async function SummaryPage({ params }: { params: Promise<{ id: st
 
   const [{ data: items }, { data: sets }, all, { data: ready }, { data: earned }, { count: workoutsDone }, { data: sched }, { data: doneLogs }] =
     await Promise.all([
-      supabase.from("workout_items").select("id, kind, sets, exercise_id, exercises(name)").eq("workout_id", id),
+      supabase.from("workout_items").select("id, kind, sets, exercise_id, exercises(name, category)").eq("workout_id", id),
       supabase.from("set_logs").select("item_id, reps, load_kg, value").eq("log_id", log.id),
       loggedSets(supabase, me),
       supabase.from("readiness").select("score").eq("athlete_id", me).eq("checked_on", workout.workout_date).maybeSingle(),
@@ -39,7 +40,7 @@ export default async function SummaryPage({ params }: { params: Promise<{ id: st
       supabase.rpc("my_workouts", { p_from: addDays(today, -26 * 7), p_to: addDays(today, 6) }),
       supabase.from("workout_logs").select("workout_id").eq("athlete_id", me).not("completed_at", "is", null).gte("workout_date", addDays(today, -26 * 7)),
     ]);
-  const itemRows = (items ?? []) as unknown as { id: string; kind: string; sets: number | null; exercise_id: string | null; exercises: { name: string } | null }[];
+  const itemRows = (items ?? []) as unknown as { id: string; kind: string; sets: number | null; exercise_id: string | null; exercises: { name: string; category: string | null } | null }[];
   const setRows = (sets ?? []) as { item_id: string; reps: number | null; load_kg: string | null; value: string | null }[];
 
   // Totals
@@ -50,7 +51,8 @@ export default async function SummaryPage({ params }: { params: Promise<{ id: st
 
   // Per exercise: today vs last time, PBs today
   const exIds = [...new Set(exItems.map((i) => i.exercise_id!).filter(Boolean))];
-  const pbsToday = pbEvents(all).filter((p) => p.date === workout.workout_date && exIds.includes(p.key));
+  const e1rmEx = new Set(itemRows.filter((i) => i.exercise_id && i.exercises && usesE1rm(i.exercises)).map((i) => i.exercise_id!));
+  const pbsToday = pbEvents(all).filter((p) => p.date === workout.workout_date && exIds.includes(p.key) && e1rmEx.has(p.key));
   const rows = exIds.map((ex) => {
     const ss = sessions(all.filter((r) => r.key === ex));
     const cur = ss.find((s) => s.date === workout.workout_date);

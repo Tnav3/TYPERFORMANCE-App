@@ -1,5 +1,6 @@
 "use server";
 // Data for the exercise pop-up a client sees when they tap an exercise name.
+import { usesE1rm } from "@/lib/programming/e1rm-scope";
 import { signedIn, UUID } from "@/lib/programming/server";
 import { loggedSets } from "@/lib/programming/history-data";
 import { sessions } from "@/lib/programming/history";
@@ -11,6 +12,8 @@ export interface ExerciseCard {
   videoUrl: string | null;
   cues: string | null;
   bestE1rm: { kg: number; date: string } | null;
+  /** False for plyos and throws, where an estimated 1RM means nothing. */
+  showE1rm: boolean;
   bestSet: { kg: number; reps: number; date: string } | null;
   recent: { date: string; sets: string; e1rm: number | null }[];
   totalSessions: number;
@@ -24,15 +27,16 @@ export async function exerciseCard(exerciseId: string, athleteId?: string): Prom
   // Clients see their own history; the coach can open it for a client
   const who = athleteId && isCoach ? athleteId : user.id;
   const [{ data: ex }, sets] = await Promise.all([
-    supabase.from("exercises").select("name, video_url, cues").eq("id", exerciseId).maybeSingle(),
+    supabase.from("exercises").select("name, category, video_url, cues").eq("id", exerciseId).maybeSingle(),
     loggedSets(supabase, who, exerciseId),
   ]);
   if (!ex) return { error: "Exercise not found." };
   const list = sessions(sets);
+  const showE1rm = usesE1rm(ex);
   let bestE1rm: ExerciseCard["bestE1rm"] = null;
   let bestSet: ExerciseCard["bestSet"] = null;
   for (const s of list) {
-    if (s.bestE1rm != null && (!bestE1rm || s.bestE1rm > bestE1rm.kg)) bestE1rm = { kg: s.bestE1rm, date: s.date };
+    if (showE1rm && s.bestE1rm != null && (!bestE1rm || s.bestE1rm > bestE1rm.kg)) bestE1rm = { kg: s.bestE1rm, date: s.date };
     for (const x of s.sets)
       if (x.kg && x.reps && (!bestSet || x.kg > bestSet.kg || (x.kg === bestSet.kg && x.reps > bestSet.reps)))
         bestSet = { kg: x.kg, reps: x.reps, date: s.date };
@@ -44,7 +48,7 @@ export async function exerciseCard(exerciseId: string, athleteId?: string): Prom
         x.kg != null && x.reps != null ? `${fmt(x.kg)}×${x.reps}` : x.reps != null ? `${x.reps} reps` : x.value != null ? fmt(x.value) : "✓",
       )
       .join(", "),
-    e1rm: s.bestE1rm,
+    e1rm: showE1rm ? s.bestE1rm : null,
   }));
   return {
     data: {
@@ -52,6 +56,7 @@ export async function exerciseCard(exerciseId: string, athleteId?: string): Prom
       videoUrl: ex.video_url,
       cues: ex.cues,
       bestE1rm,
+      showE1rm,
       bestSet,
       recent,
       totalSessions: list.length,

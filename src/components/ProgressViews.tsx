@@ -4,6 +4,7 @@ import { formatDate } from "@/lib/dates";
 import { dayMonth } from "@/lib/week";
 import { repPRs, rollingAverage, sessions, type LoggedSet } from "@/lib/programming/history";
 import type { Exercise } from "@/lib/programming/types";
+import { usesE1rm } from "@/lib/programming/e1rm-scope";
 import { WeightChart } from "@/components/WeightChart";
 import { Card } from "@/components/ui";
 
@@ -16,7 +17,7 @@ export function ExerciseList({
   hrefBase,
 }: {
   rows: (LoggedSet & { key: string })[];
-  exercises: Map<string, Pick<Exercise, "id" | "name" | "measure">>;
+  exercises: Map<string, Pick<Exercise, "id" | "name" | "measure"> & { category?: string | null }>;
   hrefBase: string;
 }) {
   const by = new Map<string, LoggedSet[]>();
@@ -24,7 +25,8 @@ export function ExerciseList({
   const list = [...by.entries()]
     .map(([key, sets]) => {
       const ss = sessions(sets);
-      const withE = ss.filter((s) => s.bestE1rm != null);
+      const ex = exercises.get(key);
+      const withE = ex && !usesE1rm(ex) ? [] : ss.filter((s) => s.bestE1rm != null);
       const best = withE.length ? Math.max(...withE.map((s) => s.bestE1rm!)) : null;
       const first = withE.length ? withE[withE.length - 1].bestE1rm! : null;
       return { key, name: exercises.get(key)?.name ?? "Exercise", last: ss[0]?.date, count: ss.length, best, first };
@@ -65,12 +67,15 @@ export function ExerciseHistory({
   sets,
   measure,
   saveSlot,
+  showE1rm = true,
 }: {
   sets: LoggedSet[];
   measure: string;
   saveSlot?: React.ReactNode;
+  /** False for plyos and throws: no estimated 1RM there. */
+  showE1rm?: boolean;
 }) {
-  const ss = sessions(sets);
+  const ss = sessions(sets).map((s) => (showE1rm ? s : { ...s, bestE1rm: null }));
   const timed = measure in UNIT;
   const trend = [...ss].reverse().slice(-20);
   const prs = repPRs(sets);

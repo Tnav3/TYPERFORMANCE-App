@@ -1,3 +1,4 @@
+import { usesE1rm } from "@/lib/programming/e1rm-scope";
 import { notFound } from "next/navigation";
 import { requireState } from "@/lib/session";
 import { loggedSets } from "@/lib/programming/history-data";
@@ -24,7 +25,7 @@ export default async function CoachExerciseHistory({
     <Screen wide>
       <BackLink href={`/coach/athlete/${id}/progress`} label="Progress" />
       <Heading sub={client.full_name ?? client.email}>{ex.name}</Heading>
-      <ExerciseHistory sets={sets} measure={ex.measure} />
+      <ExerciseHistory sets={sets} measure={ex.measure} showE1rm={usesE1rm(ex)} />
     </Screen>
   );
 }

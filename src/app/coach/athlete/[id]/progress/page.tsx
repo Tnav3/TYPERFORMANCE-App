@@ -20,7 +20,7 @@ export default async function CoachProgressPage({ params }: { params: Promise<{ 
   const [rows, weights] = await Promise.all([loggedSets(supabase, id), bodyweights(supabase, id)]);
   const ids = [...new Set(rows.map((r) => r.key))];
   const { data } = ids.length
-    ? await supabase.from("exercises").select("id, name, measure").in("id", ids)
+    ? await supabase.from("exercises").select("id, name, measure, category").in("id", ids)
     : { data: [] };
   const exercises = new Map(((data ?? []) as Exercise[]).map((e) => [e.id, e]));
   const name = client.full_name ?? client.email;

@@ -2,6 +2,7 @@
 import Link from "next/link";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { pbEvents } from "@/lib/programming/history";
+import { usesE1rm } from "@/lib/programming/e1rm-scope";
 import { formatDate } from "@/lib/dates";
 import { REACTIONS, ago } from "@/lib/reactions";
 import { reactToLog, replyToLog } from "@/app/coach/feed/actions";
@@ -35,7 +36,7 @@ export async function RecentActivity({ supabase, limit = 10, back = "/coach" }: 
   const ids = [...new Set(logs.map((l) => l.athlete_id))];
   const { data: sets } = await supabase
     .from("set_logs")
-    .select("reps, load_kg, exercise_id, exercises(name), workout_logs!inner(workout_date, athlete_id)")
+    .select("reps, load_kg, exercise_id, exercises(name, category), workout_logs!inner(workout_date, athlete_id)")
     .in("workout_logs.athlete_id", ids)
     .not("exercise_id", "is", null)
     .eq("done", true)
@@ -46,9 +47,9 @@ export async function RecentActivity({ supabase, limit = 10, back = "/coach" }: 
     reps: number | null;
     load_kg: string | null;
     exercise_id: string;
-    exercises: { name: string } | null;
+    exercises: { name: string; category: string | null } | null;
     workout_logs: { workout_date: string; athlete_id: string };
-  }[]).map((r) => {
+  }[]).filter((r) => usesE1rm({ name: r.exercises?.name ?? "", category: r.exercises?.category })).map((r) => {
     exName.set(r.exercise_id, r.exercises?.name ?? "Exercise");
     return { key: `${r.workout_logs.athlete_id}|${r.exercise_id}`, date: r.workout_logs.workout_date, reps: r.reps, kg: r.load_kg == null ? null : Number(r.load_kg), value: null };
   });

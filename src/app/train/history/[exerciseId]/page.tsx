@@ -1,3 +1,4 @@
+import { usesE1rm } from "@/lib/programming/e1rm-scope";
 import { notFound } from "next/navigation";
 import { requireFeature } from "@/lib/session";
 import { loggedSets } from "@/lib/programming/history-data";
@@ -30,7 +31,7 @@ export default async function ExerciseHistoryPage({
   const best = sessions(sets)
     .filter((s) => s.topSet && s.topSet.reps <= 10)
     .sort((a, b) => (b.bestE1rm ?? 0) - (a.bestE1rm ?? 0))[0];
-  const canSave = ex.lift_key && ex.lifts && ex.lifts.kind !== "jump" && best?.topSet;
+  const canSave = usesE1rm(ex) && ex.lift_key && ex.lifts && ex.lifts.kind !== "jump" && best?.topSet;
 
   return (
     <Screen>
@@ -42,6 +43,7 @@ export default async function ExerciseHistoryPage({
       <ExerciseHistory
         sets={sets}
         measure={ex.measure}
+        showE1rm={usesE1rm(ex)}
         saveSlot={
           canSave ? (
             <form action={saveSetAsMax} className="mt-3">

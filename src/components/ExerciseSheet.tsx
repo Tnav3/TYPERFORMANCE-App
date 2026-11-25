@@ -83,8 +83,8 @@ export function ExerciseSheet({
           {card && (
             <>
               {/* Numbers */}
-              <div className="grid grid-cols-3 gap-2">
-                <Stat label="Est. 1RM" value={card.bestE1rm ? `${card.bestE1rm.kg} kg` : "—"} sub={card.bestE1rm ? dateFmt(card.bestE1rm.date) : "no data yet"} />
+              <div className={`grid gap-2 ${card.showE1rm ? "grid-cols-3" : "grid-cols-2"}`}>
+                {card.showE1rm && <Stat label="Est. 1RM" value={card.bestE1rm ? `${card.bestE1rm.kg} kg` : "—"} sub={card.bestE1rm ? dateFmt(card.bestE1rm.date) : "no data yet"} />}
                 <Stat label="Best set" value={card.bestSet ? `${card.bestSet.kg}×${card.bestSet.reps}` : "—"} sub={card.bestSet ? dateFmt(card.bestSet.date) : ""} />
                 <Stat label="Last time" value={card.recent[0] ? dateFmt(card.recent[0].date) : "—"} sub={card.totalSessions ? `${card.totalSessions} session${card.totalSessions === 1 ? "" : "s"}` : "first time"} />
               </div>

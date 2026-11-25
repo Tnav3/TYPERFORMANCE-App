@@ -17,7 +17,7 @@ export default async function HistoryPage() {
   const rows = await loggedSets(supabase, user!.id);
   const ids = [...new Set(rows.map((r) => r.key))];
   const { data } = ids.length
-    ? await supabase.from("exercises").select("id, name, measure").in("id", ids)
+    ? await supabase.from("exercises").select("id, name, measure, category").in("id", ids)
     : { data: [] };
   const { data: badges } = await supabase.from("badges").select("key, detail, earned_on").eq("athlete_id", user!.id).order("earned_on", { ascending: false });
   const exercises = new Map(((data ?? []) as Exercise[]).map((e) => [e.id, e]));
