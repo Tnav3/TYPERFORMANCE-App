@@ -44,3 +44,13 @@ export async function setBeta(fd: FormData) {
   await supabase.from("profiles").update({ beta: fd.get("beta") === "true" }).eq("id", id);
   revalidatePath(`/coach/athlete/${id}/profile`);
 }
+
+export async function setAssignedCoach(fd: FormData) {
+  const id = String(fd.get("id") ?? "");
+  if (!UUID.test(id)) return;
+  const coach = String(fd.get("coach") ?? "");
+  const supabase = await coachOnly();
+  await supabase.from("profiles").update({ assigned_coach: UUID.test(coach) ? coach : null }).eq("id", id);
+  revalidatePath(`/coach/athlete/${id}/profile`);
+  revalidatePath("/coach/clients");
+}

@@ -7,19 +7,21 @@ import { Heading, Screen } from "@/components/ui";
 export const dynamic = "force-dynamic";
 
 export default async function ClientsPage({ searchParams }: { searchParams: Promise<{ q?: string; show?: string }> }) {
-  const { supabase } = await requireState(["coach"]);
+  const { supabase, user } = await requireState(["coach"]);
   const sp = await searchParams;
   const q = (sp.q ?? "").trim().toLowerCase();
-  const show = sp.show === "all" ? "all" : sp.show === "inactive" ? "inactive" : "active";
+  const show = sp.show === "all" ? "all" : sp.show === "inactive" ? "inactive" : sp.show === "mine" ? "mine" : "active";
+  const { count: coachCount } = await supabase.from("profiles").select("id", { count: "exact", head: true }).eq("role", "coach").eq("status", "active");
+  const multi = (coachCount ?? 0) > 1;
   const { data } = await supabase
     .from("profiles")
-    .select("id, full_name, email, status, last_seen_at, avatar_path, nickname, plan_key, coaching_plans(name)")
+    .select("id, full_name, email, status, last_seen_at, avatar_path, nickname, plan_key, assigned_coach, coaching_plans(name)")
     .eq("role", "athlete")
     .order("full_name", { nullsFirst: false });
   const now = new Date();
   const rows = (data ?? []).filter(
     (c) =>
-      (show === "all" || c.status === show) &&
+      (show === "all" || (show === "mine" ? c.status === "active" && c.assigned_coach === user!.id : c.status === show)) &&
       (!q || (c.full_name ?? "").toLowerCase().includes(q) || c.email.toLowerCase().includes(q)),
   );
 
@@ -38,13 +40,13 @@ export default async function ClientsPage({ searchParams }: { searchParams: Prom
         <button className="min-h-12 rounded-xl bg-brand px-5 font-extrabold uppercase tracking-wide text-white">Search</button>
       </form>
       <div className="mb-3 flex gap-2 text-sm">
-        {(["active", "inactive", "all"] as const).map((k) => (
+        {(multi ? (["mine", "active", "inactive", "all"] as const) : (["active", "inactive", "all"] as const)).map((k) => (
           <Link
             key={k}
             href={`/coach/clients?show=${k}${q ? `&q=${encodeURIComponent(q)}` : ""}`}
             className={`min-h-10 content-center rounded-full px-4 font-bold ${show === k ? "bg-text text-ink" : "border border-line text-muted"}`}
           >
-            {k === "active" ? "Active" : k === "inactive" ? `Deactivated (${(data ?? []).filter((c) => c.status === "inactive").length})` : "Everyone"}
+            {k === "mine" ? "My clients" : k === "active" ? "Active" : k === "inactive" ? `Deactivated (${(data ?? []).filter((c) => c.status === "inactive").length})` : "Everyone"}
           </Link>
         ))}
       </div>

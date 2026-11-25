@@ -6,7 +6,7 @@ import type { Discipline, Profile } from "@/lib/types";
 import { ProfileForm } from "@/components/ProfileForm";
 import { Screen } from "@/components/ui";
 import { setTargetWeight } from "@/app/coach/widget-actions";
-import { setBeta, setClientPlan } from "@/app/coach/settings/plans/actions";
+import { setAssignedCoach, setBeta, setClientPlan } from "@/app/coach/settings/plans/actions";
 
 export const dynamic = "force-dynamic";
 
@@ -17,6 +17,7 @@ export default async function CoachEditProfile({
 }) {
   const { supabase } = await requireState(["coach"]);
   const { id } = await params;
+  const { data: coaches } = await supabase.from("profiles").select("id, full_name, email").eq("role", "coach").eq("status", "active").order("created_at");
   const [{ data: p }, { data: disciplines }, { data: plans }] = await Promise.all([
     supabase.from("profiles").select("*").eq("id", id).maybeSingle<Profile>(),
     supabase
@@ -50,6 +51,19 @@ export default async function CoachEditProfile({
         </span>
         <button className="min-h-11 shrink-0 rounded-xl border border-line bg-surface-2 px-4 text-sm font-bold">{(p as unknown as { beta: boolean }).beta ? "Remove" : "Make beta tester"}</button>
       </form>
+      {(coaches ?? []).length > 1 && (
+        <form action={setAssignedCoach} className="mt-6 flex flex-wrap items-end gap-2 rounded-2xl border border-line bg-surface p-4">
+          <input type="hidden" name="id" value={id} />
+          <label className="min-w-48 flex-1 text-sm">
+            <span className="mb-1 block font-bold">Coach</span>
+            <select name="coach" defaultValue={(p as unknown as { assigned_coach: string | null }).assigned_coach ?? ""} className="min-h-11 w-full rounded-xl border border-line bg-surface-2 px-3 text-text">
+              <option value="">Not assigned</option>
+              {(coaches ?? []).map((c) => <option key={c.id} value={c.id}>{c.full_name ?? c.email}</option>)}
+            </select>
+          </label>
+          <button className="min-h-11 rounded-xl bg-brand px-4 text-sm font-extrabold text-white">Save</button>
+        </form>
+      )}
       <form action={setClientPlan} className="mt-6 flex flex-wrap items-end gap-2 rounded-2xl border border-line bg-surface p-4">
         <input type="hidden" name="id" value={id} />
         <label className="min-w-48 flex-1 text-sm">
