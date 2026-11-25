@@ -19,6 +19,7 @@ export interface HomeProps {
   next: { date: string; title: string } | null;
   todo: { href: string; title: string; sub: string; tone: "warn" | "brand" | "plain" }[];
   showTodo: boolean;
+  booking: { label: string; cadence: string | null } | null;
   trend: { title: string; message: string | null; latest: string; kind: "bars" | "line"; points: { label: string; value: number | null }[] } | null;
   week: { days: { date: string; st: "done" | "missed" | "planned" | "rest" }[]; done: number; total: number } | null;
   empty: boolean;
@@ -141,6 +142,16 @@ export function ClientHome(p: HomeProps) {
               </div>
             ))}
           </div>
+        </Link>
+      )}
+
+      {p.booking && (
+        <Link href="/book" className="mb-5 flex items-center justify-between gap-3 rounded-2xl border border-line bg-surface p-4">
+          <span className="min-w-0">
+            <span className="block font-extrabold">{p.booking.label}</span>
+            {p.booking.cadence && <span className="block text-sm text-muted">Included in your plan: {p.booking.cadence === "per_session" ? "book each session" : `${p.booking.cadence} catch-ups`}</span>}
+          </span>
+          <span className="shrink-0 rounded-xl bg-brand px-4 py-2 text-sm font-extrabold uppercase text-white">Book</span>
         </Link>
       )}
 

@@ -122,8 +122,14 @@ export default async function AthleteHome() {
       };
     }
   }
+  const planKey = (profile as unknown as { plan_key: string | null }).plan_key;
+  const { data: plan } = planKey
+    ? await supabase.from("coaching_plans").select("booking_label, booking_url, cadence, active").eq("key", planKey).maybeSingle()
+    : { data: null };
+  const booking = plan?.booking_url && plan.active ? { label: plan.booking_label ?? "Book a session", cadence: plan.cadence } : null;
   return (
     <ClientHome
+      booking={booking}
       trend={trend}
       tour={!profile.tutorial_done_at ? <WelcomeTour steps={welcomeSteps(profile)} /> : null}
       first={first}

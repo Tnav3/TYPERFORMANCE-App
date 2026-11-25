@@ -13,7 +13,7 @@ export default async function ClientsPage({ searchParams }: { searchParams: Prom
   const show = sp.show === "all" ? "all" : "active";
   const { data } = await supabase
     .from("profiles")
-    .select("id, full_name, email, status, last_seen_at, avatar_path, nickname")
+    .select("id, full_name, email, status, last_seen_at, avatar_path, nickname, plan_key, coaching_plans(name)")
     .eq("role", "athlete")
     .order("full_name", { nullsFirst: false });
   const now = new Date();
@@ -64,6 +64,7 @@ export default async function ClientsPage({ searchParams }: { searchParams: Prom
                   </span>
                   <span className="block truncate text-sm text-muted">
                     {c.status !== "active" ? `${c.status} · ` : ""}
+                    {(c as unknown as { coaching_plans: { name: string } | null }).coaching_plans?.name ? `${(c as unknown as { coaching_plans: { name: string } }).coaching_plans.name} · ` : ""}
                     <span className={tone === "ok" ? "text-ok" : tone === "warn" ? "text-warn" : "text-brand"}>
                       {lastSeenLabel(c.last_seen_at, now)}
                     </span>

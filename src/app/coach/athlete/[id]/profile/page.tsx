@@ -6,6 +6,7 @@ import type { Discipline, Profile } from "@/lib/types";
 import { ProfileForm } from "@/components/ProfileForm";
 import { Screen } from "@/components/ui";
 import { setTargetWeight } from "@/app/coach/widget-actions";
+import { setClientPlan } from "@/app/coach/settings/plans/actions";
 
 export const dynamic = "force-dynamic";
 
@@ -16,12 +17,13 @@ export default async function CoachEditProfile({
 }) {
   const { supabase } = await requireState(["coach"]);
   const { id } = await params;
-  const [{ data: p }, { data: disciplines }] = await Promise.all([
+  const [{ data: p }, { data: disciplines }, { data: plans }] = await Promise.all([
     supabase.from("profiles").select("*").eq("id", id).maybeSingle<Profile>(),
     supabase
       .from("disciplines")
       .select("id, name, sort_order, active")
       .order("sort_order"),
+    supabase.from("coaching_plans").select("key, name").eq("active", true).order("sort_order"),
   ]);
   if (!p) notFound();
   const list = ((disciplines ?? []) as Discipline[]).filter(
@@ -39,6 +41,18 @@ export default async function CoachEditProfile({
         today={todayISO()}
         athleteId={id}
       />
+      <form action={setClientPlan} className="mt-6 flex flex-wrap items-end gap-2 rounded-2xl border border-line bg-surface p-4">
+        <input type="hidden" name="id" value={id} />
+        <label className="min-w-48 flex-1 text-sm">
+          <span className="mb-1 block font-bold">Coaching plan</span>
+          <span className="mb-1 block text-xs text-muted">Sets their Book button (catch-up call or session). <a href="/coach/settings/plans" className="underline">Edit plans &amp; links</a></span>
+          <select name="plan" defaultValue={(p as unknown as { plan_key: string | null }).plan_key ?? ""} className="min-h-11 w-full rounded-xl border border-line bg-surface-2 px-3 text-text">
+            <option value="">No plan</option>
+            {(plans ?? []).map((pl) => <option key={pl.key} value={pl.key}>{pl.name}</option>)}
+          </select>
+        </label>
+        <button className="min-h-11 rounded-xl bg-brand px-4 text-sm font-extrabold text-white">Save</button>
+      </form>
       <form action={setTargetWeight} className="mt-6 flex flex-wrap items-end gap-2 rounded-2xl border border-line bg-surface p-4">
         <input type="hidden" name="id" value={id} />
         <label className="min-w-48 flex-1 text-sm">

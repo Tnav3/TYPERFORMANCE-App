@@ -24,6 +24,7 @@ import {
   UsersRound,
   Workflow,
   FolderOpen,
+  CalendarCheck,
   Zap,
   X,
   type LucideIcon,
@@ -62,6 +63,7 @@ export function CoachNav({ unread, notes = 0 }: { unread: number; notes?: number
         { href: "/coach/automations", label: "Automations", icon: Zap },
         { href: "/coach/sequences", label: "Onboarding sequences", icon: Workflow },
         { href: "/coach/files", label: "File library", icon: FolderOpen },
+        { href: "/coach/settings/plans", label: "Plans & booking", icon: CalendarCheck },
       ],
     ],
     [
