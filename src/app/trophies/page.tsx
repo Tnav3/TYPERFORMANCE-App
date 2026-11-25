@@ -5,7 +5,7 @@ import { loggedSets } from "@/lib/programming/history-data";
 import { pbEvents } from "@/lib/programming/history";
 import { cabinet, fightBadges, tracks } from "@/lib/trophies";
 import { PlayerCard } from "@/components/PlayerCard";
-import { loadPlayerCard } from "@/lib/player-card-data";
+import { loadPlayerCard, saveSeenCard } from "@/lib/player-card-data";
 import { todayISO } from "@/lib/dates";
 import { BackLink, Heading, Screen } from "@/components/ui";
 
@@ -33,6 +33,7 @@ export default async function TrophiesPage() {
     loadPlayerCard(supabase, me, profile ?? {}, todayISO(), { pbs: pbCount, sessions: workouts ?? 0, viewAsCoach: !!viewAs }),
     supabase.from("profiles").select("full_name, nickname, avatar_path, weight_class, disciplines(name)").eq("id", me).maybeSingle(),
   ]);
+  if (!viewAs) await saveSeenCard(supabase, me, card, todayISO());
   const who = me2 as unknown as { full_name: string | null; nickname: string | null; avatar_path: string | null; weight_class: string | null; disciplines: { name: string } | null } | null;
   const record = nFights ? `${wins}-${(fights ?? []).filter((f) => f.result === "loss").length}-${(fights ?? []).filter((f) => f.result === "draw").length}` : null;
   const { views, earned: got, total } = cabinet(tracks({ workouts: workouts ?? 0, pbs: pbEvents(all).length, fights: nFights, wins }), new Set(held.keys()));

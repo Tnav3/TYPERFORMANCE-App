@@ -6,6 +6,7 @@ import { planned } from "@/lib/planned-fights";
 import { ClientHome } from "@/components/ClientHome";
 import { FightCampCard } from "@/components/FightCampCard";
 import { quoteOfDay } from "@/lib/quotes";
+import { homeCard } from "@/lib/player-card-data";
 import { TeamFeed, type TeamRow } from "@/components/TeamFeed";
 import { campStatus, type CampStatus } from "@/lib/fight-camp";
 import { clientMenu } from "@/lib/client/menu";
@@ -17,7 +18,7 @@ import { fightCountdown } from "@/lib/fight";
 import { addDays, mondayOf } from "@/lib/week";
 
 export default async function AthleteHome() {
-  const { supabase, user, profile } = await requireState(["athlete"]);
+  const { supabase, user, profile, viewAs } = await requireState(["athlete"]);
   const today = todayISO();
   const thisWeek = mondayOf(today);
   const lastWeek = addDays(thisWeek, -7);
@@ -166,11 +167,13 @@ export default async function AthleteHome() {
   const { data: tv } = !profile.tutorial_done_at ? await supabase.from("tour_videos").select("key, url") : { data: null };
   const tourVideos = Object.fromEntries((tv ?? []).map((r) => [r.key, r.url]));
   const { data: teamRows } = await supabase.rpc("group_activity", { p_days: 7 });
-  const { data: quoteRows } = await supabase.from("quotes").select("id, body, author").eq("active", true);
+  const { data: quoteRows } = await supabase.from("quotes").select("id, body, author, source").eq("active", true);
   const quote = quoteOfDay(quoteRows ?? [], today);
+  const card = programOn ? await homeCard(supabase, user!.id, profile as never, today, !!viewAs).catch(() => null) : null;
   return (
     <ClientHome
       quote={quote}
+      card={card}
       team={(teamRows ?? []).length ? <TeamFeed rows={teamRows as TeamRow[]} now={Date.now()} /> : null}
       camp={camp ? <FightCampCard s={camp} limitKg={limitKg == null ? null : Number(limitKg)} /> : null}
       weight={weight}

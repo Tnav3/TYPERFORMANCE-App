@@ -6,6 +6,8 @@ import { getStandards, standardFor } from "@/lib/standards-data";
 import { OVERVIEW, currentFor } from "@/lib/strength-standards";
 import { weeklyStreak } from "@/lib/programming/rewards";
 import { playerCard, standardRating, type Card } from "@/lib/player-card";
+import { loggedSets } from "@/lib/programming/history-data";
+import { pbEvents } from "@/lib/programming/history";
 
 export async function loadPlayerCard(
   supabase: SupabaseClient,
@@ -38,4 +40,39 @@ export async function loadPlayerCard(
   const completionPct = past.length >= 4 ? Math.round((past.filter((w) => done.has(w.id)).length / past.length) * 100) : null;
   const streakWeeks = weeklyStreak(today, past.map((w) => ({ id: w.id, date: w.workout_date })), done);
   return playerCard({ tests, completionPct, streakWeeks, pbs: extra.pbs, sessions: extra.sessions });
+}
+
+export interface CachedCard extends Card {
+  seen: number | null; // overall the client last saw in the Trophy cabinet
+}
+
+/** Save the card the client is looking at (Trophy cabinet) and mark it seen. */
+export async function saveSeenCard(supabase: SupabaseClient, athleteId: string, card: Card, today: string) {
+  await supabase
+    .from("player_cards")
+    .upsert({ athlete_id: athleteId, overall: card.overall, tier: card.tier, stats: card.stats, seen_overall: card.overall, updated_on: today }, { onConflict: "athlete_id" });
+}
+
+/** Card for the home strip: cached, recomputed at most once a day. */
+export async function homeCard(
+  supabase: SupabaseClient,
+  athleteId: string,
+  profile: { sex?: string | null; weight_class_limit_kg?: number | string | null },
+  today: string,
+  viewAsCoach = false,
+): Promise<CachedCard | null> {
+  const { data: row } = await supabase.from("player_cards").select("overall, tier, stats, seen_overall, updated_on").eq("athlete_id", athleteId).maybeSingle();
+  if (row && (row.updated_on >= today || viewAsCoach)) return { overall: row.overall, tier: row.tier, stats: row.stats, seen: viewAsCoach ? row.overall : row.seen_overall };
+  if (viewAsCoach) return null;
+  const [all, { count: sessions }] = await Promise.all([
+    loggedSets(supabase, athleteId),
+    supabase.from("workout_logs").select("id", { count: "exact", head: true }).eq("athlete_id", athleteId).not("completed_at", "is", null),
+  ]);
+  const card = await loadPlayerCard(supabase, athleteId, profile, today, { pbs: pbEvents(all).length, sessions: sessions ?? 0 });
+  // First time: count the current card as seen so nobody gets an "upgrade" for simply starting.
+  const seen = row ? row.seen_overall : card.overall;
+  await supabase
+    .from("player_cards")
+    .upsert({ athlete_id: athleteId, overall: card.overall, tier: card.tier, stats: card.stats, seen_overall: seen, updated_on: today }, { onConflict: "athlete_id" });
+  return { ...card, seen };
 }

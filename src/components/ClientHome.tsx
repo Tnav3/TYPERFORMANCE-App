@@ -12,7 +12,8 @@ export interface HomeProps {
   tour: ReactNode;
   camp?: ReactNode;
   team?: ReactNode;
-  quote?: { body: string; author: string | null } | null;
+  quote?: { body: string; author: string | null; source?: string | null } | null;
+  card?: { overall: number | null; tier: "rookie" | "bronze" | "silver" | "gold" | "elite"; stats: Record<string, number | null>; seen: number | null } | null;
   first: string;
   me: { name: string; avatar: string | null; nickname: string | null; goal: string | null };
   fightLabel: string | null;
@@ -32,6 +33,50 @@ export interface HomeProps {
 }
 
 const DOW = ["M", "T", "W", "T", "F", "S", "S"];
+
+const TIER_STYLE: Record<NonNullable<HomeProps["card"]>["tier"], { label: string; ring: string; next: number | null; nextLabel: string | null }> = {
+  rookie: { label: "Rookie", ring: "from-zinc-400 to-zinc-700", next: 60, nextLabel: "Bronze" },
+  bronze: { label: "Bronze", ring: "from-amber-500 to-orange-800", next: 70, nextLabel: "Silver" },
+  silver: { label: "Silver", ring: "from-slate-200 to-slate-500", next: 80, nextLabel: "Gold" },
+  gold: { label: "Gold", ring: "from-yellow-200 to-amber-500", next: 88, nextLabel: "Elite" },
+  elite: { label: "Elite", ring: "from-[#D2141E] to-[#282828]", next: null, nextLabel: null },
+};
+
+/** Slim player card on home: rating, tier, next tier, and a nudge when it goes up. */
+function CardStrip({ card }: { card: NonNullable<HomeProps["card"]> }) {
+  const t = TIER_STYLE[card.tier];
+  const up = card.overall != null && card.seen != null && card.overall > card.seen;
+  const toNext = card.overall != null && t.next != null ? Math.max(1, t.next - card.overall) : null;
+  const pct = card.overall == null ? 0 : Math.min(100, Math.round(((card.overall - 40) / (99 - 40)) * 100));
+  return (
+    <Link href="/trophies" className={`mb-5 flex items-center gap-3 rounded-2xl border p-3 ${up ? "border-brand bg-brand/10" : "border-line bg-surface"}`}>
+      <span className={`relative shrink-0 rounded-xl bg-gradient-to-br p-[2px] ${t.ring}`}>
+        <span className="flex h-12 w-12 flex-col items-center justify-center rounded-[10px] bg-ink">
+          <span className="text-lg font-black leading-none">{card.overall ?? "–"}</span>
+          <span className="text-[9px] font-bold uppercase tracking-widest text-muted">OVR</span>
+        </span>
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-[11px] font-semibold uppercase tracking-widest text-muted">
+          Player card · <span className="text-text">{t.label}</span>
+        </span>
+        <span className="block truncate font-extrabold leading-tight">
+          {up
+            ? `Your card went up: ${card.seen} → ${card.overall}`
+            : card.overall == null
+              ? "Test 2 qualities to unlock your rating"
+              : toNext
+                ? `${toNext} to ${t.nextLabel}`
+                : "Top tier. Hold it."}
+        </span>
+        <span className="mt-1.5 block h-1.5 overflow-hidden rounded-full bg-surface-2">
+          <span className={`block h-full rounded-full bg-gradient-to-r ${t.ring}`} style={{ width: `${pct}%` }} />
+        </span>
+      </span>
+      <span className="text-muted" aria-hidden>›</span>
+    </Link>
+  );
+}
 
 export function ClientHome(p: HomeProps) {
   const allDone = p.todayWorkouts.length > 0 && p.todayWorkouts.every((w) => w.done);
@@ -59,12 +104,6 @@ export function ClientHome(p: HomeProps) {
         </Link>
       </header>
 
-      {p.quote && (
-        <figure className="mb-5 border-l-4 border-brand pl-3">
-          <blockquote className="text-sm font-semibold italic">{p.quote.body}</blockquote>
-          {p.quote.author && <figcaption className="text-xs text-muted">{p.quote.author}</figcaption>}
-        </figure>
-      )}
       {p.camp}
       {p.programOn && (
         <Link href={p.todayWorkouts.length === 1 ? `/train/${p.todayWorkouts[0].id}` : "/train"} className="mb-5 block">
@@ -157,6 +196,20 @@ export function ClientHome(p: HomeProps) {
         </Link>
       )}
 
+      {p.card && <CardStrip card={p.card} />}
+      {p.quote && (
+        <figure className="relative mb-5 overflow-hidden rounded-2xl border border-line bg-surface px-4 pb-3.5 pt-4">
+          <span aria-hidden className="pointer-events-none absolute -top-3 right-3 font-serif text-7xl font-black leading-none text-brand/20">&rdquo;</span>
+          <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-widest text-muted">Today&apos;s fuel</p>
+          <blockquote className="pr-6 text-base font-bold leading-snug">{p.quote.body}</blockquote>
+          {p.quote.author && (
+            <figcaption className="mt-2 text-xs">
+              <span className="font-black uppercase tracking-wide text-brand">{p.quote.author}</span>
+              {p.quote.source && <span className="text-muted"> · {p.quote.source}</span>}
+            </figcaption>
+          )}
+        </figure>
+      )}
       {p.team}
       {p.weight && <QuickWeight {...p.weight} />}
 

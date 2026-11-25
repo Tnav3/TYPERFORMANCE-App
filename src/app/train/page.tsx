@@ -1,10 +1,11 @@
 import { MoveWorkout } from "@/components/MoveWorkout";
+import { WeekBoard } from "@/components/WeekBoard";
 import Link from "next/link";
 import { requireFeature } from "@/lib/session";
 import { clientMenu } from "@/lib/client/menu";
 import { ClientTabBar } from "@/components/ClientTabBar";
 import { todayISO } from "@/lib/dates";
-import { addDays, dayMonth, dayShort } from "@/lib/week";
+import { addDays, dayMonth, dayShort, mondayOf } from "@/lib/week";
 import type { Workout } from "@/lib/programming/types";
 import { Card, Heading, Screen } from "@/components/ui";
 
@@ -49,6 +50,17 @@ export default async function TrainPage() {
     const iso = addDays(today, i - 1);
     return { iso, label: i === 1 ? "Today" : i === 2 ? "Tomorrow" : i === 0 ? "Yesterday" : `${dayShort(iso)} ${dayMonth(iso)}` };
   });
+  const monday = mondayOf(today);
+  const boardWeeks = [0, 7].map((off) => ({
+    label: off ? "Next week" : "This week",
+    days: Array.from({ length: 7 }, (_, i) => {
+      const iso = addDays(monday, off + i);
+      return { iso, dow: dayShort(iso), day: iso.slice(8).replace(/^0/, "") };
+    }),
+  }));
+  const board = list
+    .filter((w) => w.workout_date >= monday && w.workout_date <= addDays(monday, 13))
+    .map((w) => ({ id: w.id, title: w.title, date: w.workout_date, done: !!logBy.get(w.id)?.completed_at }));
   const Row = ({ w }: { w: Workout }) => {
     const log = logBy.get(w.id);
     const state = log?.completed_at ? "Done" : log ? "Started" : null;
@@ -110,6 +122,8 @@ export default async function TrainPage() {
           + {todays.length ? "Log extra work" : "Trained anyway? Add a workout"}
         </Link>
       </section>
+
+      <WeekBoard weeks={boardWeeks} today={today} min={addDays(today, -7)} max={addDays(today, 28)} workouts={board} locked={!!viewAs} />
 
       {missed.length > 0 && (
         <section className="mb-6 space-y-2">

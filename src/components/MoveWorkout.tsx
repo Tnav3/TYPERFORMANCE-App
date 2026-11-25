@@ -13,7 +13,7 @@ export function MoveWorkout({ id, from, days, min, max }: { id: string; from: st
   const go = (iso: string) =>
     start(async () => {
       setError(null);
-      const r = await moveMyWorkout(id, iso);
+      const r = await moveMyWorkout(id, iso).catch(() => ({ ok: false as const, error: "No connection. It didn't move." }));
       if (!r.ok) setError(r.error);
       else {
         setOpen(false);
