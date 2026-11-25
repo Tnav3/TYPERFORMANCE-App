@@ -66,3 +66,7 @@ What happens: paid → account active (or an invite is created if they haven't s
 - Exercise library from Trainerize: after the test import is checked, copy exercises to live with
   `insert into exercises (...) select ... ` from a CSV export of the test table (Supabase → Table editor → export), or rerun the import against live.
 - Remove the temporary import pieces from TEST once finished: edge function `tz-import`, `public.import_trainerize_svc`, `private.import_trainerize`.
+
+
+## Trainerize templates
+Load the 105 rehab/conditioning programs into live with `scripts/trainerize/` (see its README). They are already in the test project.
