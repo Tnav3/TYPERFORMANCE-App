@@ -152,7 +152,11 @@ export async function swapInAssignment(fd: FormData) {
   if (!UUID.test(id) || !UUID.test(from) || !toName) go(back, "Pick both exercises.");
   const { data: to } = await supabase.from("exercises").select("id").ilike("name", toName!).maybeSingle();
   if (!to) go(back, `"${toName}" isn't in the exercise library yet.`);
-  const { data, error } = await supabase.rpc("substitute_exercise", { p_scope: "assignment", p_target: id, p_from: from, p_to: to!.id });
+  // One day only, or every upcoming day in the block
+  const oneDay = String(fd.get("workout_id") ?? "");
+  const { data, error } = UUID.test(oneDay)
+    ? await supabase.rpc("substitute_exercise", { p_scope: "workout", p_target: oneDay, p_from: from, p_to: to!.id })
+    : await supabase.rpc("substitute_exercise", { p_scope: "assignment", p_target: id, p_from: from, p_to: to!.id });
   if (error) go(back, friendly(error.message));
   go(`${back}${back.includes("?") ? "&" : "?"}swapped=${Number(data ?? 0)}`);
 }

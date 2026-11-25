@@ -21,11 +21,11 @@ export default async function CoachWorkoutPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; ret?: string; block?: string }>;
 }) {
   const { supabase } = await requireState(["coach"]);
   const { id } = await params;
-  const { error } = await searchParams;
+  const { error, ret, block } = await searchParams;
   const [{ data: w }, { data: items }, { data: exercises }, { data: logs }] = await Promise.all([
     supabase.from("workouts").select("*").eq("id", id).maybeSingle<Workout>(),
     supabase.from("workout_items").select(ITEM_COLUMNS).eq("workout_id", id).order("position"),
@@ -53,7 +53,9 @@ export default async function CoachWorkoutPage({
     (owner as { email?: string } | null)?.email ??
     (owner as { name?: string } | null)?.name ??
     "";
-  const backHref = w.athlete_id
+  const backHref = w.athlete_id && ret === "programming"
+    ? `/coach/athlete/${w.athlete_id}/programming${block && /^[0-9a-f-]{36}$/i.test(block) ? `?block=${block}` : ""}#overview`
+    : w.athlete_id
     ? `/coach/athlete/${w.athlete_id}/program?from=${w.workout_date}`
     : `/coach/groups/${w.group_id}?from=${w.workout_date}`;
   const overrideBy = new Map(((overrides ?? []) as { id: string; athlete_id: string }[]).map((o) => [o.athlete_id, o.id]));

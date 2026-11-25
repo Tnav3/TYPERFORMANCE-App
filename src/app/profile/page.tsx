@@ -28,6 +28,19 @@ export default async function EditProfilePage({ searchParams }: { searchParams: 
 
   const sp = await searchParams;
   const me = profile as unknown as { id: string; full_name: string | null; email: string; avatar_path: string | null; nickname: string | null; goal_text: string | null; about_me: string | null };
+  // Coach viewing as this client: saving here is switched off, so send them to the coach editor instead
+  if (viewAs)
+    return (
+      <Screen>
+        <BackLink href="/athlete" />
+        <Heading>My profile</Heading>
+        <div className="rounded-2xl border border-brand/50 bg-brand/10 p-4">
+          <p className="font-extrabold">You&apos;re viewing as {me.full_name ?? "this client"}.</p>
+          <p className="mt-1 text-sm text-muted">Profile changes can&apos;t be saved from here. Edit their details from your coach screen and they show on their app straight away.</p>
+          <Link href={`/coach/athlete/${me.id}/profile`} className="mt-3 flex min-h-11 items-center justify-center rounded-xl bg-brand font-extrabold uppercase text-white">Edit their profile</Link>
+        </div>
+      </Screen>
+    );
   const home = state === "athlete" ? "/athlete" : "/pending";
 
   return (

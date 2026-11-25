@@ -1,6 +1,5 @@
 import { ClientContext } from "@/components/ClientContext";
 import { folderOptions, type Folder } from "@/lib/programming/folders";
-import { Fragment } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireState } from "@/lib/session";
@@ -10,15 +9,11 @@ import { allExercises } from "@/lib/programming/all-exercises";
 import { ClientTabs } from "@/components/ClientTabs";
 import { SeasonList } from "@/components/SeasonList";
 import { Alert, Card, Screen } from "@/components/ui";
-import { shiftAssignment, swapInAssignment, unassign, renameAssignment } from "@/app/coach/workouts/actions";
+import { BlockOverview } from "@/components/BlockOverview";
 import { createClientBlock, importBlock } from "../program/actions";
 
 export const dynamic = "force-dynamic";
 
-const input =
-  "min-h-11 w-full min-w-0 rounded-xl border border-line bg-surface-2 px-3 text-text placeholder:text-muted/60 focus:border-brand focus:outline-none";
-const smallBtn =
-  "min-h-11 shrink-0 rounded-xl border border-line bg-surface-2 px-3 text-sm font-bold";
 
 // Planning side of a client: what to keep in mind, season plan, build/import blocks, manage blocks.
 // The Calendar tab stays a clean month view.
@@ -27,7 +22,7 @@ export default async function ClientProgrammingPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ error?: string; removed?: string; swapped?: string; shifted?: string }>;
+  searchParams: Promise<{ error?: string; removed?: string; swapped?: string; shifted?: string; block?: string }>;
 }) {
   const { supabase } = await requireState(["coach"]);
   const { id } = await params;
@@ -75,6 +70,7 @@ export default async function ClientProgrammingPage({
       {sp.shifted && <Alert tone="ok">Moved {sp.shifted} upcoming workout{sp.shifted === "1" ? "" : "s"}. Logged ones stayed put.</Alert>}
       {sp.removed && <Alert tone="ok">Removed {sp.removed} upcoming workouts. Past and logged ones are kept.</Alert>}
 
+      <BlockOverview supabase={supabase} athleteId={id} assignments={(assignments ?? []) as { id: string; program_name: string; start_date: string }[]} selected={sp.block} today={today} back={back} />
       <h2 className="mb-2 mt-2 text-xs font-black uppercase tracking-widest text-muted">Season plan</h2>
       <div className="mb-6">
         <SeasonList supabase={supabase} target={{ athlete_id: id }} back={back} today={today} />
@@ -130,58 +126,15 @@ export default async function ClientProgrammingPage({
 
       <div className="mt-3 grid gap-3">
         <Card className="!p-4">
-          <h2 className="mb-2 font-extrabold">Assigned programs</h2>
+          <h2 className="mb-2 font-extrabold">All blocks</h2>
           {(assignments ?? []).length === 0 && <p className="text-sm text-muted">None assigned yet.</p>}
-          <ul className="space-y-2 text-sm">
+          <ul className="flex flex-wrap gap-2 text-sm">
             {(assignments ?? []).map((a) => (
-              <Fragment key={a.id}>
-              <li className="flex items-center justify-between gap-2">
-                <details className="min-w-0">
-                  <summary className="cursor-pointer list-none">
-                    <b>{a.program_name}</b> <span className="text-muted">from {a.start_date}</span>{" "}
-                    <span className="text-xs font-bold text-muted underline underline-offset-4">Rename</span>
-                  </summary>
-                  <form action={renameAssignment} className="mt-1 flex gap-1">
-                    <input type="hidden" name="assignment_id" value={a.id} />
-                    <input type="hidden" name="back" value={back} />
-                    <input name="name" defaultValue={a.program_name} required minLength={2} maxLength={60} className={input} aria-label="Block name" />
-                    <button className="min-h-11 shrink-0 rounded-xl bg-brand px-3 text-xs font-extrabold text-white">Save</button>
-                  </form>
-                </details>
-                <form action={unassign}>
-                  <input type="hidden" name="assignment_id" value={a.id} />
-                  <input type="hidden" name="back" value={back} />
-                  <button className="text-xs text-muted underline underline-offset-4">Remove upcoming</button>
-                </form>
+              <li key={a.id}>
+                <Link href={`${back}?block=${a.id}#overview`} className="inline-flex min-h-9 items-center rounded-lg border border-line bg-surface-2 px-3 font-bold">
+                  {a.program_name} <span className="ml-1.5 text-xs font-normal text-muted">from {a.start_date}</span>
+                </Link>
               </li>
-              <li className="flex flex-wrap items-center gap-1.5 text-xs">
-                <span className="text-muted">Move what&apos;s left:</span>
-                {[[-7, "−1 week"], [-1, "−1 day"], [1, "+1 day"], [7, "+1 week"]].map(([d, l]) => (
-                  <form key={d} action={shiftAssignment}>
-                    <input type="hidden" name="assignment_id" value={a.id} />
-                    <input type="hidden" name="back" value={back} />
-                    <input type="hidden" name="from" value={today} />
-                    <input type="hidden" name="days" value={d} />
-                    <button className="min-h-9 rounded-lg border border-line bg-surface-2 px-2.5 font-bold">{l}</button>
-                  </form>
-                ))}
-              </li>
-              <li>
-                <details className="text-xs">
-                  <summary className="cursor-pointer text-muted">Swap an exercise in upcoming workouts</summary>
-                  <form action={swapInAssignment} className="mt-1 grid grid-cols-[1fr_1fr_auto] gap-1">
-                    <input type="hidden" name="assignment_id" value={a.id} />
-                    <input type="hidden" name="back" value={back} />
-                    <select name="from" required defaultValue="" className={input} aria-label="Replace">
-                      <option value="" disabled>Replace…</option>
-                      {exList.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
-                    </select>
-                    <input name="to" list="swap-ex" required placeholder="With…" className={input} aria-label="With" />
-                    <button className={smallBtn}>Swap</button>
-                  </form>
-                </details>
-              </li>
-              </Fragment>
             ))}
           </ul>
           {(groups ?? []).length > 0 && (

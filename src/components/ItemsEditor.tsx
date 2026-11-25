@@ -49,6 +49,15 @@ function restText(sec: number | null) {
 }
 
 type Order = { id: string; join: boolean }[];
+
+/** Explain how far a scheme reached, and why if it stopped short. */
+function schemeNotice(schemeId: string | null, d: { weeks: number; schemeWeeks?: number }) {
+  if (!schemeId) return "Scheme removed from this line.";
+  const reached = `Scheme applied to ${d.weeks} week${d.weeks === 1 ? "" : "s"}.`;
+  if (d.schemeWeeks && d.schemeWeeks > d.weeks)
+    return `${reached} It has ${d.schemeWeeks} weeks: the later weeks don't have this exercise on this day yet. Copy this week forward (or add it to those days), then apply again.`;
+  return reached;
+}
 type LibEx = { id: string; name: string; active: boolean; category?: string | null; measure?: string; fields?: string[] | null; distance_unit?: string; speed_unit?: string };
 const orderOf = (list: ItemFields[]): Order => list.map((i, k) => ({ id: i.id, join: k > 0 && i.block === list[k - 1].block }));
 
@@ -200,7 +209,7 @@ export function ItemsEditor({
     const added = r.data[r.data.length - 1];
     const s2 = await builderApplyScheme(table, parentId, added.id, scheme, back);
     if (s2.error) return { error: s2.error };
-    setNotice(`Scheme applied to ${s2.data!.weeks} week${s2.data!.weeks === 1 ? "" : "s"}.`);
+    setNotice(schemeNotice("x", s2.data!));
     return r;
   };
   const submitDraft = () =>
@@ -298,7 +307,7 @@ export function ItemsEditor({
                           setNotice(null);
                           const r = await builderApplyScheme(table, parentId, i.id, schemeId, back);
                           if (r.error) return setError(r.error);
-                          setNotice(schemeId ? `Scheme applied to ${r.data!.weeks} week${r.data!.weeks === 1 ? "" : "s"} of this block.` : "Scheme removed from this line.");
+                          setNotice(schemeNotice(schemeId, r.data!));
                         })
                       }
                       checked={sel.has(i.id)}

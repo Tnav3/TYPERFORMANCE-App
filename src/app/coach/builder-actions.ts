@@ -464,7 +464,7 @@ export async function builderApplyScheme(
   itemId: string,
   schemeId: string | null,
   back: string,
-): Promise<Res<{ weeks: number }>> {
+): Promise<Res<{ weeks: number; schemeWeeks?: number }>> {
   if (!UUID.test(parentId) || !UUID.test(itemId) || (schemeId && !UUID.test(schemeId))) return { error: "Not found." };
   const supabase = await coachOnly();
   const parentCol = table === "program_items" ? "day_id" : "workout_id";
@@ -521,7 +521,7 @@ export async function builderApplyScheme(
     if (error) return { error: friendly(error.message) };
   }
   touch(back);
-  return { data: { weeks: targets.length } };
+  return { data: { weeks: targets.length, schemeWeeks: s.weeks.length } };
 }
 
 export async function listSchemes(): Promise<Res<{ id: string; name: string; weeks: number }[]>> {
