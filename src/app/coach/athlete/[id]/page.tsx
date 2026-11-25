@@ -1,4 +1,6 @@
 import { ClientTabs } from "@/components/ClientTabs";
+import { FightCampCard } from "@/components/FightCampCard";
+import { campStatus } from "@/lib/fight-camp";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireState } from "@/lib/session";
@@ -161,6 +163,10 @@ export default async function AthleteDetail({
   };
   const chosenWidgets = prefs.coach_widgets?.length ? prefs.coach_widgets : defaultWidgets(kind);
   const widgets = await loadWidgets(supabase, id, todayISO(), chosenWidgets);
+  const { data: campW } = p.next_fight_date
+    ? await supabase.from("body_metrics").select("measured_on, weight_kg").eq("athlete_id", id).not("weight_kg", "is", null).gte("measured_on", addDays(today, -28)).order("measured_on")
+    : { data: null };
+  const camp = campStatus({ fight: p.next_fight_date, today, limitKg: limit, weights: (campW ?? []).map((r) => ({ date: r.measured_on as string, kg: Number(r.weight_kg) })) });
 
   return (
     <Screen wide>
@@ -188,6 +194,7 @@ export default async function AthleteDetail({
           </span>
         </div>
       </header>
+      {camp && <div className="max-w-xl"><FightCampCard s={camp} limitKg={limit} coach /></div>}
       {pageError === "widgets" && (
         <p className="mb-3 rounded-xl border border-brand/60 bg-brand/10 px-4 py-3 text-sm font-bold text-brand">Those graphs didn&apos;t save. Please try again.</p>
       )}

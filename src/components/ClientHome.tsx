@@ -10,6 +10,7 @@ import { Logo, Screen } from "@/components/ui";
 
 export interface HomeProps {
   tour: ReactNode;
+  camp?: ReactNode;
   first: string;
   me: { name: string; avatar: string | null; nickname: string | null; goal: string | null };
   fightLabel: string | null;
@@ -56,6 +57,7 @@ export function ClientHome(p: HomeProps) {
         </Link>
       </header>
 
+      {p.camp}
       {p.programOn && (
         <Link href={p.todayWorkouts.length === 1 ? `/train/${p.todayWorkouts[0].id}` : "/train"} className="mb-5 block">
           <div className="rounded-3xl border border-brand bg-brand/10 p-5">

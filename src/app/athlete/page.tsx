@@ -4,6 +4,8 @@ import { requireState } from "@/lib/session";
 import { hasFeature } from "@/lib/features";
 import { planned } from "@/lib/planned-fights";
 import { ClientHome } from "@/components/ClientHome";
+import { FightCampCard } from "@/components/FightCampCard";
+import { campStatus, type CampStatus } from "@/lib/fight-camp";
 import { clientMenu } from "@/lib/client/menu";
 import { statusFor } from "@/components/WorkoutCalendar";
 import { welcomeSteps } from "@/lib/tutorial";
@@ -147,8 +149,21 @@ export default async function AthleteHome() {
       week: recent.length >= 3 ? Math.round((recent.reduce((a, r) => a + r.kg, 0) / recent.length) * 10) / 10 : null,
     };
   }
+  const limitKg = (profile as unknown as { weight_class_limit_kg: number | null }).weight_class_limit_kg;
+  let camp: CampStatus | null = null;
+  if (on.fights && profile.next_fight_date) {
+    const { data: cw } = await supabase
+      .from("body_metrics")
+      .select("measured_on, weight_kg")
+      .eq("athlete_id", user!.id)
+      .not("weight_kg", "is", null)
+      .gte("measured_on", addDays(today, -28))
+      .order("measured_on");
+    camp = campStatus({ fight: profile.next_fight_date, today, limitKg: limitKg == null ? null : Number(limitKg), weights: (cw ?? []).map((r) => ({ date: r.measured_on as string, kg: Number(r.weight_kg) })) });
+  }
   return (
     <ClientHome
+      camp={camp ? <FightCampCard s={camp} limitKg={limitKg == null ? null : Number(limitKg)} /> : null}
       weight={weight}
       booking={booking}
       trend={trend}
