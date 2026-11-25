@@ -26,7 +26,7 @@ describe("welcome tour", () => {
 describe("tips", () => {
   it("one tip per feature page, and seen tips stay hidden", () => {
     expect(Object.keys(TIPS).sort()).toEqual(
-      ["calculator", "fights", "hr", "log", "mas", "mobility", "nutrition", "rpe", "standards", "testing"],
+      ["calculator", "fights", "hr", "log", "logger", "mas", "mobility", "nutrition", "rpe", "standards", "testing"],
     );
     expect(tipSeen({ tips_seen: ["mas"] }, "mas")).toBe(true);
     expect(tipSeen({ tips_seen: null }, "mas")).toBe(false);
