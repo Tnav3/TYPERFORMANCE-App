@@ -11,6 +11,7 @@ import { Logo, Screen } from "@/components/ui";
 export interface HomeProps {
   tour: ReactNode;
   camp?: ReactNode;
+  quote?: { body: string; author: string | null } | null;
   first: string;
   me: { name: string; avatar: string | null; nickname: string | null; goal: string | null };
   fightLabel: string | null;
@@ -57,6 +58,12 @@ export function ClientHome(p: HomeProps) {
         </Link>
       </header>
 
+      {p.quote && (
+        <figure className="mb-5 border-l-4 border-brand pl-3">
+          <blockquote className="text-sm font-semibold italic">{p.quote.body}</blockquote>
+          {p.quote.author && <figcaption className="text-xs text-muted">{p.quote.author}</figcaption>}
+        </figure>
+      )}
       {p.camp}
       {p.programOn && (
         <Link href={p.todayWorkouts.length === 1 ? `/train/${p.todayWorkouts[0].id}` : "/train"} className="mb-5 block">

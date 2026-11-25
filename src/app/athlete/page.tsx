@@ -5,6 +5,7 @@ import { hasFeature } from "@/lib/features";
 import { planned } from "@/lib/planned-fights";
 import { ClientHome } from "@/components/ClientHome";
 import { FightCampCard } from "@/components/FightCampCard";
+import { quoteOfDay } from "@/lib/quotes";
 import { campStatus, type CampStatus } from "@/lib/fight-camp";
 import { clientMenu } from "@/lib/client/menu";
 import { statusFor } from "@/components/WorkoutCalendar";
@@ -161,8 +162,11 @@ export default async function AthleteHome() {
       .order("measured_on");
     camp = campStatus({ fight: profile.next_fight_date, today, limitKg: limitKg == null ? null : Number(limitKg), weights: (cw ?? []).map((r) => ({ date: r.measured_on as string, kg: Number(r.weight_kg) })) });
   }
+  const { data: quoteRows } = await supabase.from("quotes").select("id, body, author").eq("active", true);
+  const quote = quoteOfDay(quoteRows ?? [], today);
   return (
     <ClientHome
+      quote={quote}
       camp={camp ? <FightCampCard s={camp} limitKg={limitKg == null ? null : Number(limitKg)} /> : null}
       weight={weight}
       booking={booking}

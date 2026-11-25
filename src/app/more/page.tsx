@@ -80,6 +80,7 @@ export default async function MorePage() {
 
       <div className="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-surface">
         {[
+          ["/trophies", "Trophy cabinet", Trophy],
           ["/notifications", "Notifications", Bell],
           ["/profile", "My profile", UserRound],
           ["/faq", "Help", CircleHelp],

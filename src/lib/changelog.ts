@@ -9,6 +9,8 @@ export const CHANGELOG: Release[] = [
     version: "0.9.0",
     date: "2026-11-25",
     items: [
+      { who: "client", text: "Trophy cabinet in More: every badge, plus progress to the next one." },
+      { who: "client", text: "A daily line from your coach on Home." },
       { who: "client", text: "Fight camp mode: countdown, camp phase and your weight-make tracker on Home." },
       { who: "client", text: "Your meal plan from your coach: training and rest days, shopping list, print to PDF." },
       { who: "coach", text: "Meal library and meal plan builder with targets, live macro totals and publish." },
