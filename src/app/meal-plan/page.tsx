@@ -29,10 +29,12 @@ export default async function MealPlanPage({
     .maybeSingle();
   if (published?.snapshot && sp.sample !== "1") {
     return (
-      <Screen>
+      <Screen wide>
+        <div className="mx-auto max-w-5xl">
         <BackLink href="/macros" label="Macros" />
         <PublishedMealPlan plan={published.snapshot as MealSnapshot} day={(sp.d ?? "train_a") as DayKey} publishedAt={formatDate(published.published_at.slice(0, 10))} />
         <p className="no-print mt-4 text-center text-xs text-muted">Questions about your plan? Message your coach.</p>
+        </div>
       </Screen>
     );
   }

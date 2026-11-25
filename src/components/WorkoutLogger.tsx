@@ -190,6 +190,16 @@ export function WorkoutLogger({
     if (changed.done && cur.restSec) setRest({ until: Date.now() + cur.restSec * 1000, total: cur.restSec });
   }
 
+  /** One tap: tick every open set using what's typed, else the greyed-out target / last-session numbers. */
+  function logAll(item: LoggerItem) {
+    if (readOnly) return;
+    const cur = blocks.flatMap((b) => b.items).find((i) => i.id === item.id);
+    if (!cur) return;
+    const open = cur.sets.filter((x) => !x.done);
+    update(item.id, (i) => ({ ...i, sets: i.sets.map((x) => (x.done ? x : { ...x, done: true })) }));
+    open.forEach((x) => saveSet(cur, { ...x, done: true }));
+  }
+
   function editSet(item: LoggerItem, setNo: number, field: string, val: string) {
     update(item.id, (i) => ({
       ...i,
@@ -379,11 +389,23 @@ export function WorkoutLogger({
                         </button>
                       )
                     )}
-                    {it.prev && (
-                      <p className="mt-1 inline-flex rounded-lg bg-surface-2 px-2.5 py-1 text-xs">
-                        <span className="mr-1.5 font-bold uppercase tracking-wide text-muted">Last</span> {it.prev}
-                      </p>
-                    )}
+                    <div className="mt-1 flex flex-wrap items-center gap-2">
+                      {it.prev && (
+                        <p className="inline-flex rounded-lg bg-surface-2 px-2.5 py-1 text-xs">
+                          <span className="mr-1.5 font-bold uppercase tracking-wide text-muted">Last</span> {it.prev}
+                        </p>
+                      )}
+                      {!readOnly && it.sets.some((x) => !x.done) && it.sets.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => logAll(it)}
+                          className="inline-flex min-h-8 items-center rounded-lg border border-line px-2.5 text-xs font-bold text-muted hover:text-text"
+                          title="Tick every set with the numbers shown"
+                        >
+                          ✓ Log all as shown
+                        </button>
+                      )}
+                    </div>
                     <div className="mt-2 space-y-1.5">
                       <div
                         className="grid items-end gap-2 px-1 text-[11px] uppercase tracking-wide text-muted"

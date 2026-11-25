@@ -56,7 +56,7 @@ export function PublishedMealPlan({ plan, day, publishedAt }: { plan: MealSnapsh
         </div>
         <PrintButton />
       </div>
-      <div className="mb-3 grid grid-cols-2 gap-2 text-sm">
+      <div className="mb-3 grid grid-cols-2 gap-2 text-sm lg:max-w-xl">
         {(["train", "rest"] as const).map((k) => (
           <Card key={k} className="!p-3">
             <div className="font-bold">{k === "train" ? "Training days" : "Rest days"}</div>
@@ -73,7 +73,7 @@ export function PublishedMealPlan({ plan, day, publishedAt }: { plan: MealSnapsh
         ))}
       </div>
       <h2 className="print-only mb-2 text-lg font-black">{current[1]}</h2>
-      <div className="space-y-3">
+      <div className="grid items-start gap-3 lg:grid-cols-2">
         {list(d.breakfast) && <MealCard m={list(d.breakfast)!} label="Breakfast" />}
         {list(d.lunch) && <MealCard m={list(d.lunch)!} label="Lunch" />}
         {list(d.dinner) && <MealCard m={list(d.dinner)!} label="Dinner" />}
@@ -87,7 +87,7 @@ export function PublishedMealPlan({ plan, day, publishedAt }: { plan: MealSnapsh
           return (
             <section key={k} className="print-break">
               <h2 className="mb-2 mt-4 text-lg font-black">{label}</h2>
-              <div className="space-y-3">
+              <div className="grid items-start gap-3 lg:grid-cols-2">
                 {list(o.breakfast) && <MealCard m={list(o.breakfast)!} label="Breakfast" />}
                 {list(o.lunch) && <MealCard m={list(o.lunch)!} label="Lunch" />}
                 {list(o.dinner) && <MealCard m={list(o.dinner)!} label="Dinner" />}
@@ -97,6 +97,7 @@ export function PublishedMealPlan({ plan, day, publishedAt }: { plan: MealSnapsh
           );
         })}
       </div>
+      <div className="grid items-start gap-x-4 lg:grid-cols-2">
       {plan.tips && <Card className="mt-4"><h2 className="mb-1 font-bold">Tips</h2><p className="whitespace-pre-line text-sm">{plan.tips}</p></Card>}
       {plan.substitutes && <Card className="mt-4"><h2 className="mb-1 font-bold">Swaps you can make</h2><p className="whitespace-pre-line text-sm">{plan.substitutes}</p></Card>}
       <Card className="mt-4">
@@ -114,6 +115,7 @@ export function PublishedMealPlan({ plan, day, publishedAt }: { plan: MealSnapsh
         <div className="text-xs font-bold uppercase text-brand">Spice pantry</div>
         <p className="text-sm">{SPICES.join(", ")}</p>
       </Card>
+      </div>
     </div>
   );
 }

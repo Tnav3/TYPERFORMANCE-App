@@ -9,6 +9,7 @@ export const CHANGELOG: Release[] = [
     version: "0.9.0",
     date: "2026-11-25",
     items: [
+      { who: "client", text: "Logging is quicker: empty boxes fill from your plan or last session, plus a Log all button." },
       { who: "client", text: "Team feed on Home: see when your group trains (if your coach turns it on)." },
       { who: "coach", text: "Faster builder: smart exercise search, one-line sets and reps, paste a whole session, loading schemes." },
       { who: "coach", text: "Keep in mind panel (injuries, fights, notes) while programming." },

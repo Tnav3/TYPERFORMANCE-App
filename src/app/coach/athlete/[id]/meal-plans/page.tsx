@@ -60,7 +60,7 @@ export default async function ClientMealPlansPage({
 
   if (!plan) {
     return (
-      <Screen>
+      <Screen wide>
         <ClientTabs id={id} name={name} active="meals" />
         {sp.error && <Alert>{sp.error}</Alert>}
         <div className="space-y-2">
@@ -73,7 +73,7 @@ export default async function ClientMealPlansPage({
             </Link>
           ))}
         </div>
-        <Card className="mt-4">
+        <Card className="mt-4 lg:max-w-2xl">
           <h2 className="mb-1 font-bold">New meal plan</h2>
           <p className="mb-3 text-sm text-muted">Mifflin-St Jeor with your plan rules. You can change every number after.</p>
           {meals.length < 4 && (
@@ -118,7 +118,7 @@ export default async function ClientMealPlansPage({
   );
 
   return (
-    <Screen>
+    <Screen wide>
       <ClientTabs id={id} name={name} active="meals" />
       <Link href={`/coach/athlete/${id}/meal-plans`} className="mb-2 inline-block text-sm text-muted">← All plans</Link>
       {sp.error && <Alert>{sp.error}</Alert>}
@@ -129,7 +129,7 @@ export default async function ClientMealPlansPage({
       </p>
       {(t.flags ?? []).map((f) => <Alert key={f}>{f}</Alert>)}
 
-      <Card className="mb-4">
+      <Card className="mb-4 lg:max-w-2xl">
         <h3 className="mb-2 font-bold">Targets</h3>
         <form action={saveTargets} className="space-y-2">
           <input type="hidden" name="plan_id" value={plan.id} />
@@ -150,7 +150,7 @@ export default async function ClientMealPlansPage({
         </form>
       </Card>
 
-      <form action={saveDays} id="days" className="space-y-4">
+      <form action={saveDays} id="days" className="grid items-start gap-4 lg:grid-cols-2">
         <input type="hidden" name="plan_id" value={plan.id} />
         <input type="hidden" name="athlete_id" value={id} />
         {DAYS.map(([k, label, kind]) => {
@@ -183,7 +183,7 @@ export default async function ClientMealPlansPage({
             </Card>
           );
         })}
-        <Card>
+        <Card className="lg:col-span-2">
           <label className="block text-sm text-muted">Tips for this client
             <textarea name="tips" rows={5} defaultValue={plan.tips ?? ""} placeholder="Eat 3 of your 4 meals at home. Prep protein on Sunday." className={area} />
           </label>
@@ -191,7 +191,7 @@ export default async function ClientMealPlansPage({
             <textarea name="substitutes" rows={4} defaultValue={plan.substitutes ?? ""} placeholder="Chicken thigh → lean beef mince or barramundi" className={area} />
           </label>
         </Card>
-        <button className="min-h-11 w-full rounded-xl border border-line bg-surface-2 font-bold">Save days</button>
+        <button className="min-h-11 w-full rounded-xl border border-line bg-surface-2 font-bold lg:col-span-2">Save days</button>
       </form>
       <p className="mt-2 text-xs text-muted">Green is within 5% of target, yellow within 10%. Save before publishing.</p>
 

@@ -52,17 +52,17 @@ export default async function MealLibraryPage({ searchParams }: { searchParams: 
   const editing = meals.find((m) => m.id === sp.edit);
 
   return (
-    <Screen>
+    <Screen wide>
       <Heading sub="Your meals with AU macros. Plans are built from these, and the shopping list comes from the ingredients.">Meal library</Heading>
       {sp.error && <Alert>{sp.error}</Alert>}
       {editing ? (
-        <Card className="mb-4">
+        <Card className="mb-4 lg:max-w-2xl">
           <div className="mb-3 flex items-center justify-between"><h2 className="font-bold">Edit meal</h2><Link href="/coach/meals" className="text-sm text-muted">Cancel</Link></div>
           <MealForm m={editing} />
           <form action={deleteMeal} className="mt-3"><input type="hidden" name="id" value={editing.id} /><button className="text-sm text-red-400">Delete meal</button></form>
         </Card>
       ) : (
-        <details className="mb-4" open={!!sp.new || meals.length === 0}>
+        <details className="mb-4 lg:max-w-2xl" open={!!sp.new || meals.length === 0}>
           <summary className="min-h-11 cursor-pointer rounded-xl border border-line bg-surface px-4 py-3 font-bold">+ Add a meal</summary>
           <Card className="mt-2"><MealForm /></Card>
         </details>
@@ -75,7 +75,7 @@ export default async function MealLibraryPage({ searchParams }: { searchParams: 
           </Link>
         ))}
       </div>
-      <div className="space-y-2">
+      <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
         {shown.map((m) => (
           <Link key={m.id} href={`/coach/meals?edit=${m.id}`} className="block rounded-xl border border-line bg-surface p-3">
             <div className="font-semibold">{m.name}</div>

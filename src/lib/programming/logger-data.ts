@@ -199,6 +199,18 @@ export async function loadLoggerData(supabase: SupabaseClient, workoutId: string
             if (f === "distance" && it.reps && /\d+\s*m$/i.test(it.reps) && target != null)
               hint.distance = fromCanonical("distance", target, units);
           }
+          // Anything the plan doesn't set falls back to what they did last time (same set, or their last set),
+          // so ticking a set with empty boxes logs last session's numbers.
+          const ps = prev ? prev.sets[k] ?? prev.sets[prev.sets.length - 1] : null;
+          if (ps)
+            for (const f of fields) {
+              if (hint[f]) continue;
+              const val =
+                f === "reps" ? (ps.reps != null ? String(ps.reps) : "")
+                : f === "weight" ? fromCanonical("weight", ps.load_kg, units)
+                : fromCanonical(f, ps.metrics[f] ?? (f === fields[0] && ps.value != null ? ps.value : null), units);
+              if (val) hint[f] = val;
+            }
           return {
             setNo: no,
             v,
