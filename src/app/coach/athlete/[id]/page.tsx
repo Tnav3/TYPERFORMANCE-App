@@ -49,7 +49,7 @@ export default async function AthleteDetail({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; a?: string; b?: string }>;
 }) {
   const { supabase } = await requireState(["coach"]);
   const { id } = await params;
@@ -59,7 +59,7 @@ export default async function AthleteDetail({
     .eq("athlete_id", id)
     .is("done_at", null)
     .order("due_on");
-  const { error: pageError } = await searchParams;
+  const { error: pageError, a: cmpA, b: cmpB } = await searchParams;
   if (!UUID.test(id)) notFound();
   const today = todayISO();
   const thisWeek = mondayOf(today);
@@ -396,95 +396,117 @@ export default async function AthleteDetail({
       <h2 className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted">
         Week by week
       </h2>
-      <div className="mb-8 space-y-3">
-        {[...weekInfo]
-          // Start the list at the week they joined (or their first session, if logged earlier)
-          .filter(({ w, cur }) => w >= joinedWeek || cur.count > 0)
-          .reverse()
-          .map(({ w, cur, tl }) => {
-            const c = ck(w);
-            const s = rows.filter((r) => r.week_start === w);
-            const n = nt(w);
-            return (
-              <Card key={w} className="!p-4">
-                <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                  <p className="font-extrabold">
-                    {dayMonth(w)} – {dayMonth(addDays(w, 6))}
-                    {w === thisWeek && (
-                      <span className="ml-2 text-xs font-normal text-brand">
-                        This week
-                      </span>
-                    )}
-                    {w === fightWeek && (
-                      <span className="ml-2 text-xs font-bold">FIGHT WEEK</span>
-                    )}
-                  </p>
-                  <div className="flex items-center gap-2 text-sm">
-                    <span>
-                      Load <b>{cur.load}</b>{" "}
-                      {w !== thisWeek && (
-                        <span className="text-muted">
-                          {formatChange(tl.changePct)}
-                        </span>
-                      )}
-                    </span>
-                    {w !== thisWeek && <TrafficLight level={tl.level} />}
-                  </div>
-                </div>
-
-                <p className="mb-2 text-sm text-muted">
-                  {cur.count} sessions · {cur.minutes} min
-                  {c ? ` · wellness ${c.wellness}/10` : " · not submitted"}
-                  {c?.bodyweight_kg != null
-                    ? ` · ${Number(c.bodyweight_kg)} kg`
-                    : ""}
-                </p>
+      {(() => {
+        // Newest first; the last 4 weeks show, older ones fold away so the page stays short.
+        const list = [...weekInfo].filter(({ w, cur }) => w >= joinedWeek || cur.count > 0).reverse();
+        const done = list.filter((x) => x.w !== thisWeek);
+        const A = list.find((x) => x.w === cmpA) ?? done[1] ?? null;
+        const B = list.find((x) => x.w === cmpB) ?? done[0] ?? null;
+        const row = ({ w, cur, tl }: (typeof list)[number]) => {
+          const c = ck(w);
+          const s = rows.filter((r) => r.week_start === w);
+          const n = nt(w);
+          return (
+            <details key={w} open={w === thisWeek} className="group rounded-xl border border-line bg-surface">
+              <summary className="flex cursor-pointer list-none flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2.5">
+                <span className="w-28 shrink-0 font-extrabold">
+                  {dayMonth(w)}
+                  {w === thisWeek && <span className="ml-1.5 text-[10px] font-black uppercase text-brand">Now</span>}
+                  {w === fightWeek && <span className="ml-1.5 text-[10px] font-black uppercase">Fight</span>}
+                </span>
+                <span className="text-sm">Load <b>{cur.load}</b>{w !== thisWeek && <span className="ml-1 text-xs text-muted">{formatChange(tl.changePct)}</span>}</span>
+                <span className="text-sm text-muted">{cur.count} sess · {cur.minutes} min</span>
+                <span className="text-sm text-muted">{c ? `wellness ${c.wellness}/10` : "no check-in"}</span>
+                {c?.bodyweight_kg != null && <span className="text-sm text-muted">{Number(c.bodyweight_kg)} kg</span>}
+                {c?.niggle && <span className="rounded bg-warn/15 px-1.5 text-xs font-bold text-warn">Niggle</span>}
+                {n && <span className="rounded bg-surface-2 px-1.5 text-xs text-muted">Note</span>}
+                <span className="flex-1" />
+                {w !== thisWeek && <TrafficLight level={tl.level} />}
+                <span className="text-muted transition group-open:rotate-180">▾</span>
+              </summary>
+              <div className="border-t border-line px-3 pb-3 pt-2">
                 {c?.niggle && (
-                  <p className="mb-2 rounded-lg border border-warn/50 bg-warn/10 px-3 py-2 text-sm">
-                    <b>Niggle:</b> {c.niggle_note}
-                  </p>
+                  <p className="mb-2 rounded-lg border border-warn/50 bg-warn/10 px-3 py-2 text-sm"><b>Niggle:</b> {c.niggle_note}</p>
                 )}
-
-                {s.length > 0 && (
-                  <details className="mb-1">
-                    <summary className="cursor-pointer text-sm text-muted">
-                      Sessions
-                    </summary>
-                    <ul className="mt-2 space-y-1 text-sm">
-                      {s.map((x) => (
-                        <li
-                          key={x.id}
-                          className="flex justify-between gap-3 border-t border-line pt-1"
-                        >
-                          <span>
-                            <span
-                              className="mr-1.5 inline-block h-2 w-2 rounded-sm align-middle"
-                              style={{ background: colors[x.discipline_id] }}
-                            />
-                            {dayMonth(x.session_date)}{" "}
-                            {formatTime(x.start_time)} ·{" "}
-                            {names.disc.get(x.discipline_id)} ·{" "}
-                            {names.type.get(x.session_type_id)} ·{" "}
-                            {x.duration_min} min · RPE {x.rpe}{" "}
-                            {RPE_LABELS[x.rpe]?.label}
-                            {x.notes && (
-                              <span className="block text-xs text-muted">
-                                “{x.notes}”
-                              </span>
-                            )}
-                          </span>
-                          <b className="shrink-0">{x.load_au}</b>
-                        </li>
-                      ))}
-                    </ul>
-                  </details>
+                {s.length > 0 ? (
+                  <ul className="mb-2 space-y-1 text-sm">
+                    {s.map((x) => (
+                      <li key={x.id} className="flex justify-between gap-3 border-b border-line pb-1 last:border-0">
+                        <span>
+                          <span className="mr-1.5 inline-block h-2 w-2 rounded-sm align-middle" style={{ background: colors[x.discipline_id] }} />
+                          {dayMonth(x.session_date)} {formatTime(x.start_time)} · {names.disc.get(x.discipline_id)} · {names.type.get(x.session_type_id)} · {x.duration_min} min · RPE {x.rpe} {RPE_LABELS[x.rpe]?.label}
+                          {x.notes && <span className="block text-xs text-muted">“{x.notes}”</span>}
+                        </span>
+                        <b className="shrink-0">{x.load_au}</b>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="mb-2 text-sm text-muted">No sessions logged.</p>
                 )}
-
                 <CoachNoteForm athleteId={id} week={w} initial={n} />
-              </Card>
-            );
-          })}
-      </div>
+              </div>
+            </details>
+          );
+        };
+        const stat = (label: string, a: number | null, b: number | null, unit = "") => {
+          const diff = a != null && b != null ? Math.round((b - a) * 10) / 10 : null;
+          return (
+            <tr key={label} className="border-t border-line">
+              <td className="py-1.5 text-muted">{label}</td>
+              <td className="py-1.5 text-right font-bold">{a ?? "–"}{a != null ? unit : ""}</td>
+              <td className="py-1.5 text-right font-bold">{b ?? "–"}{b != null ? unit : ""}</td>
+              <td className={`py-1.5 text-right text-xs font-bold ${diff == null || diff === 0 ? "text-muted" : diff > 0 ? "text-ok" : "text-brand"}`}>
+                {diff == null ? "" : `${diff > 0 ? "+" : ""}${diff}${unit}`}
+              </td>
+            </tr>
+          );
+        };
+        const opts = list.map((x) => <option key={x.w} value={x.w}>{dayMonth(x.w)}{x.w === thisWeek ? " (now)" : ""}</option>);
+        return (
+          <div className="mb-8 space-y-2">
+            {list.length > 1 && A && B && (
+              <details className="rounded-xl border border-line bg-surface">
+                <summary className="cursor-pointer list-none px-3 py-2.5 text-sm font-extrabold">Compare two weeks ▾</summary>
+                <div className="border-t border-line p-3">
+                  <form className="mb-3 flex flex-wrap items-center gap-2 text-sm">
+                    <select name="a" defaultValue={A.w} className="min-h-10 rounded-xl border border-line bg-surface-2 px-2" aria-label="First week">{opts}</select>
+                    <span className="text-muted">vs</span>
+                    <select name="b" defaultValue={B.w} className="min-h-10 rounded-xl border border-line bg-surface-2 px-2" aria-label="Second week">{opts}</select>
+                    <button className="min-h-10 rounded-xl bg-brand px-3 text-xs font-extrabold uppercase text-white">Compare</button>
+                  </form>
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="text-xs uppercase tracking-widest text-muted">
+                        <th className="text-left font-semibold" />
+                        <th className="text-right font-semibold">{dayMonth(A.w)}</th>
+                        <th className="text-right font-semibold">{dayMonth(B.w)}</th>
+                        <th className="text-right font-semibold">Change</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {stat("Load", A.cur.load, B.cur.load)}
+                      {stat("Sessions", A.cur.count, B.cur.count)}
+                      {stat("Minutes", A.cur.minutes, B.cur.minutes)}
+                      {stat("Wellness", ck(A.w)?.wellness ?? null, ck(B.w)?.wellness ?? null, "/10")}
+                      {stat("Bodyweight", ck(A.w)?.bodyweight_kg != null ? Number(ck(A.w)!.bodyweight_kg) : null, ck(B.w)?.bodyweight_kg != null ? Number(ck(B.w)!.bodyweight_kg) : null, " kg")}
+                    </tbody>
+                  </table>
+                </div>
+              </details>
+            )}
+            {list.slice(0, 4).map(row)}
+            {list.length > 4 && (
+              <details className="rounded-xl border border-dashed border-line">
+                <summary className="cursor-pointer list-none px-3 py-2.5 text-center text-sm font-bold text-muted">
+                  Show {list.length - 4} older week{list.length - 4 === 1 ? "" : "s"} ▾
+                </summary>
+                <div className="space-y-2 p-2">{list.slice(4).map(row)}</div>
+              </details>
+            )}
+          </div>
+        );
+      })()}
 
       <form action={setAthleteStatus} className="mb-8">
         <input type="hidden" name="id" value={id} />
