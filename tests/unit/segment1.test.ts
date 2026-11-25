@@ -245,3 +245,14 @@ describe("redirect safety", () => {
     expect(safeNext(null)).toBe("/");
   });
 });
+
+import { gateState as gs } from "@/lib/gate";
+import { CONSENT_VERSION as CV } from "@/lib/consent";
+describe("payment hold gate", () => {
+  it("an active, set-up client on hold lands on the hold screen; coaches are never held", () => {
+    const base = { role: "athlete" as const, status: "active" as const, consent_version: CV, profile_completed_at: "2026-01-01" };
+    expect(gs({ ...base, payment_hold: true } as never)).toBe("on_hold");
+    expect(gs({ ...base, payment_hold: false } as never)).toBe("athlete");
+    expect(gs({ ...base, role: "coach", payment_hold: true } as never)).toBe("coach");
+  });
+});

@@ -1,4 +1,5 @@
 "use client";
+import { PWNED_MESSAGE, timesPwned } from "@/lib/pwned";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -27,6 +28,10 @@ export default function SignupPage() {
 
     setBusy(true);
     setError(null);
+    if ((await timesPwned(password)) > 0) {
+      setBusy(false);
+      return setError(PWNED_MESSAGE);
+    }
     const { data, error } = await createClient().auth.signUp({
       email,
       password,

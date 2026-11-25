@@ -107,3 +107,14 @@ export async function setAthleteFeature(formData: FormData) {
   // Never fail silently: tell the coach the switch didn't save
   if (error || !data?.length) redirect(`/coach/athlete/${id}?error=feature`);
 }
+
+/** Put a client on payment hold (chat only) or release them. */
+export async function setPaymentHold(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  const hold = formData.get("hold") === "true";
+  if (!UUID.test(id)) return;
+  const supabase = await createClient();
+  await supabase.from("profiles").update({ payment_hold: hold }).eq("id", id).eq("role", "athlete");
+  revalidatePath("/coach");
+  revalidatePath(`/coach/athlete/${id}`);
+}

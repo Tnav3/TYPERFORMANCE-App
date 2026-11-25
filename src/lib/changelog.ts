@@ -9,6 +9,8 @@ export const CHANGELOG: Release[] = [
     version: "0.9.0",
     date: "2026-11-25",
     items: [
+      { who: "coach", text: "Failed or cancelled payments put a client on hold: they can still message you, the rest pauses until they pay." },
+      { who: "all", text: "New passwords are checked against known data breaches." },
       { who: "client", text: "After each workout, see what it did to your player card." },
       { who: "client", text: "Training shows a compact month calendar instead of a long list. Tap a day to see its sessions." },
       { who: "coach", text: "GHL payments now put clients on the matching coaching plan (Foundation, Performance, Elite and more)." },

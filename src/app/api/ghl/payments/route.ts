@@ -1,4 +1,5 @@
-// GoHighLevel → app: payment events switch a client's access on or off.
+// GoHighLevel → app: payments turn a client's access on; failed or cancelled payments
+// put them on hold (chat only) until they pay again.
 // Set up in GHL: Workflow → trigger (Payment Received / Subscription Cancelled / Payment Failed)
 // → action "Webhook" POST to https://<app>/api/ghl/payments with header
 // x-typ-secret: <GHL_WEBHOOK_SECRET> and JSON body { event, email, plan }.
@@ -52,7 +53,7 @@ export async function POST(req: NextRequest) {
     const { data: profile } = await db.from("profiles").select("id, role, status").ilike("email", email).maybeSingle();
     if (action.kind === "activate") {
       if (profile && profile.role === "athlete") {
-        const patch: Record<string, unknown> = { status: "active" };
+        const patch: Record<string, unknown> = { status: "active", payment_hold: false };
         if (action.plan) patch.feat_mealplan = action.plan === "premium";
         if (planKey) patch.plan_key = planKey;
         await db.from("profiles").update(patch).eq("id", profile.id);
@@ -63,8 +64,9 @@ export async function POST(req: NextRequest) {
       } else result = "coach account: no change";
     } else {
       if (profile && profile.role === "athlete") {
-        await db.from("profiles").update({ status: "inactive" }).eq("id", profile.id);
-        result = "deactivated";
+        // Keep chat open, pause everything else until they pay again
+        await db.from("profiles").update({ payment_hold: true }).eq("id", profile.id);
+        result = "on hold (chat only)";
       } else {
         await db.from("invites").delete().eq("email", email).is("used_at", null);
         result = profile ? "coach account: no change" : "no account; pending invite removed";

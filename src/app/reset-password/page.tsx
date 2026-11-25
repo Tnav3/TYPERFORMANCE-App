@@ -1,4 +1,5 @@
 "use client";
+import { PWNED_MESSAGE, timesPwned } from "@/lib/pwned";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
@@ -22,6 +23,10 @@ export default function ResetPasswordPage() {
       return setError("Passwords don't match.");
     setBusy(true);
     setError(null);
+    if ((await timesPwned(password)) > 0) {
+      setBusy(false);
+      return setError(PWNED_MESSAGE);
+    }
     const { error } = await createClient().auth.updateUser({ password });
     setBusy(false);
     if (error) return setError(friendlyAuthError(error.message));

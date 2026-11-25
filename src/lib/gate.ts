@@ -9,6 +9,7 @@ export type GateState =
   | "needs_consent"
   | "needs_profile"
   | "pending"
+  | "on_hold"
   | "athlete"
   | "coach";
 
@@ -16,7 +17,7 @@ export function gateState(
   p: Pick<
     Profile,
     "role" | "status" | "consent_version" | "profile_completed_at"
-  > | null,
+  > & { payment_hold?: boolean | null } | null,
 ): GateState {
   if (!p) return "signed_out";
   if (p.status === "inactive") return "inactive";
@@ -24,6 +25,7 @@ export function gateState(
   if (p.consent_version !== CONSENT_VERSION) return "needs_consent";
   if (!p.profile_completed_at) return "needs_profile";
   if (p.status === "pending") return "pending";
+  if (p.payment_hold) return "on_hold";
   return "athlete";
 }
 
@@ -33,6 +35,7 @@ export const HOME_FOR: Record<GateState, string> = {
   needs_consent: "/onboarding/consent",
   needs_profile: "/onboarding/profile",
   pending: "/pending",
+  on_hold: "/on-hold",
   athlete: "/athlete",
   coach: "/coach",
 };

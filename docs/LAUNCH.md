@@ -30,7 +30,7 @@ Test-project login settings: **Authentication → Sign In / Providers → Email*
    Ask GHL to send the product name in `plan` (the `{{...}}` field name varies by GHL version; check the webhook test data).
 5. Check results at **Dashboard → Invites & Payments → Recent payment events**.
 
-What happens: paid → account active (or an invite is created if they haven't signed up yet, so they skip the approval queue). Cancelled/failed → account inactive (their data is kept; paying again reactivates it).
+What happens: paid → account active (or an invite is created if they haven't signed up yet, so they skip the approval queue). Cancelled/failed → payment hold: they can still message you, everything else is paused (their data is kept). Paying again lifts the hold. You can also hold or release a client by hand from their overview.
 
 ## 3. Push notifications
 1. Vercel env (Production + Preview): `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`, `PUSH_DISPATCH_SECRET`, `SUPABASE_SERVICE_ROLE_KEY` (values are in the private file Claude sent you, not in this repo).
@@ -63,7 +63,7 @@ What happens: paid → account active (or an invite is created if they haven't s
 
 
 ## Added 2026-11-25
-- Load migrations 046–090 into live with the others.
+- Load migrations 046–091 into live with the others.
 - Exercise library from Trainerize: after the test import is checked, copy exercises to live with
   `insert into exercises (...) select ... ` from a CSV export of the test table (Supabase → Table editor → export), or rerun the import against live.
 - Remove the temporary import pieces from TEST once finished: edge function `tz-import`, `public.import_trainerize_svc`, `private.import_trainerize`.

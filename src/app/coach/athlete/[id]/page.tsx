@@ -1,4 +1,4 @@
-import { BellRing, PersonStanding, SlidersHorizontal, Swords, Trophy, UserPen } from "lucide-react";
+import { BellRing, CreditCard, PersonStanding, SlidersHorizontal, Swords, Trophy, UserPen } from "lucide-react";
 import { ClientTabs } from "@/components/ClientTabs";
 import { FightCampCard } from "@/components/FightCampCard";
 import { campStatus } from "@/lib/fight-camp";
@@ -27,7 +27,7 @@ import { type LoadChartWeek } from "@/components/LoadChart";
 import { CoachLoadCharts } from "@/components/CoachLoadCharts";
 import { WeightChart } from "@/components/WeightChart";
 import { CoachNoteForm } from "@/components/CoachNoteForm";
-import { setAthleteFeature, setAthleteStatus } from "../../actions";
+import { setAthleteFeature, setAthleteStatus, setPaymentHold } from "../../actions";
 import { FEATURES } from "@/lib/features";
 import { ClientWidgets } from "@/components/ClientWidgets";
 import { loadWidgets } from "@/lib/programming/widgets-data";
@@ -239,6 +239,25 @@ export default async function AthleteDetail({
           <input name="note" required maxLength={500} placeholder="e.g. Check shoulder after sparring" className="min-h-11 min-w-0 rounded-xl border border-line bg-surface-2 px-3 text-text" aria-label="Note" />
           <button className="min-h-11 rounded-xl border border-line bg-surface-2 px-3 text-sm font-bold">Add</button>
         </form>
+          </div>
+        </details>
+        <details data-popover className="relative">
+          <summary className={`flex min-h-9 cursor-pointer list-none items-center gap-1.5 rounded-full border px-3 text-sm font-bold ${(p as unknown as { payment_hold?: boolean }).payment_hold ? "border-warn bg-warn/15 text-warn" : "border-line bg-surface"}`}>
+            <CreditCard size={15} /> {(p as unknown as { payment_hold?: boolean }).payment_hold ? "On payment hold" : "Billing"}
+          </summary>
+          <div className="absolute left-0 z-30 mt-2 w-[min(92vw,360px)] rounded-2xl border border-line bg-surface p-4 shadow-2xl">
+            <p className="text-sm">
+              {(p as unknown as { payment_hold?: boolean }).payment_hold
+                ? "Payment failed or was cancelled. They can only message you until it's paid. A successful GHL payment lifts this automatically."
+                : "Access is normal. A failed or cancelled GHL payment puts them on hold (chat only) automatically."}
+            </p>
+            <form action={setPaymentHold} className="mt-3">
+              <input type="hidden" name="id" value={id} />
+              <input type="hidden" name="hold" value={String(!(p as unknown as { payment_hold?: boolean }).payment_hold)} />
+              <button className="min-h-10 w-full rounded-xl border border-line bg-surface-2 px-3 text-sm font-bold">
+                {(p as unknown as { payment_hold?: boolean }).payment_hold ? "Release hold now" : "Put on hold (chat only)"}
+              </button>
+            </form>
           </div>
         </details>
         {cardRow?.overall != null && (
