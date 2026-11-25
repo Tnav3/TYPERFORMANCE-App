@@ -3,7 +3,8 @@
 // Kept to three parts so it stays easy to read: video, numbers, last sessions.
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { X } from "lucide-react";
+import { Lightbulb, MessageSquare, X } from "lucide-react";
+import { parseCues } from "@/lib/cues";
 import { embedUrl } from "@/lib/programming/video";
 import { exerciseCard, type ExerciseCard } from "@/app/train/exercise-actions";
 
@@ -25,7 +26,6 @@ export function ExerciseSheet({
 }) {
   const [card, setCard] = useState<ExerciseCard | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [more, setMore] = useState(false);
 
   useEffect(() => {
     let live = true;
@@ -45,8 +45,7 @@ export function ExerciseSheet({
   }, [exerciseId, athleteId, onClose]);
 
   const src = card?.videoUrl ? embedUrl(card.videoUrl) : null;
-  const cues = card?.cues?.trim() ?? "";
-  const longCues = cues.split("\n").length > 5 || cues.length > 320;
+  const sections = parseCues(card?.cues);
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center" role="dialog" aria-modal="true" aria-label={name}>
@@ -90,15 +89,45 @@ export function ExerciseSheet({
                 <Stat label="Last time" value={card.recent[0] ? dateFmt(card.recent[0].date) : "—"} sub={card.totalSessions ? `${card.totalSessions} session${card.totalSessions === 1 ? "" : "s"}` : "first time"} />
               </div>
 
-              {/* How to */}
-              {cues && (
-                <section>
-                  <h3 className="mb-1 text-xs font-semibold uppercase tracking-widest text-muted">How to do it</h3>
-                  <p className={`whitespace-pre-line text-[15px] leading-relaxed ${longCues && !more ? "line-clamp-5" : ""}`}>{cues}</p>
-                  {longCues && (
-                    <button onClick={() => setMore(!more)} className="mt-1 min-h-9 text-sm font-bold text-brand">
-                      {more ? "Show less" : "Show more"}
-                    </button>
+              {/* How to: steps first, then tips, then anything the coach added */}
+              {sections.length > 0 && (
+                <section className="space-y-3">
+                  <h3 className="text-xs font-semibold uppercase tracking-widest text-muted">How to do it</h3>
+                  {sections.map((sec, i) =>
+                    sec.kind === "tip" ? (
+                      <div key={i} className="flex gap-2.5 rounded-2xl bg-brand/10 p-3">
+                        <Lightbulb size={18} className="mt-0.5 shrink-0 text-brand" aria-hidden />
+                        <div className="space-y-1 text-[15px] leading-snug">
+                          <p className="text-xs font-bold uppercase tracking-wider text-brand">{sec.items.length > 1 ? "Tips" : "Tip"}</p>
+                          {sec.items.map((t, j) => <p key={j}>{t}</p>)}
+                        </div>
+                      </div>
+                    ) : sec.kind === "notes" ? (
+                      <div key={i} className="flex gap-2.5 rounded-2xl border border-line p-3">
+                        <MessageSquare size={18} className="mt-0.5 shrink-0 text-muted" aria-hidden />
+                        <div className="space-y-1 text-[15px] leading-snug">
+                          <p className="text-xs font-bold uppercase tracking-wider text-muted">From your coach</p>
+                          {sec.items.map((t, j) => <p key={j}>{t}</p>)}
+                        </div>
+                      </div>
+                    ) : sec.numbered ? (
+                      <div key={i}>
+                        {sec.title && !/^steps?$/i.test(sec.title) && <p className="mb-1.5 text-sm font-bold">{sec.title}</p>}
+                        <ol className="space-y-2">
+                          {sec.items.map((t, j) => (
+                            <li key={j} className="flex gap-3 text-[15px] leading-snug">
+                              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand text-xs font-black text-white">{j + 1}</span>
+                              <span className="pt-0.5">{t}</span>
+                            </li>
+                          ))}
+                        </ol>
+                      </div>
+                    ) : (
+                      <div key={i} className="space-y-1 text-[15px] leading-snug">
+                        {sec.title && <p className="text-sm font-bold">{sec.title}</p>}
+                        {sec.items.map((t, j) => <p key={j}>{t}</p>)}
+                      </div>
+                    ),
                   )}
                 </section>
               )}
