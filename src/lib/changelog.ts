@@ -12,6 +12,7 @@ export const CHANGELOG: Release[] = [
       { who: "coach", text: "Programming tab shows the block week by week: current block and week highlighted, every day's exercises, click a day to edit just that day." },
       { who: "coach", text: "Swap an exercise on one day only, or every upcoming day in a block." },
       { who: "coach", text: "11 more loading schemes (5x5, linear %, heavy triples, top set + back-offs, strength-speed, speed-strength and more)." },
+      { who: "client", text: "344 daily quotes from athletes and coaches, so the home screen quote changes every day of the year." },
       { who: "coach", text: "1RM calculator, MAS calculator and Log my own training keep the coach sidebar on desktop." },
       { who: "coach", text: "Programming tab: tap + on any empty day to add a session to that block, including blocks that start empty." },
       { who: "coach", text: "Exercise library is tidier: one short line per exercise, tags show when you open it, tag filters sit under one button." },
