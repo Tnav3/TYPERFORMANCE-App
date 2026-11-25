@@ -249,7 +249,11 @@ export default async function LibraryPage({
         </details>
       </div>
 
-      <p className="mb-2 text-right text-xs"><Link href="/coach/library/categories" className="font-bold text-muted underline underline-offset-4">Edit categories</Link></p>
+      <p className="mb-2 flex flex-wrap justify-end gap-x-4 text-xs">
+        <Link href="/coach/library/glossary" className="font-bold text-muted underline underline-offset-4">Training glossary</Link>
+        <Link href="/coach/library/habits" className="font-bold text-muted underline underline-offset-4">Habit library</Link>
+        <Link href="/coach/library/categories" className="font-bold text-muted underline underline-offset-4">Edit categories</Link>
+      </p>
       {/* Category chips */}
       <div className="mb-2 flex flex-wrap gap-1.5">
         <Link href={link({ cat: undefined })} className={chip(!cat)}>All <span className="opacity-70">{pool.length}</span></Link>

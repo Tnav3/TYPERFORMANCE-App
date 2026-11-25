@@ -9,6 +9,8 @@ import { Check, ChevronLeft, ChevronRight, List, RotateCcw, Timer, X } from "luc
 import { ExerciseSheet } from "@/components/ExerciseSheet";
 import { SwapSheet } from "@/components/SwapSheet";
 import { IntensityDial } from "@/components/IntensityDial";
+import { GlossaryChips } from "@/components/GlossaryChips";
+import { termsIn, type GlossaryTerm } from "@/lib/glossary";
 import { swapExercise } from "@/app/train/actions";
 import { SWAP_REASONS } from "@/lib/programming/types";
 import { ArrowLeftRight, Info, PlayCircle } from "lucide-react";
@@ -82,6 +84,7 @@ export function WorkoutLogger({
   lastRpe,
   athleteId,
   embedded = false,
+  glossary = [],
 }: {
   workoutId: string;
   blocks: LoggerBlock[];
@@ -96,6 +99,8 @@ export function WorkoutLogger({
   athleteId?: string;
   /** Inside a panel: no sticky/fixed bars, always the full list */
   embedded?: boolean;
+  /** Training terms; any used by an exercise get a "?" chip */
+  glossary?: GlossaryTerm[];
 }) {
   const router = useRouter();
   const [blocks, setBlocks] = useState(initial);
@@ -358,6 +363,18 @@ export function WorkoutLogger({
                     </p>
                     {it.warn && <p className="text-xs text-warn">{it.warn}</p>}
                     {it.notes && <p className="mt-1 text-sm">{it.notes}</p>}
+                    {glossary.length > 0 && (
+                      <GlossaryChips
+                        backTo={`/train/${workoutId}`}
+                        terms={termsIn(
+                          `${it.rx} ${it.meta} ${it.notes ?? ""} ${b.title ?? ""} ${it.fields.some((f) => /velocity|m\/s/i.test(f.key + f.unit)) ? "m/s" : ""} ${
+                            // Grouped block: explain it once, on its first exercise
+                            b.superset && b.items[0]?.id === it.id ? (b.items.length >= 4 ? "giant set" : b.items.length === 3 ? "triset" : "superset") : ""
+                          }`,
+                          glossary,
+                        ).map((k) => glossary.find((g) => g.key === k)!)}
+                      />
+                    )}
                     <div className="mt-1 flex flex-wrap items-center gap-x-4">
                       {it.exerciseId && (
                         <button

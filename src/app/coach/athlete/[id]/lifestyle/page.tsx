@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { ClientTabs } from "@/components/ClientTabs";
 import { notFound } from "next/navigation";
 import { requireState } from "@/lib/session";
@@ -28,13 +29,14 @@ export default async function LifestylePage({
   const { error } = await searchParams;
   const today = todayISO();
   const days = Array.from({ length: 28 }, (_, i) => addDays(today, i - 27));
-  const [{ data: client }, { data: habits }, { data: hlogs }, { data: target }, { data: mlogs }, weights] = await Promise.all([
+  const [{ data: client }, { data: habits }, { data: hlogs }, { data: target }, { data: mlogs }, weights, { data: templates }] = await Promise.all([
     supabase.from("profiles").select("full_name, email, feat_habits, feat_macros, feat_photos, weight_class_limit_kg").eq("id", id).maybeSingle(),
     supabase.from("habits").select("id, name, active").eq("athlete_id", id).order("active", { ascending: false }).order("created_at"),
     supabase.from("habit_logs").select("habit_id, day").eq("athlete_id", id).gte("day", addDays(today, -120)),
     supabase.from("macro_targets").select("*").eq("athlete_id", id).maybeSingle(),
     supabase.from("macro_logs").select("*").eq("athlete_id", id).gte("day", addDays(today, -13)).order("day", { ascending: false }),
     bodyweights(supabase, id),
+    supabase.from("habit_templates").select("id, name").order("sort_order").order("name"),
   ]);
   if (!client) notFound();
   const stats = habitStats((habits ?? []).filter((h) => h.active).map((h) => h.id), hlogs ?? [], today);
@@ -85,11 +87,22 @@ export default async function LifestylePage({
             </div>
           ))}
         </div>
-        <form action={addHabit} className="mt-4 flex gap-2">
+        {(templates ?? []).length > 0 && (
+          <form action={addHabit} className="mt-4 flex gap-2">
+            <input type="hidden" name="athlete_id" value={id} />
+            <select name="template_id" required defaultValue="" className={input} aria-label="From the habit library">
+              <option value="" disabled>From your habit library…</option>
+              {(templates ?? []).map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+            </select>
+            <button className={smallBtn}>Add</button>
+          </form>
+        )}
+        <form action={addHabit} className="mt-2 flex gap-2">
           <input type="hidden" name="athlete_id" value={id} />
-          <input name="name" required maxLength={80} placeholder="e.g. 8,000 steps · 3 L water · in bed by 10" className={input} aria-label="New habit" />
+          <input name="name" required maxLength={80} placeholder="Or type one: 8,000 steps · 3 L water · in bed by 10" className={input} aria-label="New habit" />
           <button className={smallBtn}>Add habit</button>
         </form>
+        <p className="mt-2 text-right text-xs"><Link href="/coach/library/habits" className="font-bold text-muted underline underline-offset-4">Edit habit library</Link></p>
       </Card>
 
       <Card className="mb-6 !p-4">

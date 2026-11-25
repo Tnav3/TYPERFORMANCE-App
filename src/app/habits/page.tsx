@@ -4,6 +4,7 @@ import { todayISO } from "@/lib/dates";
 import { addDays, dayShort } from "@/lib/week";
 import { Alert, BackLink, Card, Heading, Screen } from "@/components/ui";
 import { Celebrate } from "@/components/Celebrate";
+import { LinkedText } from "@/components/LinkedText";
 import { habitStats } from "@/lib/programming/habits";
 import { toggleHabit } from "@/app/lifestyle-actions";
 
@@ -19,7 +20,7 @@ export default async function HabitsPage({
   const today = todayISO();
   const days = Array.from({ length: 7 }, (_, i) => addDays(today, i - 6));
   const [{ data: habits }, { data: logs }] = await Promise.all([
-    supabase.from("habits").select("id, name").eq("athlete_id", user!.id).eq("active", true).order("sort_order").order("created_at"),
+    supabase.from("habits").select("id, name, details").eq("athlete_id", user!.id).eq("active", true).order("sort_order").order("created_at"),
     supabase.from("habit_logs").select("habit_id, day").eq("athlete_id", user!.id).gte("day", addDays(today, -120)),
   ]);
   const stats = habitStats((habits ?? []).map((h) => h.id), logs ?? [], today);
@@ -73,6 +74,12 @@ export default async function HabitsPage({
                   <Check size={24} strokeWidth={3} />
                 </button>
               </form>
+              {h.details && (
+                <details className="mt-1 text-sm">
+                  <summary className="cursor-pointer list-none text-xs font-bold text-brand">How to do this ▾</summary>
+                  <p className="mt-1 text-muted"><LinkedText text={h.details} /></p>
+                </details>
+              )}
               <div className="mt-2 grid grid-cols-7 gap-1">
                 {days.map((d) => {
                   const hit = done.has(`${h.id}|${d}`);

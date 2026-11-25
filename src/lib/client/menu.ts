@@ -8,7 +8,7 @@ import type { Profile } from "@/lib/types";
 
 export type MenuIcon =
   | "chat" | "checkin" | "progress" | "weighin" | "habits" | "macros" | "mealplan" | "photos"
-  | "testing" | "mobility" | "tools" | "fights" | "refer" | "week";
+  | "testing" | "mobility" | "tools" | "fights" | "refer" | "week" | "learn";
 
 export interface MenuItem {
   href: string;
@@ -47,6 +47,7 @@ export async function clientMenu(supabase: SupabaseClient, profile: Profile, use
     [hasFeature(profile, "testing"), { href: "/tests", label: "Testing", icon: "testing" }],
     [hasFeature(profile, "mobility"), { href: "/mobility", label: "Mobility", icon: "mobility" }],
     [toolsFor(profile).length > 0, { href: "/tools", label: "Tools", icon: "tools" }],
+    [programOn, { href: "/learn", label: "Learn", icon: "learn" }],
     [hasFeature(profile, "fights"), { href: "/fights", label: "My fights", icon: "fights" }],
     [!!offer, { href: "/refer", label: "Refer a friend", icon: "refer" }],
   ];

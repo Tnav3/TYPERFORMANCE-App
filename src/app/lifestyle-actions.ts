@@ -90,10 +90,16 @@ const coachPage = (id: string) => `/coach/athlete/${id}/lifestyle`;
 export async function addHabit(fd: FormData) {
   const supabase = await coachOnly();
   const athlete = String(fd.get("athlete_id") ?? "");
-  const name = str(fd.get("name"), 80);
+  let name = str(fd.get("name"), 80);
+  let details: string | null = null;
   if (!UUID.test(athlete)) go("/coach");
-  if (!name || name.length < 2) go(coachPage(athlete), "Name the habit.");
-  const { error } = await supabase.from("habits").insert({ athlete_id: athlete, name });
+  const tpl = String(fd.get("template_id") ?? "");
+  if (UUID.test(tpl)) {
+    const { data: t } = await supabase.from("habit_templates").select("name, details").eq("id", tpl).maybeSingle();
+    if (t) ({ name, details } = t);
+  }
+  if (!name || name.length < 2) go(coachPage(athlete), "Name the habit or pick one from the library.");
+  const { error } = await supabase.from("habits").insert({ athlete_id: athlete, name, details });
   go(coachPage(athlete), error ? friendly(error.message) : undefined);
 }
 

@@ -23,6 +23,7 @@ import {
   Swords,
   type LucideIcon,
   NotebookPen,
+  GraduationCap,
 } from "lucide-react";
 import { requireState } from "@/lib/session";
 import { todayISO } from "@/lib/dates";
@@ -49,6 +50,7 @@ const ICONS: Record<MenuIcon, LucideIcon> = {
   tools: Wrench,
   fights: Swords,
   refer: Gift,
+  learn: GraduationCap,
 };
 
 export default async function MorePage() {
