@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { todayISO } from "@/lib/dates";
 import { validateFight } from "@/lib/fights";
 import { afterLogged } from "@/lib/planned-fights";
+import { validateTitle } from "@/lib/titles";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -74,4 +75,40 @@ export async function deleteFight(fd: FormData) {
   revalidatePath(next);
   revalidatePath("/coach/fights");
   redirect(next.startsWith("/") && !next.startsWith("//") ? next : "/fights");
+}
+
+/** Add a title/belt (client for themselves, or coach for a client). */
+export async function addTitle(fd: FormData) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+  const requested = String(fd.get("athlete_id") ?? "");
+  const athleteId = UUID.test(requested) ? requested : user.id;
+  const next = String(fd.get("next") ?? "/fights");
+  const back = next.startsWith("/") && !next.startsWith("//") ? next.split("?")[0] : "/fights";
+  const v = validateTitle({
+    org: String(fd.get("org") ?? ""),
+    name: String(fd.get("name") ?? ""),
+    colour: String(fd.get("colour") ?? "gold"),
+    won_on: String(fd.get("won_on") ?? ""),
+    today: todayISO(),
+  });
+  if ("error" in v) redirect(`${back}?title_error=${encodeURIComponent(v.error!)}#titles`);
+  const { error } = await supabase.from("titles").insert({ athlete_id: athleteId, ...v.row });
+  revalidatePath(back);
+  revalidatePath("/trophies");
+  redirect(error ? `${back}?title_error=${encodeURIComponent("Couldn't save. Please try again.")}#titles` : `${back}#titles`);
+}
+
+export async function deleteTitle(fd: FormData) {
+  const supabase = await createClient();
+  const id = String(fd.get("id") ?? "");
+  const next = String(fd.get("next") ?? "/fights");
+  const back = next.startsWith("/") && !next.startsWith("//") ? next.split("?")[0] : "/fights";
+  if (UUID.test(id)) await supabase.from("titles").delete().eq("id", id);
+  revalidatePath(back);
+  revalidatePath("/trophies");
+  redirect(`${back}#titles`);
 }

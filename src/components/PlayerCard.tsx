@@ -2,6 +2,8 @@
 // Original design in TYPERFORMANCE colours; no third-party card branding.
 import { avatarUrl, initials } from "@/lib/avatar";
 import { STAT_LABEL, STAT_NAME, type Card, type CardStat } from "@/lib/player-card";
+import type { Title } from "@/lib/titles";
+import { TitleBadge } from "./TitleBadge";
 
 const TIER: Record<Card["tier"], { label: string; frame: string; glow: string; text: string }> = {
   rookie: { label: "Rookie", frame: "from-zinc-500 via-zinc-700 to-zinc-900", glow: "shadow-zinc-500/20", text: "text-zinc-100" },
@@ -20,6 +22,8 @@ export function PlayerCard({
   tagline,
   record,
   trophies,
+  titles = [],
+  heaviest,
 }: {
   card: Card;
   name: string;
@@ -28,6 +32,8 @@ export function PlayerCard({
   tagline?: string | null; // discipline · weight class
   record?: string | null; // "7-2-0"
   trophies: number;
+  titles?: Pick<Title, "org" | "name" | "colour">[];
+  heaviest?: { kg: number; exercise: string } | null;
 }) {
   const t = TIER[card.tier];
   const url = avatarUrl(avatarPath);
@@ -43,19 +49,30 @@ export function PlayerCard({
           <span className={`rounded-full bg-gradient-to-r px-2.5 py-1 text-[10px] font-black uppercase tracking-widest ${card.tier === "elite" ? "text-white" : "text-black"} ${t.frame}`}>{t.label}</span>
         </div>
         {/* photo */}
-        <div className="relative mx-auto mt-1 aspect-square w-[62%]">
+        <div className={`relative mx-auto mt-1 aspect-square ${titles.length || heaviest ? "w-[56%]" : "w-[62%]"}`}>
           <div className={`absolute inset-0 rounded-full bg-gradient-to-br opacity-70 blur-md ${t.frame}`} />
           {url ? (
             <img src={url} alt="" className="relative h-full w-full rounded-full border-4 border-[#141414] object-cover" />
           ) : (
             <div className="relative flex h-full w-full items-center justify-center rounded-full border-4 border-[#141414] bg-[#282828] text-5xl font-black text-white/80">{initials(name)}</div>
           )}
+          {titles.length > 0 && (
+            <div className="absolute -bottom-2 left-1/2 flex -translate-x-1/2 gap-1">
+              {titles.slice(0, 3).map((t, i) => <TitleBadge key={i} t={t} small />)}
+              {titles.length > 3 && <span className="rounded-md bg-black/70 px-1.5 py-0.5 text-[9px] font-black text-white">+{titles.length - 3}</span>}
+            </div>
+          )}
         </div>
         {/* name */}
-        <div className="mt-2 px-3 text-center">
+        <div className={`px-3 text-center ${titles.length ? "mt-3" : "mt-2"}`}>
           <p className="truncate text-lg font-black uppercase tracking-wide text-white">{name}</p>
           {nickname && <p className="-mt-0.5 truncate text-xs font-bold italic text-[#D2141E]">&ldquo;{nickname}&rdquo;</p>}
           {tagline && <p className="truncate text-[11px] text-white/50">{tagline}</p>}
+          {heaviest && (
+            <p className="truncate text-[10px] font-bold uppercase tracking-wider text-white/70">
+              Heaviest <span className={t.text}>{Math.round(heaviest.kg * 10) / 10} kg</span> · {heaviest.exercise}
+            </p>
+          )}
         </div>
         {/* stats */}
         <div className="mx-3 mt-auto grid grid-cols-5 gap-1 border-t border-white/10 pt-2">

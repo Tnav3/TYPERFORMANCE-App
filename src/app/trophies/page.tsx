@@ -6,6 +6,7 @@ import { pbEvents } from "@/lib/programming/history";
 import { cabinet, fightBadges, tracks } from "@/lib/trophies";
 import { PlayerCard } from "@/components/PlayerCard";
 import { loadPlayerCard, saveSeenCard } from "@/lib/player-card-data";
+import { heaviestLift, type Title } from "@/lib/titles";
 import { todayISO } from "@/lib/dates";
 import { BackLink, Heading, Screen } from "@/components/ui";
 
@@ -33,6 +34,11 @@ export default async function TrophiesPage() {
     loadPlayerCard(supabase, me, profile ?? {}, todayISO(), { pbs: pbCount, sessions: workouts ?? 0, viewAsCoach: !!viewAs }),
     supabase.from("profiles").select("full_name, nickname, avatar_path, weight_class, disciplines(name)").eq("id", me).maybeSingle(),
   ]);
+  const top = heaviestLift(all);
+  const [{ data: titles }, { data: topEx }] = await Promise.all([
+    supabase.from("titles").select("org, name, colour, won_on").eq("athlete_id", me).order("won_on", { ascending: false, nullsFirst: false }),
+    top ? supabase.from("exercises").select("name").eq("id", top.exercise_id).maybeSingle() : Promise.resolve({ data: null }),
+  ]);
   if (!viewAs) await saveSeenCard(supabase, me, card, todayISO());
   const who = me2 as unknown as { full_name: string | null; nickname: string | null; avatar_path: string | null; weight_class: string | null; disciplines: { name: string } | null } | null;
   const record = nFights ? `${wins}-${(fights ?? []).filter((f) => f.result === "loss").length}-${(fights ?? []).filter((f) => f.result === "draw").length}` : null;
@@ -51,6 +57,8 @@ export default async function TrophiesPage() {
           tagline={[who?.disciplines?.name, who?.weight_class].filter(Boolean).join(" · ") || null}
           record={record}
           trophies={got}
+          titles={(titles ?? []) as Title[]}
+          heaviest={top && topEx ? { kg: top.kg, exercise: (topEx as { name: string }).name } : null}
         />
         <p className="mx-auto mt-3 max-w-sm text-center text-xs text-muted">
           STR, PWR and ENG come from your testing and lifts against the Bronze–Silver–Gold standards. CON is how many planned sessions you finished in the last 8 weeks. GRT grows with streaks, PBs and sessions. A dash means there&apos;s nothing to rate yet: test it to unlock it.

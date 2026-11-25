@@ -5,19 +5,24 @@ import { todayISO } from "@/lib/dates";
 import type { Fight } from "@/lib/fights";
 import { FightForm } from "@/components/FightForm";
 import { FightRecordView } from "@/components/FightRecordView";
+import { TitlesEditor } from "@/components/TitlesEditor";
+import type { Title } from "@/lib/titles";
 import { Card, Screen } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
 
 export default async function CoachAthleteFights({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ title_error?: string }>;
 }) {
+  const sp = await searchParams;
   const { supabase } = await requireState(["coach"]);
   const { id } = await params;
   const today = todayISO();
-  const [{ data: p }, { data }] = await Promise.all([
+  const [{ data: p }, { data }, { data: titles }] = await Promise.all([
     supabase
       .from("profiles")
       .select("full_name, email, next_fight_date")
@@ -27,6 +32,7 @@ export default async function CoachAthleteFights({
       .from("fights")
       .select("id, athlete_id, fought_on, result, rounds, created_at")
       .eq("athlete_id", id),
+    supabase.from("titles").select("id, org, name, colour, won_on").eq("athlete_id", id).order("won_on", { ascending: false, nullsFirst: false }),
   ]);
   if (!p) notFound();
   const back = `/coach/athlete/${id}/fights`;
@@ -42,6 +48,9 @@ export default async function CoachAthleteFights({
         back={back}
         thisYear={Number(today.slice(0, 4))}
       />
+      <div className="mt-6">
+        <TitlesEditor titles={(titles ?? []) as Title[]} athleteId={id} next={back} error={sp.title_error ?? null} today={today} />
+      </div>
       </div>
       <Card className="mt-6 lg:mt-0">
         <h2 className="mb-4 text-lg font-black uppercase">
