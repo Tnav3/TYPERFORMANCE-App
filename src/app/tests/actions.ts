@@ -1,4 +1,5 @@
 "use server";
+import { FD_TESTS } from "@/lib/forcedecks";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
@@ -120,7 +121,7 @@ export async function saveForceDecksDay(
   const bw = checkBodyweight(fd.get("bodyweight_kg"));
   if (bw.error) errors.bodyweight_kg = bw.error;
 
-  const keys = ["cmj", "slj", "sl_iso_squat", "imtp", "plyo_pushup", "rj_10_5"];
+  const keys = FD_TESTS.map((t) => t.key);
   const rows: { test_key: string; values: Record<string, number> }[] = [];
   for (const key of keys) {
     const fields = TEST_FIELDS[key];

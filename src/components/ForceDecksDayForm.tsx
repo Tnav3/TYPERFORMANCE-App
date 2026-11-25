@@ -1,17 +1,12 @@
 "use client";
-import { useActionState, useState, useTransition } from "react";
+import { useActionState, useEffect, useState, useTransition } from "react";
+import { FD_DEFAULT, FD_TESTS } from "@/lib/forcedecks";
 import { saveForceDecksDay, type EntryState } from "@/app/tests/actions";
 import { TEST_FIELDS, dsiFrom, DSI_LABEL } from "@/lib/testing";
 import { Alert, Button } from "./ui";
 
-const BATTERY: { key: string; name: string }[] = [
-  { key: "cmj", name: "CMJ" },
-  { key: "slj", name: "Single leg jump" },
-  { key: "sl_iso_squat", name: "SL isometric squat" },
-  { key: "imtp", name: "IMTP" },
-  { key: "plyo_pushup", name: "Plyo push-up" },
-  { key: "rj_10_5", name: "10-5 RJT (always last)" },
-];
+const PICK_KEY = "fd-tests";
+const GROUPS = [...new Set(FD_TESTS.map((t) => t.group))];
 const inputCls =
   "min-h-11 w-full rounded-xl border border-line bg-surface-2 px-3 text-text focus:border-brand focus:outline-none";
 
@@ -32,6 +27,20 @@ export function ForceDecksDayForm({
   const [imtpPf, setImtpPf] = useState("");
   const [formKey, setFormKey] = useState(0);
   const [dismissed, setDismissed] = useState<EntryState | null>(null);
+  // Which tests this session uses. Remembered on this device so the coach's usual battery is ticked next time.
+  const [picked, setPicked] = useState<string[]>(FD_DEFAULT);
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(PICK_KEY) ?? "null");
+      if (Array.isArray(saved) && saved.length) setPicked(saved.filter((k) => FD_TESTS.some((t) => t.key === k)));
+    } catch {}
+  }, []);
+  const toggle = (k: string) => {
+    const next = picked.includes(k) ? picked.filter((x) => x !== k) : [...picked, k];
+    setPicked(next);
+    try { localStorage.setItem(PICK_KEY, JSON.stringify(next)); } catch {}
+  };
+  const BATTERY = FD_TESTS.filter((t) => picked.includes(t.key)).map((t) => ({ key: t.key, name: `${t.name} (${t.abbr})` }));
   const e = state.errors ?? {};
   const dsi = dsiFrom(Number(cmjPf), Number(imtpPf));
 
@@ -96,6 +105,41 @@ export function ForceDecksDayForm({
         </label>
       </div>
 
+      <details className="mb-4 rounded-xl border border-line p-3" open={picked.length === 0}>
+        <summary className="cursor-pointer text-sm font-extrabold">
+          Tests in this session · {picked.length} picked <span className="font-normal text-muted">(tap to change)</span>
+        </summary>
+        <div className="mt-3 space-y-3">
+          {GROUPS.map((g) => (
+            <div key={g}>
+              <p className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-muted">{g}</p>
+              <div className="flex flex-wrap gap-1.5">
+                {FD_TESTS.filter((t) => t.group === g).map((t) => {
+                  const on = picked.includes(t.key);
+                  return (
+                    <button
+                      key={t.key}
+                      type="button"
+                      onClick={() => toggle(t.key)}
+                      aria-pressed={on}
+                      className={`min-h-9 rounded-full px-3 text-sm font-bold ${on ? "bg-brand text-white" : "border border-line text-muted"}`}
+                      title={t.name}
+                    >
+                      {on ? "✓ " : ""}{t.abbr}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+          <div className="flex gap-3 text-xs">
+            <button type="button" className="font-bold text-brand" onClick={() => { setPicked(FD_DEFAULT); try { localStorage.setItem(PICK_KEY, JSON.stringify(FD_DEFAULT)); } catch {} }}>Usual battery</button>
+            <button type="button" className="font-bold text-muted" onClick={() => { setPicked([]); try { localStorage.setItem(PICK_KEY, "[]"); } catch {} }}>Clear</button>
+          </div>
+        </div>
+      </details>
+
+      {picked.length === 0 && <p className="mb-3 text-sm text-muted">Pick the tests you&apos;re running above.</p>}
       <div className="space-y-3">
         {BATTERY.map((t, i) => (
           <fieldset key={t.key} className="rounded-xl border border-line p-3">

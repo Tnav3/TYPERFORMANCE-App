@@ -35,7 +35,7 @@ const entry = (
   );
 
 describe("test definitions", () => {
-  it("has 13 field tests grouped Power → Strength → Conditioning, and the 6 ForceDecks tests in your battery order", async () => {
+  it("has 13 field tests grouped Power → Strength → Conditioning, and the ForceDecks battery first, then the full catalogue", async () => {
     const f = await q(
       `select key from test_definitions where mode = 'field' order by sort_order`,
     );
@@ -58,7 +58,8 @@ describe("test definitions", () => {
     const fd = await q(
       `select key from test_definitions where mode = 'forcedecks' order by sort_order`,
     );
-    expect(fd.rows.map((r) => r.key)).toEqual([
+    expect(fd.rows.length).toBe(27);
+    expect(fd.rows.map((r) => r.key).slice(0, 6)).toEqual([
       "cmj",
       "slj",
       "sl_iso_squat",

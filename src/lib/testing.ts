@@ -15,7 +15,10 @@ export interface FieldSpec {
   required?: boolean;
 }
 
+import { FD_EXTRA_FIELDS, LOWER_IS_BETTER, fdHeadline } from "./forcedecks";
+
 export const TEST_FIELDS: Record<string, FieldSpec[]> = {
+  ...FD_EXTRA_FIELDS,
   med_ball_throw: [
     {
       key: "best_m",
@@ -612,6 +615,14 @@ export function derivedFor(
         value: a.weaker ? `${a.pct}% (${a.weaker} weaker)` : "0%",
       });
   }
+  const fdSpec = FD_EXTRA_FIELDS[testKey];
+  if (fdSpec?.[0]?.key.startsWith("left_") && !LOWER_IS_BETTER.has(testKey)) {
+    const base = fdSpec[0].key.slice(5);
+    const l = v[`left_${base}`];
+    const r = v[`right_${base}`];
+    const a = l && r ? asymmetry(l, r) : null;
+    if (a) out.push({ label: "Asymmetry", value: a.weaker ? `${a.pct}% (${a.weaker} weaker)` : "0%" });
+  }
   if (testKey === "wingate_30s" && v.peak_w && v.avg_w) {
     if (bodyweight) {
       out.push({
@@ -708,7 +719,7 @@ export function headlineValue(
     case "rj_10_5":
       return v.rsi != null ? { value: v.rsi, unit: "RSI" } : null;
   }
-  return null;
+  return fdHeadline(testKey, v);
 }
 
 /** Horizontal jumps are entered in cm (tape reading) but shown in metres. */
