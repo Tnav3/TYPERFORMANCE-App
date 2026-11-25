@@ -10,7 +10,8 @@ import { Alert, Heading, Screen } from "@/components/ui";
 import { FIELD_KEYS, FIELD_LABEL } from "@/lib/programming/fields";
 import { EQUIPMENT_LIST, equipmentLabel } from "@/lib/programming/equipment";
 import { labelOf, loadCategories, type Categories } from "@/lib/programming/categories-data";
-import { addExercise, bulkExercises, setExerciseActive, updateExercise } from "./actions";
+import { addExercise, bulkExercises, fillInstructions, setExerciseActive, updateExercise } from "./actions";
+import { hasSteps, stepsFor } from "@/lib/exercise-instructions";
 
 export const dynamic = "force-dynamic";
 
@@ -160,7 +161,7 @@ function ExerciseFields({
         name="cues"
         defaultValue={e?.cues ?? ""}
         placeholder="Coaching cues"
-        maxLength={1000}
+        maxLength={2000}
         rows={3}
         className={`${input} py-2`}
         aria-label="Coaching cues"
@@ -172,10 +173,10 @@ function ExerciseFields({
 export default async function LibraryPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; q?: string; cat?: string; sub?: string; hidden?: string; tag?: string; novideo?: string; edit?: string; n?: string }>;
+  searchParams: Promise<{ error?: string; q?: string; cat?: string; sub?: string; hidden?: string; tag?: string; novideo?: string; nosteps?: string; filled?: string; edit?: string; n?: string }>;
 }) {
   const { supabase } = await requireState(["coach"]);
-  const { error, q = "", cat = "", sub = "", hidden, tag = "", novideo, edit, n } = await searchParams;
+  const { error, q = "", cat = "", sub = "", hidden, tag = "", novideo, nosteps, filled, edit, n } = await searchParams;
   const PAGE = 60;
   const limit = Math.min(5000, Math.max(PAGE, Number(n) || PAGE));
   const [{ data }, lifts, cats] = await Promise.all([
@@ -192,6 +193,7 @@ export default async function LibraryPage({
       (!sub || (sub === "none" ? !e.subcategory : e.subcategory === sub)) &&
       (!tag || (e.tags ?? []).includes(tag)) &&
       (!novideo || !e.video_url) &&
+      (!nosteps || !hasSteps(e.cues)) &&
       (!needle || e.name.toLowerCase().includes(needle) || (e.tags ?? []).some((t) => t.includes(needle)) || (e.cues ?? "").toLowerCase().includes(needle)),
   );
   const liftOptions = lifts
@@ -205,9 +207,11 @@ export default async function LibraryPage({
   for (const e of pool) for (const t of e.tags ?? []) tagCount.set(t, (tagCount.get(t) ?? 0) + 1);
   const topTags = [...tagCount.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).slice(0, 24);
   const noVideo = pool.filter((e) => !e.video_url).length;
+  const noSteps = pool.filter((e) => !hasSteps(e.cues));
+  const canFill = noSteps.filter((e) => stepsFor(e.name)).length;
   const link = (over: Record<string, string | undefined>) => {
     const p = new URLSearchParams();
-    const cur: Record<string, string | undefined> = { q: q || undefined, cat: cat || undefined, sub: sub || undefined, tag: tag || undefined, novideo, hidden, n: limit > PAGE ? String(limit) : undefined, ...over };
+    const cur: Record<string, string | undefined> = { q: q || undefined, cat: cat || undefined, sub: sub || undefined, tag: tag || undefined, novideo, nosteps, hidden, n: limit > PAGE ? String(limit) : undefined, ...over };
     for (const [k, v] of Object.entries(cur)) if (v) p.set(k, v);
     const s = p.toString();
     return `/coach/library${s ? `?${s}` : ""}`;
@@ -228,6 +232,13 @@ export default async function LibraryPage({
         Exercise library
       </Heading>
       {error && <Alert>{error}</Alert>}
+      {filled && <Alert tone="ok">Added step-by-step instructions to {filled} exercises. Your own notes are kept under &quot;Coach notes&quot;.</Alert>}
+      {canFill > 0 && (
+        <form action={fillInstructions} className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-line bg-surface p-3 text-sm">
+          <span>{canFill} exercises have written step-by-step instructions ready to add. Your existing notes stay, under &quot;Coach notes&quot;.</span>
+          <button className="min-h-10 rounded-xl bg-brand px-4 text-xs font-extrabold uppercase text-white">Add instructions</button>
+        </form>
+      )}
 
       <div className="mb-4 flex flex-wrap gap-2">
         <form className="flex min-w-64 flex-1 gap-2" role="search">
@@ -283,6 +294,7 @@ export default async function LibraryPage({
       {/* Tag + status filters */}
       <div className="mb-5 flex flex-wrap items-center gap-1.5 text-xs">
         <Link href={link({ novideo: novideo ? undefined : "1" })} className={`${chip(!!novideo)} !min-h-8 !text-xs`}>No video ({noVideo})</Link>
+        <Link href={link({ nosteps: nosteps ? undefined : "1" })} className={`${chip(!!nosteps)} !min-h-8 !text-xs`}>No steps ({noSteps.length})</Link>
         <Link href={link({ hidden: hidden ? undefined : "1" })} className={`${chip(!!hidden)} !min-h-8 !text-xs`}>Archived</Link>
         {tag && (
           <Link href={link({ tag: undefined })} className={`${chip(true)} !min-h-8 !text-xs`} aria-label={`Remove tag filter ${tag}`}>

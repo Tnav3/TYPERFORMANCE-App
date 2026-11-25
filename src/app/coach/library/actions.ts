@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { titleCase } from "@/lib/calculator";
 import { coachOnly, friendly, str, UUID } from "@/lib/programming/server";
+import { hasSteps, mergeCues, stepsFor } from "@/lib/exercise-instructions";
 import { FIELD_KEYS, MAX_FIELDS } from "@/lib/programming/fields";
 import { EQUIPMENT_KEYS } from "@/lib/programming/equipment";
 import {
@@ -103,7 +104,7 @@ function fields(fd: FormData) {
       measure,
       lift_key: KEY.test(lift) ? lift : null,
       video_url,
-      cues: str(fd.get("cues"), 1000),
+      cues: str(fd.get("cues"), 2000),
       tags: parseTags(String(fd.get("tags") ?? "")),
       equipment: fd.getAll("equipment").map(String).filter((k) => EQUIPMENT_KEYS.includes(k)),
       ...d,
@@ -173,4 +174,34 @@ export async function bulkExercises(fd: FormData) {
     }
   } else back("Pick what to do.", undefined, q);
   back(undefined, undefined, q);
+}
+
+/** Fill in written step-by-step instructions for exercises that don't have numbered steps yet.
+ *  The coach's existing notes are kept underneath as "Coach notes". */
+export async function fillInstructions() {
+  const supabase = await coachOnly();
+  const rows: { id: string; name: string; cues: string | null }[] = [];
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await supabase.from("exercises").select("id, name, cues").range(from, from + 999);
+    if (error) back(friendly(error.message));
+    rows.push(...(data ?? []));
+    if (!data || data.length < 1000) break;
+  }
+  const todo = rows.flatMap((e) => {
+    if (hasSteps(e.cues)) return [];
+    const steps = stepsFor(e.name);
+    const cues = steps && mergeCues(steps, e.cues);
+    return cues ? [{ id: e.id, cues }] : [];
+  });
+  let done = 0;
+  for (let i = 0; i < todo.length; i += 25) {
+    const res = await Promise.all(
+      todo.slice(i, i + 25).map((t) => supabase.from("exercises").update({ cues: t.cues }).eq("id", t.id)),
+    );
+    const bad = res.find((r) => r.error);
+    done += res.filter((r) => !r.error).length;
+    if (bad) back(`Filled ${done}, then stopped: ${friendly(bad.error!.message)}`);
+  }
+  revalidatePath(PATH);
+  redirect(`${PATH}?filled=${done}`);
 }
