@@ -3,7 +3,8 @@
 // so the list can update in place. Shared by program days and dated workouts.
 import { revalidatePath } from "next/cache";
 import { FIELD_KEYS } from "@/lib/programming/fields";
-import { ITEM_COLUMNS, isCategory, type ItemFields } from "@/lib/programming/types";
+import { ITEM_COLUMNS, isCategory, type ItemFields, type SetTarget } from "@/lib/programming/types";
+import { schemeRow } from "@/lib/programming/schemes";
 import { coachOnly, friendly, UUID } from "@/lib/programming/server";
 
 const TABLES = { program_items: "day_id", workout_items: "workout_id" } as const;
@@ -318,6 +319,7 @@ export async function builderApplyWeeks(
       rest_sec: src.rest_sec,
       notes: src.notes,
       fields: src.fields,
+      set_plan: src.set_plan,
     };
     if (opts.mode === "load") {
       if (p.load_type === "percent" && p.percent != null) p.percent = r2(clamp(p.percent + step * n, 1, 120));
@@ -379,7 +381,7 @@ export async function builderApplyWeeks(
   return { data: { weeks: done } };
 }
 
-const BLOCK_COLS = ["kind", "exercise_id", "sets", "reps", "load_type", "percent", "rpe", "load_kg", "velocity", "tempo", "rest_sec", "title", "notes", "block_title", "fields"] as const;
+const BLOCK_COLS = ["kind", "exercise_id", "sets", "reps", "load_type", "percent", "rpe", "load_kg", "velocity", "tempo", "rest_sec", "title", "notes", "block_title", "fields", "set_plan"] as const;
 
 export async function listSavedBlocks(): Promise<Res<{ id: string; name: string; count: number }[]>> {
   const supabase = await coachOnly();
@@ -437,4 +439,73 @@ export async function deleteSavedBlock(id: string): Promise<Res> {
   const supabase = await coachOnly();
   const { error } = await supabase.from("saved_blocks").delete().eq("id", id);
   return error ? { error: friendly(error.message) } : {};
+}
+
+// ---------- Loading schemes ----------
+type Scheme = { id: string; name: string; load_type: "percent" | "rpe" | "none"; weeks: SetTarget[][] };
+
+export async function builderApplyScheme(
+  table: "program_items" | "workout_items",
+  parentId: string,
+  itemId: string,
+  schemeId: string | null,
+  back: string,
+): Promise<Res<{ weeks: number }>> {
+  if (!UUID.test(parentId) || !UUID.test(itemId) || (schemeId && !UUID.test(schemeId))) return { error: "Not found." };
+  const supabase = await coachOnly();
+  const parentCol = table === "program_items" ? "day_id" : "workout_id";
+  const { data: src } = await supabase.from(table).select("*").eq("id", itemId).eq(parentCol, parentId).maybeSingle();
+  if (!src || src.kind !== "exercise") return { error: "Pick an exercise line." };
+  if (!schemeId) {
+    const { error } = await supabase.from(table).update({ set_plan: null }).eq("id", itemId);
+    touch(back);
+    return error ? { error: friendly(error.message) } : { data: { weeks: 1 } };
+  }
+  const { data: s } = await supabase.from("loading_schemes").select("id, name, load_type, weeks").eq("id", schemeId).maybeSingle<Scheme>();
+  if (!s) return { error: "Scheme not found." };
+  const planFor = (i: number) => s.weeks[i % s.weeks.length];
+
+  // Targets: [itemId for this week, then the same exercise on the same day in later weeks]
+  const targets: string[] = [itemId];
+  if (table === "program_items") {
+    const { data: day } = await supabase.from("program_days").select("program_id, week_no, day_no").eq("id", parentId).single();
+    const { data: later } = await supabase
+      .from("program_days")
+      .select("id, week_no, program_items(id, exercise_id, position)")
+      .eq("program_id", day!.program_id)
+      .eq("day_no", day!.day_no)
+      .gt("week_no", day!.week_no)
+      .order("week_no");
+    for (const d of later ?? []) {
+      const m = ((d.program_items ?? []) as { id: string; exercise_id: string | null; position: number }[])
+        .filter((x) => x.exercise_id === src.exercise_id)
+        .sort((a, b) => a.position - b.position)[0];
+      if (m) targets.push(m.id);
+    }
+  } else {
+    const { data: w } = await supabase.from("workouts").select("assignment_id, athlete_id, workout_date").eq("id", parentId).single();
+    if (w?.assignment_id) {
+      const { data: later } = await supabase
+        .from("workouts")
+        .select("id, workout_date, workout_items(id, exercise_id, position)")
+        .eq("assignment_id", w.assignment_id)
+        .gt("workout_date", w.workout_date)
+        .order("workout_date");
+      const dow = new Date(`${w.workout_date}T00:00:00Z`).getUTCDay();
+      for (const x of later ?? []) {
+        if (new Date(`${x.workout_date}T00:00:00Z`).getUTCDay() !== dow) continue;
+        const m = ((x.workout_items ?? []) as { id: string; exercise_id: string | null; position: number }[])
+          .filter((y) => y.exercise_id === src.exercise_id)
+          .sort((a, b) => a.position - b.position)[0];
+        if (m) targets.push(m.id);
+      }
+    }
+  }
+  for (let i = 0; i < targets.length; i++) {
+    const row = schemeRow(planFor(i), s.load_type);
+    const { error } = await supabase.from(table).update(row).eq("id", targets[i]);
+    if (error) return { error: friendly(error.message) };
+  }
+  touch(back);
+  return { data: { weeks: targets.length } };
 }

@@ -1,3 +1,4 @@
+import { ClientContext } from "@/components/ClientContext";
 import { folderOptions, type Folder } from "@/lib/programming/folders";
 import { Fragment } from "react";
 import Link from "next/link";
@@ -139,6 +140,7 @@ export default async function ClientProgramPage({
   return (
     <Screen wide>
       <ClientTabs id={id} name={name} active="program" />
+      <ClientContext athleteId={id} />
       {sp.error && <Alert>{sp.error}</Alert>}
       {sp.swapped && <Alert tone="ok">Swapped on {sp.swapped} upcoming line{sp.swapped === "1" ? "" : "s"}.</Alert>}
       {sp.shifted && <Alert tone="ok">Moved {sp.shifted} upcoming workout{sp.shifted === "1" ? "" : "s"}. Logged ones stayed put.</Alert>}

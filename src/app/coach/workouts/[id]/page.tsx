@@ -1,3 +1,4 @@
+import { ClientContext } from "@/components/ClientContext";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireState } from "@/lib/session";
@@ -73,6 +74,7 @@ export default async function CoachWorkoutPage({
       <Heading sub={`${formatDate(w.workout_date)}${w.group_id ? " · group workout" : ""}${w.overrides_id ? " · personalised copy" : ""}`}>
         {w.title}
       </Heading>
+      {w.athlete_id && <ClientContext athleteId={w.athlete_id} />}
       {error && <Alert>{error}</Alert>}
       {w.overrides_id && (
         <Alert tone="info">

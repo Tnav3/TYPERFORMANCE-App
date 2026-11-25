@@ -181,3 +181,12 @@ export function itemLabel(
 ): string {
   return blockSize > 1 ? `${item.block}${item.slot}` : item.block;
 }
+
+/** Per-set plan, e.g. "5 @ 75% · 4 @ 80% · 3 @ 85%". Collapses identical sets: "3 × 8 @ RPE 7". */
+export function formatSetPlan(plan: { r: string; p?: number; e?: number; k?: number }[] | null | undefined): string {
+  if (!plan?.length) return "";
+  const one = (x: { r: string; p?: number; e?: number; k?: number }) =>
+    `${x.r}${x.p != null ? ` @ ${trimNum(x.p)}%` : x.e != null ? ` @ RPE ${trimNum(x.e)}` : x.k != null ? ` @ ${trimNum(x.k)} kg` : ""}`;
+  const parts = plan.map(one);
+  return parts.every((x) => x === parts[0]) ? `${plan.length} × ${parts[0]}` : parts.join(" · ");
+}

@@ -4,7 +4,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { formatDate, todayISO } from "@/lib/dates";
 import { addDays, editableFrom } from "@/lib/week";
 import { getLifts, getMaxes, latestBodyweight } from "@/lib/lift-data";
-import { formatPrescription, formatRest, itemLabel, setCount, targetReps } from "@/lib/prescription";
+import { formatPrescription, formatRest, formatSetPlan, itemLabel, setCount, targetReps } from "@/lib/prescription";
 import { baseFor, latestByLift, lineLoad } from "@/lib/programming/loads";
 import {
   DEFAULT_UNITS,
@@ -28,6 +28,7 @@ import {
 } from "@/lib/programming/types";
 import type { LoggerBlock, LoggerItem } from "@/components/WorkoutLogger";
 import { neededFor } from "./equipment";
+import type { SetTarget } from "./types";
 
 export async function loadLoggerData(supabase: SupabaseClient, workoutId: string, athleteId: string) {
   const { data: workout } = await supabase.from("workouts").select("*").eq("id", workoutId).maybeSingle<Workout>();
@@ -125,7 +126,8 @@ export async function loadLoggerData(supabase: SupabaseClient, workoutId: string
       const base = baseFor(ex.lift_key, liftMap, latest);
       const load = lineLoad(it, base, bodyweight);
       const logged = sets.filter((x) => x.item_id === it.id);
-      const rows = Math.max(setCount(it.sets), ...logged.map((x) => x.set_no));
+      const plan = (it.set_plan ?? null) as SetTarget[] | null;
+      const rows = Math.max(plan?.length ?? 0, setCount(it.sets), ...logged.map((x) => x.set_no));
       const fields = fieldsFor(ex, it);
       const units: Units = { ...DEFAULT_UNITS, ...(ex.weight_unit ? { weight_unit: ex.weight_unit } : {}), ...(ex.distance_unit ? { distance_unit: ex.distance_unit } : {}), ...(ex.speed_unit ? { speed_unit: ex.speed_unit } : {}) };
       const prev = last.get(ex.id);
@@ -137,7 +139,7 @@ export async function loadLoggerData(supabase: SupabaseClient, workoutId: string
         label,
         name: ex.name,
         exerciseId: ex.id,
-        rx:
+        rx: plan?.length ? formatSetPlan(plan) :
           formatPrescription({
             ...it,
             percent: it.percent != null ? Number(it.percent) : null,
@@ -178,7 +180,16 @@ export async function loadLoggerData(supabase: SupabaseClient, workoutId: string
                 : f === "weight" ? fromCanonical("weight", x.load_kg != null ? Number(x.load_kg) : null, units)
                 : fromCanonical(f, m[f] ?? (f === fields[0] && x.value != null ? Number(x.value) : null), units);
           const hint: Record<string, string> = {};
+          const sp = plan?.[k];
+          const setLoad = sp && (sp.p != null || sp.k != null)
+            ? lineLoad({ ...it, load_type: sp.p != null ? "percent" : "kg", percent: sp.p ?? null, load_kg: sp.k ?? null }, base, bodyweight)
+            : load;
           for (const f of fields) {
+            if (sp) {
+              if (f === "reps" && targetReps(sp.r) != null && !timeTarget) { hint.reps = String(targetReps(sp.r)); continue; }
+              if (f === "weight" && setLoad) { hint.weight = suggestedDisplayWeight(setLoad.kg, units); continue; }
+              if (f === "rpe" && sp.e != null) { hint.rpe = String(sp.e); continue; }
+            }
             if (f === "reps" && target != null && !timeTarget) hint.reps = String(target);
             if (f === "weight" && load) hint.weight = suggestedDisplayWeight(load.kg, units);
             if (f === "time" && timeTarget) hint.time = timeTarget;

@@ -104,10 +104,19 @@ export interface ItemFields {
   block_title?: string | null;
   velocity?: number | string | null;
   fields?: string[] | null;
+  set_plan?: SetTarget[] | null;
 }
 
 export const ITEM_COLUMNS =
-  "id, position, kind, exercise_id, block, slot, sets, reps, load_type, percent, rpe, load_kg, tempo, rest_sec, title, notes, block_title, velocity, fields";
+  "id, position, kind, exercise_id, block, slot, sets, reps, load_type, percent, rpe, load_kg, tempo, rest_sec, title, notes, block_title, velocity, fields, set_plan";
+
+/** One planned set: reps text plus optional % (p), RPE (e) or kg (k). */
+export interface SetTarget {
+  r: string;
+  p?: number;
+  e?: number;
+  k?: number;
+}
 
 /** The block's label: first non-empty block_title among its items. */
 export const blockTitle = (items: { block_title?: string | null }[]) =>
