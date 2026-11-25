@@ -126,7 +126,7 @@ export default async function ShopAdmin({ searchParams }: { searchParams: Promis
           <option value="" disabled>Choose from your program folders…</option>
           {[...grouped].sort(([a], [b]) => a.localeCompare(b)).map(([folder, list]) => (
             <optgroup key={folder} label={folder}>
-              {list.map((p) => <option key={p.id} value={p.id}>{p.name}{p.weeks ? ` (${p.weeks} wk)` : ""}</option>)}
+              {list.map((p) => <option key={p.id} value={p.id}>{p.name}{p.weeks && !/\(\d+ wk\)$/.test(p.name) ? ` (${p.weeks} wk)` : ""}</option>)}
             </optgroup>
           ))}
         </select>
