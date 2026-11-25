@@ -46,3 +46,15 @@ describe("exercise fields", () => {
     ).toBe("12 cal · 45s · 310 W");
   });
 });
+
+import { bandLabel, toCanonical as tc, describeSet as ds, DEFAULT_UNITS as DU } from "@/lib/programming/fields";
+describe("band tension", () => {
+  it("stores 1-4 and shows words", () => {
+    expect(tc("band", "Heavy", DU)).toBe(3);
+    expect(tc("band", "x heavy", DU)).toBe(4);
+    expect(tc("band", "2", DU)).toBe(2);
+    expect(tc("band", "9", DU)).toBeNull();
+    expect(bandLabel(1)).toBe("Light");
+    expect(ds({ reps: 15, load_kg: null, metrics: { band: 2 } }, ["reps", "band"], DU)).toBe("15 · Medium band");
+  });
+});

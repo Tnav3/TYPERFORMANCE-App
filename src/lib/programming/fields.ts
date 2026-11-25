@@ -13,6 +13,8 @@ export const FIELD_KEYS = [
   "rpe",
   "height",
   "velocity",
+  "band",
+  "resistance",
 ] as const;
 export type FieldKey = (typeof FIELD_KEYS)[number];
 
@@ -28,7 +30,18 @@ export const FIELD_LABEL: Record<FieldKey, string> = {
   rpe: "RPE",
   height: "Height",
   velocity: "Bar speed (VBT)",
+  band: "Band tension",
+  resistance: "Resistance (Keiser)",
 };
+
+/** Band tension is stored as 1–4 so it can be charted; shown as words. */
+export const BAND_LEVELS: [number, string][] = [
+  [1, "Light"],
+  [2, "Medium"],
+  [3, "Heavy"],
+  [4, "X-Heavy"],
+];
+export const bandLabel = (n: number | null | undefined) => BAND_LEVELS.find(([v]) => v === Math.round(Number(n)))?.[1] ?? "";
 
 export interface Units {
   weight_unit: "kg" | "lb";
@@ -71,6 +84,10 @@ export function unitLabel(field: FieldKey, u: Units, bodyweight = false): string
       return "W";
     case "velocity":
       return "m/s";
+    case "band":
+      return "band";
+    case "resistance":
+      return "res";
     default:
       return field === "reps" ? "reps" : "";
   }
@@ -84,6 +101,11 @@ const round = (n: number, dp: number) => Math.round(n * 10 ** dp) / 10 ** dp;
 export function toCanonical(field: FieldKey, raw: string, u: Units): number | null {
   const s = raw.trim().replace(",", ".");
   if (!s) return null;
+  if (field === "band") {
+    const word = BAND_LEVELS.find(([, l]) => l.toLowerCase() === s.toLowerCase().replace(/\s+/g, "-"));
+    const n = word ? word[0] : Math.round(Number(s));
+    return n >= 1 && n <= 4 ? n : null;
+  }
   let n: number;
   if (field === "time" && s.includes(":")) {
     const parts = s.split(":").map(Number);
@@ -100,6 +122,8 @@ export function toCanonical(field: FieldKey, raw: string, u: Units): number | nu
       return round(u.speed_unit === "mph" ? n * (MI / 1000) : u.speed_unit === "kmh" ? n : n * 3.6, 2);
     case "velocity":
       return round(n, 2);
+    case "resistance":
+      return round(n, 1);
     case "reps":
     case "watts":
     case "calories":
@@ -152,6 +176,9 @@ export function describeSet(
     else if (f === "time" && (m.time ?? (fields[0] === "time" ? s.value : null)) != null) {
       const t = Number(m.time ?? s.value);
       parts.push(t >= 60 ? `${Math.floor(t / 60)}:${String(Math.round(t % 60)).padStart(2, "0")}` : `${t}s`);
+    } else if (f === "band") {
+      const v = m.band ?? (fields[0] === "band" ? s.value ?? null : null);
+      if (v != null) parts.push(`${bandLabel(v)} band`);
     } else if (f !== "reps" && f !== "weight" && f !== "time") {
       const v = m[f] ?? (fields[0] === f ? s.value ?? null : null);
       if (v != null) parts.push(`${fromCanonical(f, Number(v), u)} ${unitLabel(f, u)}`);

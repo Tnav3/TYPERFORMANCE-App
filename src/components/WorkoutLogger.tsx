@@ -1,4 +1,5 @@
 "use client";
+import { BAND_LEVELS } from "@/lib/programming/fields";
 // TrainHeroic-style logging: tap a set to complete it (saves instantly),
 // rest timer starts automatically, progress bar for the session.
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
@@ -441,6 +442,21 @@ export function WorkoutLogger({
                                     aria-label={`Set ${s.setNo} seconds`}
                                   />
                                 </div>
+                              ) : f.key === "band" ? (
+                                <select
+                                  key={f.key}
+                                  value={s.v.band || s.hint.band || ""}
+                                  disabled={readOnly}
+                                  onChange={(e) => {
+                                    editSet(it, s.setNo, "band", e.target.value);
+                                    if (s.done) saveSet(it, { ...s, v: { ...s.v, band: e.target.value } });
+                                  }}
+                                  className={`${cell} !px-1`}
+                                  aria-label={`Set ${s.setNo} band tension`}
+                                >
+                                  <option value="">Band</option>
+                                  {BAND_LEVELS.map(([v, l]) => <option key={v} value={String(v)}>{l}</option>)}
+                                </select>
                               ) : (
                                 <input
                                   key={f.key}
