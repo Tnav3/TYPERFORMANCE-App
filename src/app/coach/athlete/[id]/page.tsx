@@ -462,10 +462,13 @@ export default async function AthleteDetail({
           value={p.status === "inactive" ? "active" : "inactive"}
         />
         <button className="min-h-12 w-full rounded-xl border border-brand/60 text-sm font-extrabold uppercase tracking-wide text-brand">
-          {p.status === "inactive"
-            ? "Reactivate athlete"
-            : "Deactivate athlete"}
+          {p.status === "inactive" ? "Reactivate client" : "Deactivate client"}
         </button>
+        <p className="mt-2 text-center text-xs text-muted">
+          {p.status === "inactive"
+            ? "Reactivating gives them their app back with everything as they left it."
+            : "They lose access to the app, and automations and messages stop. All their data is kept, so you can reactivate them any time."}
+        </p>
       </form>
     </Screen>
   );

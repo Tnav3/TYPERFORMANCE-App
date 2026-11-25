@@ -10,7 +10,7 @@ export default async function ClientsPage({ searchParams }: { searchParams: Prom
   const { supabase } = await requireState(["coach"]);
   const sp = await searchParams;
   const q = (sp.q ?? "").trim().toLowerCase();
-  const show = sp.show === "all" ? "all" : "active";
+  const show = sp.show === "all" ? "all" : sp.show === "inactive" ? "inactive" : "active";
   const { data } = await supabase
     .from("profiles")
     .select("id, full_name, email, status, last_seen_at, avatar_path, nickname, plan_key, coaching_plans(name)")
@@ -19,7 +19,7 @@ export default async function ClientsPage({ searchParams }: { searchParams: Prom
   const now = new Date();
   const rows = (data ?? []).filter(
     (c) =>
-      (show === "all" || c.status === "active") &&
+      (show === "all" || c.status === show) &&
       (!q || (c.full_name ?? "").toLowerCase().includes(q) || c.email.toLowerCase().includes(q)),
   );
 
@@ -34,17 +34,17 @@ export default async function ClientsPage({ searchParams }: { searchParams: Prom
           className="min-h-12 flex-1 rounded-xl border border-line bg-surface-2 px-4 text-text placeholder:text-muted/60 focus:border-brand focus:outline-none"
           aria-label="Search clients"
         />
-        {show === "all" && <input type="hidden" name="show" value="all" />}
+        {show !== "active" && <input type="hidden" name="show" value={show} />}
         <button className="min-h-12 rounded-xl bg-brand px-5 font-extrabold uppercase tracking-wide text-white">Search</button>
       </form>
       <div className="mb-3 flex gap-2 text-sm">
-        {(["active", "all"] as const).map((k) => (
+        {(["active", "inactive", "all"] as const).map((k) => (
           <Link
             key={k}
             href={`/coach/clients?show=${k}${q ? `&q=${encodeURIComponent(q)}` : ""}`}
             className={`min-h-10 content-center rounded-full px-4 font-bold ${show === k ? "bg-text text-ink" : "border border-line text-muted"}`}
           >
-            {k === "active" ? "Active" : "Everyone"}
+            {k === "active" ? "Active" : k === "inactive" ? `Deactivated (${(data ?? []).filter((c) => c.status === "inactive").length})` : "Everyone"}
           </Link>
         ))}
       </div>
