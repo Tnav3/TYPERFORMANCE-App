@@ -1,4 +1,3 @@
-import { PopoverCloser } from "@/components/PopoverCloser";
 import { BellRing, PersonStanding, SlidersHorizontal, Swords, UserPen } from "lucide-react";
 import { ClientTabs } from "@/components/ClientTabs";
 import { FightCampCard } from "@/components/FightCampCard";
@@ -173,7 +172,6 @@ export default async function AthleteDetail({
   return (
     <Screen wide>
       <ClientTabs id={id} name={p.full_name ?? p.email} active="overview" />
-      <PopoverCloser />
       {/* Quick tools: compact chips; panels open only when tapped */}
       <div className="-mt-1 mb-5 flex flex-wrap items-center gap-2">
         <details data-popover className="relative" open={pageError === "feature"}>

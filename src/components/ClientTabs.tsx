@@ -1,3 +1,4 @@
+import { PopoverCloser } from "@/components/PopoverCloser";
 // One header for every client page: name, quick chat, and tabs across the top.
 import Link from "next/link";
 import { Eye, MessageCircle, Timer } from "lucide-react";
@@ -56,6 +57,7 @@ export async function ClientTabs({ id, name, active, sub }: { id: string; name: 
           <MessageCircle size={16} /> <span className="hidden sm:inline">Message</span>
         </Link>
       </div>
+      <PopoverCloser />
       <nav className="-mx-5 flex items-stretch gap-0 border-b border-line px-5 lg:flex-wrap">
         {TABS.map(([k, label, path], n) => (
           <Link
