@@ -174,3 +174,24 @@ export async function shiftAssignment(fd: FormData) {
   if (error) go(back, friendly(error.message));
   go(`${back}${back.includes("?") ? "&" : "?"}shifted=${data ?? 0}`);
 }
+
+/** Add an empty day to a client's block from the overview, then open it to program. */
+export async function addBlockDay(fd: FormData) {
+  const supabase = await coachOnly();
+  const back = safePath(fd.get("back"), "/coach");
+  const id = String(fd.get("assignment_id") ?? "");
+  const date = String(fd.get("date") ?? "");
+  if (!UUID.test(id)) go(back);
+  if (!ISO_DATE.test(date)) go(back, "Pick a date.");
+  const { data: a, error: aErr } = await supabase.from("assignments").select("athlete_id").eq("id", id).single();
+  if (aErr || !a?.athlete_id) go(back, "That block isn't on a client's calendar.");
+  const { count } = await supabase.from("workouts").select("id", { count: "exact", head: true }).eq("assignment_id", id);
+  const { data, error } = await supabase
+    .from("workouts")
+    .insert({ athlete_id: a!.athlete_id, assignment_id: id, workout_date: date, title: `Day ${(count ?? 0) + 1}` })
+    .select("id")
+    .single();
+  if (error) go(back, friendly(error.message));
+  revalidatePath(back.split(/[?#]/)[0]);
+  redirect(`/coach/workouts/${data!.id}?ret=programming&block=${id}`);
+}

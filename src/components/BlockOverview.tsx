@@ -6,7 +6,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { addDays, mondayOf } from "@/lib/week";
 import { formatDate } from "@/lib/dates";
 import { formatPrescription, formatSetPlan, itemLabel } from "@/lib/prescription";
-import { renameAssignment, shiftAssignment, swapInAssignment, unassign } from "@/app/coach/workouts/actions";
+import { addBlockDay, renameAssignment, shiftAssignment, swapInAssignment, unassign } from "@/app/coach/workouts/actions";
 
 type Assignment = { id: string; program_name: string; start_date: string };
 type W = { id: string; workout_date: string; title: string };
@@ -87,7 +87,10 @@ export async function BlockOverview({
   const done = new Map((logs ?? []).map((l) => [l.workout_id as string, !!l.completed_at]));
 
   const firstMon = mondayOf(r.from);
-  const weekCount = Math.max(1, Math.floor((Date.parse(mondayOf(r.to)) - Date.parse(firstMon)) / 604800000) + 1);
+  const usedWeeks = Math.max(1, Math.floor((Date.parse(mondayOf(r.to)) - Date.parse(firstMon)) / 604800000) + 1);
+  // One spare week after the last so the block can be extended; an empty block gets one to start in.
+  const weekCount = workouts.length ? usedWeeks : 1;
+  const gridWeeks = workouts.length ? usedWeeks + 1 : 1;
   const curWeek = today >= r.from && today <= addDays(r.to, 6) ? Math.floor((Date.parse(mondayOf(today)) - Date.parse(firstMon)) / 604800000) + 1 : null;
   const byDate = new Map<string, W[]>();
   for (const w of workouts) byDate.set(w.workout_date, [...(byDate.get(w.workout_date) ?? []), w]);
@@ -131,6 +134,22 @@ export async function BlockOverview({
       </Link>
     );
   };
+
+  const blockBack = `${back}?block=${pick.id}`;
+  const AddDay = ({ date, wide }: { date: string; wide?: boolean }) =>
+    date < today ? null : (
+      <form action={addBlockDay}>
+        <input type="hidden" name="assignment_id" value={pick.id} />
+        <input type="hidden" name="date" value={date} />
+        <input type="hidden" name="back" value={blockBack} />
+        <button
+          aria-label={`Add a day on ${formatDate(date)}`}
+          className={`flex w-full items-center justify-center rounded-lg border border-dashed border-line text-muted transition hover:border-brand hover:text-brand ${wide ? "min-h-10 text-xs font-bold" : "min-h-14 text-lg"}`}
+        >
+          {wide ? `+ ${DAYS[(new Date(date + "T00:00:00Z").getUTCDay() + 6) % 7]} ${formatDate(date)}` : "+"}
+        </button>
+      </form>
+    );
 
   return (
     <section id="overview" className="mb-6 scroll-mt-4">
@@ -218,6 +237,12 @@ export async function BlockOverview({
         </div>
       </div>
 
+      {!workouts.length && (
+        <p className="mb-3 rounded-xl border border-dashed border-brand/50 bg-brand/5 p-3 text-sm">
+          This block has no days yet. Tap <b>+</b> on a day to add a session, then add exercises. Copy weeks forward from inside the day once week 1 is built.
+        </p>
+      )}
+
       {/* Weeks × days */}
       <div className="overflow-x-auto">
         <div className="hidden min-w-[900px] md:block">
@@ -225,14 +250,15 @@ export async function BlockOverview({
             <span />
             {DAYS.map((d) => <span key={d}>{d}</span>)}
           </div>
-          {Array.from({ length: weekCount }, (_, wk) => {
+          {Array.from({ length: gridWeeks }, (_, wk) => {
             const mon = addDays(firstMon, wk * 7);
             const isCur = curWeek === wk + 1;
+            const spare = wk >= weekCount;
             return (
-              <div key={wk} className={`mb-1.5 grid grid-cols-[4.5rem_repeat(7,minmax(0,1fr))] gap-1.5 rounded-xl p-1 ${isCur ? "bg-brand/10 ring-1 ring-brand/40" : ""}`}>
+              <div key={wk} className={`mb-1.5 ${spare ? "opacity-70 hover:opacity-100" : ""} grid grid-cols-[4.5rem_repeat(7,minmax(0,1fr))] gap-1.5 rounded-xl p-1 ${isCur ? "bg-brand/10 ring-1 ring-brand/40" : ""}`}>
                 <div className="pt-1 text-xs">
                   <p className={`font-black uppercase ${isCur ? "text-brand" : ""}`}>Week {wk + 1}</p>
-                  <p className="text-[10px] text-muted">{formatDate(mon)}</p>
+                  <p className="text-[10px] text-muted">{spare ? "Add a week" : formatDate(mon)}</p>
                 </div>
                 {DAYS.map((_, d) => {
                   const date = addDays(mon, d);
@@ -240,6 +266,7 @@ export async function BlockOverview({
                   return (
                     <div key={d} className={`min-h-16 space-y-1.5 rounded-lg ${date === today ? "outline outline-1 outline-brand/60" : ""}`}>
                       {list.map((w) => <Card key={w.id} w={w} />)}
+                      {list.length === 0 && <AddDay date={date} />}
                     </div>
                   );
                 })}
@@ -251,12 +278,13 @@ export async function BlockOverview({
 
       {/* Phone: week by week, training days only */}
       <div className="space-y-3 md:hidden">
-        {Array.from({ length: weekCount }, (_, wk) => {
+        {Array.from({ length: gridWeeks }, (_, wk) => {
           const mon = addDays(firstMon, wk * 7);
           const isCur = curWeek === wk + 1;
           const days = DAYS.map((_, d) => addDays(mon, d)).filter((d) => byDate.has(d));
+          const free = DAYS.map((_, d) => addDays(mon, d)).filter((d) => !byDate.has(d) && d >= today);
           return (
-            <details key={wk} open={isCur || (!curWeek && wk === 0)} className={`rounded-2xl border p-3 ${isCur ? "border-brand/60 bg-brand/5" : "border-line bg-surface"}`}>
+            <details key={wk} open={isCur || (!curWeek && wk === 0) || !workouts.length} className={`rounded-2xl border p-3 ${isCur ? "border-brand/60 bg-brand/5" : "border-line bg-surface"}`}>
               <summary className="cursor-pointer list-none font-black uppercase">
                 <span className={isCur ? "text-brand" : ""}>Week {wk + 1}</span>
                 <span className="ml-2 text-xs font-normal normal-case text-muted">{formatDate(mon)} · {days.length} session{days.length === 1 ? "" : "s"}{isCur ? " · this week" : ""}</span>
@@ -268,6 +296,12 @@ export async function BlockOverview({
                     <div className="space-y-1.5">{(byDate.get(d) ?? []).map((w) => <Card key={w.id} w={w} />)}</div>
                   </div>
                 ))}
+                {free.length > 0 && (
+                  <details className="rounded-xl border border-dashed border-line p-2">
+                    <summary className="cursor-pointer list-none text-xs font-bold text-muted">+ Add a day this week</summary>
+                    <div className="mt-2 grid grid-cols-2 gap-1.5">{free.map((d) => <AddDay key={d} date={d} wide />)}</div>
+                  </details>
+                )}
               </div>
             </details>
           );

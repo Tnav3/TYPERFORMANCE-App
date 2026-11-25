@@ -221,10 +221,6 @@ export default async function LibraryPage({
   const groups = (cat ? [cat] : cats.cats.map(([v]) => v))
     .map((c) => [c, shown.filter((e) => e.category === c && visible.has(e.id)), shown.filter((e) => e.category === c).length] as const)
     .filter(([, l]) => l.length);
-  const fmtDefault = (e: Exercise) => {
-    if (!e.default_sets && !e.default_reps) return null;
-    return [e.default_sets && e.default_reps ? `${e.default_sets}×${e.default_reps}` : e.default_reps ?? `${e.default_sets} sets`].join("");
-  };
 
   return (
     <Screen wide>
@@ -284,12 +280,23 @@ export default async function LibraryPage({
       <div className="mb-5 flex flex-wrap items-center gap-1.5 text-xs">
         <Link href={link({ novideo: novideo ? undefined : "1" })} className={`${chip(!!novideo)} !min-h-8 !text-xs`}>No video ({noVideo})</Link>
         <Link href={link({ hidden: hidden ? undefined : "1" })} className={`${chip(!!hidden)} !min-h-8 !text-xs`}>Archived</Link>
-        {topTags.length > 0 && <span className="ml-2 text-muted">Tags:</span>}
-        {topTags.map(([t, n]) => (
-          <Link key={t} href={link({ tag: tag === t ? undefined : t })} className={`${chip(tag === t)} !min-h-8 !text-xs`}>
-            #{t} <span className="opacity-70">{n}</span>
+        {tag && (
+          <Link href={link({ tag: undefined })} className={`${chip(true)} !min-h-8 !text-xs`} aria-label={`Remove tag filter ${tag}`}>
+            #{tag} ✕
           </Link>
-        ))}
+        )}
+        {topTags.length > 0 && (
+          <details className="relative">
+            <summary className={`${chip(false)} !min-h-8 cursor-pointer list-none !text-xs`}>Filter by tag ▾</summary>
+            <div className="absolute left-0 z-20 mt-2 flex max-h-72 w-[min(92vw,420px)] flex-wrap gap-1.5 overflow-y-auto rounded-2xl border border-line bg-surface p-3 shadow-2xl">
+              {topTags.map(([t, n]) => (
+                <Link key={t} href={link({ tag: tag === t ? undefined : t })} className={`${chip(tag === t)} !min-h-8 !text-xs`}>
+                  #{t} <span className="opacity-70">{n}</span>
+                </Link>
+              ))}
+            </div>
+          </details>
+        )}
       </div>
 
       {/* Bulk bar */}
@@ -326,22 +333,23 @@ export default async function LibraryPage({
                     <Link href={e.id === edit ? `${link({})}#ex-${e.id}` : `${link({ edit: e.id })}#ex-${e.id}`} scroll={false} className="flex items-start justify-between gap-2">
                       <span className="min-w-0">
                         <span className="block font-bold">{e.name}</span>
-                        <span className="mt-1 flex flex-wrap gap-1 text-[11px]">
-                          {labelOf(cats, e.category, e.subcategory) && <span className="rounded-md bg-brand/10 px-1.5 py-0.5 font-bold text-brand">{labelOf(cats, e.category, e.subcategory)}</span>}
-                          {e.video_url ? (
-                            <span className="rounded-md bg-ok/15 px-1.5 py-0.5 font-bold text-ok">▶ video</span>
-                          ) : (
-                            <span className="rounded-md bg-warn/15 px-1.5 py-0.5 font-bold text-warn">no video</span>
-                          )}
-                          {(e.equipment ?? []).length > 0 && (
-                            <span className="rounded-md bg-surface-2 px-1.5 py-0.5 text-muted">🏋 {(e.equipment ?? []).map(equipmentLabel).join(", ")}</span>
-                          )}
-                          {e.lift_key && <span className="rounded-md bg-surface-2 px-1.5 py-0.5 text-muted">% of {liftName.get(e.lift_key) ?? "1RM"}</span>}
-                          {fmtDefault(e) && <span className="rounded-md bg-surface-2 px-1.5 py-0.5 text-muted">default {fmtDefault(e)}</span>}
-                          {(e.tags ?? []).map((t) => (
-                            <span key={t} className="rounded-md bg-surface-2 px-1.5 py-0.5 text-muted">#{t}</span>
-                          ))}
+                        <span className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[11px] text-muted">
+                          <span
+                            className={`inline-block h-2 w-2 shrink-0 rounded-full ${e.video_url ? "bg-ok" : "bg-warn"}`}
+                            title={e.video_url ? "Has video" : "No video"}
+                            aria-label={e.video_url ? "Has video" : "No video"}
+                          />
+                          {labelOf(cats, e.category, e.subcategory) && <span className="font-bold text-brand">{labelOf(cats, e.category, e.subcategory)}</span>}
+                          {(e.equipment ?? []).length > 0 && <span>· {(e.equipment ?? []).map(equipmentLabel).join(", ")}</span>}
+                          {e.lift_key && <span>· % {liftName.get(e.lift_key) ?? "1RM"}</span>}
                         </span>
+                        {e.id === edit && (e.tags ?? []).length > 0 && (
+                          <span className="mt-1 flex flex-wrap gap-1 text-[11px]">
+                            {(e.tags ?? []).map((t) => (
+                              <span key={t} className="rounded-md bg-surface-2 px-1.5 py-0.5 text-muted">#{t}</span>
+                            ))}
+                          </span>
+                        )}
                       </span>
                       <span className="shrink-0 text-xs text-muted">{e.id === edit ? "Close" : "Edit"}</span>
                     </Link>
