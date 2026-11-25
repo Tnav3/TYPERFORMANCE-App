@@ -32,7 +32,7 @@ export default async function CoachWorkoutPage({
     allExercises(supabase).then((data) => ({ data })),
     supabase
       .from("workout_logs")
-      .select("id, athlete_id, completed_at, session_rpe, profiles(full_name, email)")
+      .select("id, athlete_id, completed_at, session_rpe, profiles!workout_logs_athlete_id_fkey(full_name, email)")
       .eq("workout_id", id),
   ]);
   if (!w) notFound();
@@ -42,7 +42,7 @@ export default async function CoachWorkoutPage({
       ? supabase.from("profiles").select("full_name, email").eq("id", w.athlete_id).maybeSingle()
       : supabase.from("groups").select("name").eq("id", w.group_id!).maybeSingle(),
     w.group_id
-      ? supabase.from("group_members").select("athlete_id, profiles(full_name, email)").eq("group_id", w.group_id)
+      ? supabase.from("group_members").select("athlete_id, profiles!workout_logs_athlete_id_fkey(full_name, email)").eq("group_id", w.group_id)
       : Promise.resolve({ data: [] }),
     w.group_id
       ? supabase.from("workouts").select("id, athlete_id").eq("overrides_id", w.id)

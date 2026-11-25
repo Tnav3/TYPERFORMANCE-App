@@ -21,7 +21,7 @@ type Log = {
   item_logs: { comment: string | null }[];
 };
 
-const COLS = "id, athlete_id, workout_date, completed_at, session_rpe, duration_min, comment, coach_seen_at, profiles(full_name, email), workouts(title), item_logs(comment)";
+const COLS = "id, athlete_id, workout_date, completed_at, session_rpe, duration_min, comment, coach_seen_at, profiles!workout_logs_athlete_id_fkey(full_name, email), workouts(title), item_logs(comment)";
 
 export async function RecentActivity({ supabase, limit = 10, back = "/coach" }: { supabase: SupabaseClient; limit?: number; back?: string }) {
   const since = new Date(Date.now() - 14 * 86400000).toISOString();

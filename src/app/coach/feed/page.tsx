@@ -15,7 +15,7 @@ export default async function FeedPage({
   let q = supabase
     .from("workout_logs")
     .select(
-      "id, workout_date, completed_at, session_rpe, duration_min, comment, coach_seen_at, athlete_id, profiles(full_name, email), workouts(title), item_logs(comment)",
+      "id, workout_date, completed_at, session_rpe, duration_min, comment, coach_seen_at, athlete_id, profiles!workout_logs_athlete_id_fkey(full_name, email), workouts(title), item_logs(comment)",
     )
     .not("completed_at", "is", null)
     .order("completed_at", { ascending: false })

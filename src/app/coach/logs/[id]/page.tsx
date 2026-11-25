@@ -16,7 +16,7 @@ export default async function CoachLogPage({ params }: { params: Promise<{ id: s
   const { id } = await params;
   const { data: log } = await supabase
     .from("workout_logs")
-    .select("*, profiles(full_name, email), workouts(id, title, notes)")
+    .select("*, profiles!workout_logs_athlete_id_fkey(full_name, email), workouts(id, title, notes)")
     .eq("id", id)
     .maybeSingle();
   if (!log) notFound();
