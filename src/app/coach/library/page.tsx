@@ -172,10 +172,12 @@ function ExerciseFields({
 export default async function LibraryPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; q?: string; cat?: string; sub?: string; hidden?: string; tag?: string; novideo?: string }>;
+  searchParams: Promise<{ error?: string; q?: string; cat?: string; sub?: string; hidden?: string; tag?: string; novideo?: string; edit?: string; n?: string }>;
 }) {
   const { supabase } = await requireState(["coach"]);
-  const { error, q = "", cat = "", sub = "", hidden, tag = "", novideo } = await searchParams;
+  const { error, q = "", cat = "", sub = "", hidden, tag = "", novideo, edit, n } = await searchParams;
+  const PAGE = 60;
+  const limit = Math.min(5000, Math.max(PAGE, Number(n) || PAGE));
   const [{ data }, lifts, cats] = await Promise.all([
     allExerciseRows(supabase).then((data) => ({ data })),
     getLifts(supabase),
@@ -205,14 +207,20 @@ export default async function LibraryPage({
   const noVideo = pool.filter((e) => !e.video_url).length;
   const link = (over: Record<string, string | undefined>) => {
     const p = new URLSearchParams();
-    const cur: Record<string, string | undefined> = { q: q || undefined, cat: cat || undefined, sub: sub || undefined, tag: tag || undefined, novideo, hidden, ...over };
+    const cur: Record<string, string | undefined> = { q: q || undefined, cat: cat || undefined, sub: sub || undefined, tag: tag || undefined, novideo, hidden, n: limit > PAGE ? String(limit) : undefined, ...over };
     for (const [k, v] of Object.entries(cur)) if (v) p.set(k, v);
     const s = p.toString();
     return `/coach/library${s ? `?${s}` : ""}`;
   };
   const chip = (on: boolean) =>
     `inline-flex min-h-9 items-center gap-1.5 rounded-full px-3 text-sm font-bold ${on ? "bg-brand text-white" : "border border-line text-muted hover:text-text"}`;
-  const groups = (cat ? [cat] : cats.cats.map(([v]) => v)).map((c) => [c, shown.filter((e) => e.category === c)] as const).filter(([, l]) => l.length);
+  // Only render a page of cards (the full list made the page several MB). The one being edited always shows.
+  const ordered = (cat ? [cat] : cats.cats.map(([v]) => v)).flatMap((c) => shown.filter((e) => e.category === c));
+  const visible = new Set(ordered.slice(0, limit).map((e) => e.id));
+  if (edit) visible.add(edit);
+  const groups = (cat ? [cat] : cats.cats.map(([v]) => v))
+    .map((c) => [c, shown.filter((e) => e.category === c && visible.has(e.id)), shown.filter((e) => e.category === c).length] as const)
+    .filter(([, l]) => l.length);
   const fmtDefault = (e: Exercise) => {
     if (!e.default_sets && !e.default_reps) return null;
     return [e.default_sets && e.default_reps ? `${e.default_sets}×${e.default_reps}` : e.default_reps ?? `${e.default_sets} sets`].join("");
@@ -304,18 +312,18 @@ export default async function LibraryPage({
         <span className="ml-auto pr-2 text-xs text-muted">{shown.length} shown</span>
       </form>
 
-      {groups.map(([c, list]) => (
+      {groups.map(([c, list, total]) => (
         <section key={c} className="mb-6">
           <h2 className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted">
-            {catLabel.get(c)} · {list.length}
+            {catLabel.get(c)} · {total}
           </h2>
           <div className="grid items-start gap-2 md:grid-cols-2 2xl:grid-cols-3">
             {list.map((e) => (
               <div key={e.id} id={`ex-${e.id}`} className={`scroll-mt-24 rounded-xl border border-line bg-surface ${e.active ? "" : "opacity-60"}`}>
                 <div className="flex items-start gap-2 p-3">
                   <input type="checkbox" name="ids" value={e.id} form="bulk" className="mt-1 h-5 w-5 shrink-0 accent-[var(--color-brand)]" aria-label={`Select ${e.name}`} />
-                  <details className="min-w-0 flex-1">
-                    <summary className="flex cursor-pointer list-none items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <Link href={e.id === edit ? `${link({})}#ex-${e.id}` : `${link({ edit: e.id })}#ex-${e.id}`} scroll={false} className="flex items-start justify-between gap-2">
                       <span className="min-w-0">
                         <span className="block font-bold">{e.name}</span>
                         <span className="mt-1 flex flex-wrap gap-1 text-[11px]">
@@ -335,25 +343,37 @@ export default async function LibraryPage({
                           ))}
                         </span>
                       </span>
-                      <span className="shrink-0 text-xs text-muted">Edit</span>
-                    </summary>
-                    <form action={updateExercise} className="mt-3">
-                      <input type="hidden" name="id" value={e.id} />
-                      <ExerciseFields e={e} lifts={liftOptions} cats={cats} />
-                      <button className={`${smallBtn} mt-3`}>Save</button>
-                    </form>
-                    <form action={setExerciseActive} className="mt-2">
-                      <input type="hidden" name="id" value={e.id} />
-                      <input type="hidden" name="active" value={String(!e.active)} />
-                      <button className="text-sm text-muted underline underline-offset-4">{e.active ? "Archive" : "Restore"}</button>
-                    </form>
-                  </details>
+                      <span className="shrink-0 text-xs text-muted">{e.id === edit ? "Close" : "Edit"}</span>
+                    </Link>
+                    {e.id === edit && (
+                      <>
+                        <form action={updateExercise} className="mt-3">
+                          <input type="hidden" name="id" value={e.id} />
+                          <ExerciseFields e={e} lifts={liftOptions} cats={cats} />
+                          <button className={`${smallBtn} mt-3`}>Save</button>
+                        </form>
+                        <form action={setExerciseActive} className="mt-2">
+                          <input type="hidden" name="id" value={e.id} />
+                          <input type="hidden" name="active" value={String(!e.active)} />
+                          <button className="text-sm text-muted underline underline-offset-4">{e.active ? "Archive" : "Restore"}</button>
+                        </form>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}
           </div>
         </section>
       ))}
+      {ordered.length > limit && (
+        <div className="mb-8 text-center">
+          <Link href={link({ n: String(limit + PAGE * 2) })} scroll={false} className={`${smallBtn} inline-flex items-center`}>
+            Show more ({ordered.length - limit} left)
+          </Link>
+          <p className="mt-2 text-xs text-muted">Or search above to jump straight to one.</p>
+        </div>
+      )}
       {shown.length === 0 && <p className="text-muted">No exercises match.</p>}
     </Screen>
   );
