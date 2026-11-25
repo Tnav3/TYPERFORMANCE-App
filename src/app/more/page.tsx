@@ -5,6 +5,8 @@ import {
   Camera,
   ChevronRight,
   CircleHelp,
+  Sparkles,
+  MessageSquareWarning,
   ClipboardCheck,
   ClipboardList,
   Gift,
@@ -81,6 +83,8 @@ export default async function MorePage() {
           ["/notifications", "Notifications", Bell],
           ["/profile", "My profile", UserRound],
           ["/faq", "Help", CircleHelp],
+          ["/whats-new", "What's new", Sparkles],
+          ["/feedback?from=/more", "Report a problem or idea", MessageSquareWarning],
         ].map(([href, label, Icon]) => {
           const I = Icon as LucideIcon;
           return (

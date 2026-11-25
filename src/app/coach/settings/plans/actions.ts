@@ -36,3 +36,11 @@ export async function setClientPlan(fd: FormData) {
   revalidatePath(`/coach/athlete/${id}/profile`);
   revalidatePath("/coach/clients");
 }
+
+export async function setBeta(fd: FormData) {
+  const id = String(fd.get("id") ?? "");
+  if (!UUID.test(id)) return;
+  const supabase = await coachOnly();
+  await supabase.from("profiles").update({ beta: fd.get("beta") === "true" }).eq("id", id);
+  revalidatePath(`/coach/athlete/${id}/profile`);
+}

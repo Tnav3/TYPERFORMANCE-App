@@ -25,6 +25,7 @@ import {
   Workflow,
   FolderOpen,
   CalendarCheck,
+  MessageSquareWarning,
   Zap,
   X,
   type LucideIcon,
@@ -64,6 +65,7 @@ export function CoachNav({ unread, notes = 0 }: { unread: number; notes?: number
         { href: "/coach/sequences", label: "Onboarding sequences", icon: Workflow },
         { href: "/coach/files", label: "File library", icon: FolderOpen },
         { href: "/coach/settings/plans", label: "Plans & booking", icon: CalendarCheck },
+        { href: "/coach/feedback", label: "Beta feedback", icon: MessageSquareWarning },
       ],
     ],
     [

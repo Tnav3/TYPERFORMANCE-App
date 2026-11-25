@@ -6,7 +6,7 @@ import type { Discipline, Profile } from "@/lib/types";
 import { ProfileForm } from "@/components/ProfileForm";
 import { Screen } from "@/components/ui";
 import { setTargetWeight } from "@/app/coach/widget-actions";
-import { setClientPlan } from "@/app/coach/settings/plans/actions";
+import { setBeta, setClientPlan } from "@/app/coach/settings/plans/actions";
 
 export const dynamic = "force-dynamic";
 
@@ -41,6 +41,15 @@ export default async function CoachEditProfile({
         today={todayISO()}
         athleteId={id}
       />
+      <form action={setBeta} className="mt-6 flex items-center justify-between gap-3 rounded-2xl border border-line bg-surface p-4">
+        <input type="hidden" name="id" value={id} />
+        <input type="hidden" name="beta" value={String(!(p as unknown as { beta: boolean }).beta)} />
+        <span className="text-sm">
+          <span className="block font-bold">Beta tester {(p as unknown as { beta: boolean }).beta ? "✓" : ""}</span>
+          <span className="text-xs text-muted">Beta testers get new features first and you&apos;ll see a BETA tag on their feedback.</span>
+        </span>
+        <button className="min-h-11 shrink-0 rounded-xl border border-line bg-surface-2 px-4 text-sm font-bold">{(p as unknown as { beta: boolean }).beta ? "Remove" : "Make beta tester"}</button>
+      </form>
       <form action={setClientPlan} className="mt-6 flex flex-wrap items-end gap-2 rounded-2xl border border-line bg-surface p-4">
         <input type="hidden" name="id" value={id} />
         <label className="min-w-48 flex-1 text-sm">
