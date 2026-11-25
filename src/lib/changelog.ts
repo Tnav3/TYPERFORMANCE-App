@@ -9,6 +9,9 @@ export const CHANGELOG: Release[] = [
     version: "0.9.0",
     date: "2026-11-25",
     items: [
+      { who: "client", text: "Cleaner home: today's workout first, goal under your name, no doubled-up fight countdown." },
+      { who: "client", text: "Training has one calendar: tap a day to see it, drag or tap the handle to move a session." },
+      { who: "client", text: "Progress photos: pick from your gallery, and they upload faster." },
       { who: "coach", text: "Failed or cancelled payments put a client on hold: they can still message you, the rest pauses until they pay." },
       { who: "all", text: "New passwords are checked against known data breaches." },
       { who: "client", text: "After each workout, see what it did to your player card." },

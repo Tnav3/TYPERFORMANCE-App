@@ -5,15 +5,32 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { recordPhoto } from "@/app/lifestyle-actions";
 
+/** Shrink to max 1600 px JPEG so photos load fast and show on every device (iPhone HEIC included). */
+async function toJpeg(file: File): Promise<File> {
+  try {
+    const bmp = await createImageBitmap(file);
+    const scale = Math.min(1, 1600 / Math.max(bmp.width, bmp.height));
+    const c = document.createElement("canvas");
+    c.width = Math.round(bmp.width * scale);
+    c.height = Math.round(bmp.height * scale);
+    c.getContext("2d")!.drawImage(bmp, 0, 0, c.width, c.height);
+    const blob: Blob | null = await new Promise((res) => c.toBlob(res, "image/jpeg", 0.85));
+    return blob ? new File([blob], "photo.jpg", { type: "image/jpeg" }) : file;
+  } catch {
+    return file; // browser can't decode it: upload as is
+  }
+}
+
 export function PhotoUploader({ userId, today }: { userId: string; today: string }) {
   const router = useRouter();
   const [pose, setPose] = useState("front");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function upload(file: File) {
+  async function upload(original: File) {
     setBusy(true);
     setError(null);
+    const file = await toJpeg(original);
     if (file.size > 10 * 1024 * 1024) {
       setError("That photo is over 10 MB.");
       setBusy(false);
@@ -52,7 +69,6 @@ export function PhotoUploader({ userId, today }: { userId: string; today: string
         <input
           type="file"
           accept="image/*"
-          capture="environment"
           className="sr-only"
           disabled={busy}
           onChange={(e) => {

@@ -1,19 +1,21 @@
 "use client";
-// Phone-style tab bar for clients: Home · Train · Chat · Nutrition · Progress · More.
+// Phone-style tab bar for clients: up to 5 of Home · Train · Chat · Nutrition · Progress · More.
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Dumbbell, House, Menu, MessageCircle, TrendingUp, Utensils } from "lucide-react";
+import { visibleTabs, type TabKey } from "@/lib/client/tabs";
 
 export function ClientTabBar({ train, chat, progress, chatBadge, moreBadge, food = null }: { train: boolean; chat: boolean; progress: boolean; chatBadge: number; moreBadge: number; food?: string | null }) {
   const path = usePathname();
-  const tabs = [
-    { href: "/", label: "Home", Icon: House, on: path === "/" || path === "/athlete", show: true, badge: 0 },
-    { href: "/train", label: "Train", Icon: Dumbbell, on: path === "/train", show: train, badge: 0 },
-    { href: "/chat", label: "Chat", Icon: MessageCircle, on: path.startsWith("/chat"), show: chat, badge: chatBadge },
-    { href: food ?? "/nutrition", label: "Nutrition", Icon: Utensils, on: !!food && (path.startsWith("/meal-plan") || path.startsWith("/macros") || path.startsWith("/nutrition")), show: !!food, badge: 0 },
-    { href: "/train/history", label: "Progress", Icon: TrendingUp, on: path.startsWith("/train/history"), show: progress, badge: 0 },
-    { href: "/more", label: "More", Icon: Menu, on: path === "/more", show: true, badge: moreBadge },
-  ].filter((t) => t.show);
+  const show = new Set(visibleTabs({ train, chat, progress, food }));
+  const tabs = ([
+    { key: "home", href: "/", label: "Home", Icon: House, on: path === "/" || path === "/athlete", badge: 0 },
+    { key: "train", href: "/train", label: "Train", Icon: Dumbbell, on: path === "/train", badge: 0 },
+    { key: "chat", href: "/chat", label: "Chat", Icon: MessageCircle, on: path.startsWith("/chat"), badge: chatBadge },
+    { key: "food", href: food ?? "/nutrition", label: "Nutrition", Icon: Utensils, on: !!food && (path.startsWith("/meal-plan") || path.startsWith("/macros") || path.startsWith("/nutrition")), badge: 0 },
+    { key: "progress", href: "/train/history", label: "Progress", Icon: TrendingUp, on: path.startsWith("/train/history"), badge: 0 },
+    { key: "more", href: "/more", label: "More", Icon: Menu, on: path === "/more", badge: moreBadge },
+  ] as const).filter((t) => show.has(t.key as TabKey));
   return (
     <>
       <div className="h-20" aria-hidden />

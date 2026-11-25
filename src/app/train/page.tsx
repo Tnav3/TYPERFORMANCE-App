@@ -1,5 +1,4 @@
 import { MoveWorkout } from "@/components/MoveWorkout";
-import { WeekBoard } from "@/components/WeekBoard";
 import { MonthCalendar } from "@/components/MonthCalendar";
 import { statusFor } from "@/components/WorkoutCalendar";
 import Link from "next/link";
@@ -7,7 +6,7 @@ import { requireFeature } from "@/lib/session";
 import { clientMenu } from "@/lib/client/menu";
 import { ClientTabBar } from "@/components/ClientTabBar";
 import { todayISO } from "@/lib/dates";
-import { addDays, dayMonth, dayShort, mondayOf } from "@/lib/week";
+import { addDays, dayMonth, dayShort } from "@/lib/week";
 import type { Workout } from "@/lib/programming/types";
 import { Card, Heading, Screen } from "@/components/ui";
 
@@ -53,17 +52,6 @@ export default async function TrainPage() {
     const iso = addDays(today, i - 1);
     return { iso, label: i === 1 ? "Today" : i === 2 ? "Tomorrow" : i === 0 ? "Yesterday" : `${dayShort(iso)} ${dayMonth(iso)}` };
   });
-  const monday = mondayOf(today);
-  const boardWeeks = [0, 7].map((off) => ({
-    label: off ? "Next week" : "This week",
-    days: Array.from({ length: 7 }, (_, i) => {
-      const iso = addDays(monday, off + i);
-      return { iso, dow: dayShort(iso), day: iso.slice(8).replace(/^0/, "") };
-    }),
-  }));
-  const board = list
-    .filter((w) => w.workout_date >= monday && w.workout_date <= addDays(monday, 13))
-    .map((w) => ({ id: w.id, title: w.title, date: w.workout_date, done: !!logBy.get(w.id)?.completed_at }));
   const Row = ({ w }: { w: Workout }) => {
     const log = logBy.get(w.id);
     const state = log?.completed_at ? "Done" : log ? "Started" : null;
@@ -126,7 +114,6 @@ export default async function TrainPage() {
         </Link>
       </section>
 
-      <WeekBoard weeks={boardWeeks} today={today} min={addDays(today, -7)} max={addDays(today, 28)} workouts={board} locked={!!viewAs} />
 
       {missed.length > 0 && (
         <section className="mb-6 space-y-2">
@@ -139,6 +126,9 @@ export default async function TrainPage() {
         today={today}
         months={[monthFirst, nextFirst].map((first) => ({ first, label: new Intl.DateTimeFormat("en-AU", { month: "long", timeZone: "UTC" }).format(new Date(first + "T00:00:00Z")) }))}
         workouts={list.map((w) => ({ id: w.id, date: w.workout_date, title: w.title, status: statusFor(w.workout_date, today, logBy.get(w.id)) }))}
+        min={addDays(today, -7)}
+        max={addDays(today, 28)}
+        locked={!!viewAs}
       />
 
       <Link href="/train/history" className="text-sm text-muted underline underline-offset-4">

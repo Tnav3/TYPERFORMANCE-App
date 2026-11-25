@@ -20,6 +20,7 @@ import {
   UserRound,
   Utensils,
   Wrench,
+  Swords,
   type LucideIcon,
   NotebookPen,
 } from "lucide-react";
@@ -27,6 +28,7 @@ import { requireState } from "@/lib/session";
 import { todayISO } from "@/lib/dates";
 import { hasFeature } from "@/lib/features";
 import { clientMenu, type MenuIcon } from "@/lib/client/menu";
+import { visibleTabs } from "@/lib/client/tabs";
 import { ClientTabBar } from "@/components/ClientTabBar";
 import { Heading, Screen, SignOutButton } from "@/components/ui";
 
@@ -45,15 +47,21 @@ const ICONS: Record<MenuIcon, LucideIcon> = {
   testing: ClipboardList,
   mobility: PersonStanding,
   tools: Wrench,
-  fights: Trophy,
+  fights: Swords,
   refer: Gift,
 };
 
 export default async function MorePage() {
   const { supabase, user, profile } = await requireState(["athlete"]);
   const m = await clientMenu(supabase, profile, user!.id, todayISO());
-  // Chat and Progress already have their own tabs
-  const items = m.items.filter((i) => i.href !== "/chat" && i.href !== "/train/history");
+  // Hide anything that already has its own tab
+  const tabs = visibleTabs({ train: hasFeature(profile, "program"), chat: m.chatOn, progress: m.programOn, food: m.food });
+  const inTabs = new Set<string>([
+    ...(tabs.includes("chat") ? ["/chat"] : []),
+    ...(tabs.includes("progress") ? ["/train/history"] : []),
+    ...(tabs.includes("food") && m.food ? [m.food] : []),
+  ]);
+  const items = m.items.filter((i) => !inTabs.has(i.href));
 
   return (
     <Screen>

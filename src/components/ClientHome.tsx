@@ -92,7 +92,12 @@ export function ClientHome(p: HomeProps) {
         <div className="min-w-0 flex-1">
           <p className="truncate text-lg font-black uppercase leading-tight tracking-tight">Hey {p.first}</p>
           {p.me.nickname && <p className="truncate text-xs font-bold text-muted">&ldquo;{p.me.nickname}&rdquo;</p>}
-          {p.fightLabel && <p className="text-xs font-bold text-brand">Fight in {p.fightLabel}</p>}
+          {p.fightLabel && !p.camp && <p className="text-xs font-bold text-brand">Fight in {p.fightLabel}</p>}
+          {p.me.goal && (
+            <Link href="/profile#about" className="block truncate text-xs text-muted">
+              Goal: <span className="font-bold text-text">{p.me.goal}</span>
+            </Link>
+          )}
         </div>
         <Link
           href="/trophies"
@@ -116,34 +121,6 @@ export function ClientHome(p: HomeProps) {
         </Link>
       </header>
 
-      {p.newNotes && p.newNotes.length > 0 && (
-        <section className="mb-5 overflow-hidden rounded-2xl border border-brand/50 bg-surface">
-          <div className="flex items-center justify-between px-4 pt-3">
-            <h2 className="text-xs font-semibold uppercase tracking-widest text-brand">New for you</h2>
-            <span className="flex items-center gap-3">
-              <Link href="/notifications" className="text-xs font-bold text-muted">
-                {p.unreadNotes > p.newNotes.length ? `See all ${p.unreadNotes}` : "See all"}
-              </Link>
-              <form action={clearNotifications}>
-                <button className="min-h-8 text-xs font-bold text-muted">Clear</button>
-              </form>
-            </span>
-          </div>
-          <div className="divide-y divide-line">
-            {p.newNotes.map((n) => (
-              <Link key={n.id} href={`/notifications/open/${n.id}`} prefetch={false} className="flex min-h-14 items-center gap-3 px-4 py-2.5 active:bg-surface-2">
-                <span className="h-2 w-2 shrink-0 rounded-full bg-brand" />
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate font-extrabold leading-tight">{n.title}</span>
-                  <span className="block truncate text-sm text-muted">{n.body}</span>
-                </span>
-                <span className="text-muted" aria-hidden>›</span>
-              </Link>
-            ))}
-          </div>
-        </section>
-      )}
-      {p.camp}
       {p.programOn && (
         <Link href={p.todayWorkouts.length === 1 ? `/train/${p.todayWorkouts[0].id}` : "/train"} className="mb-5 block">
           <div className="rounded-3xl border border-brand bg-brand/10 p-5">
@@ -179,6 +156,34 @@ export function ClientHome(p: HomeProps) {
         </Link>
       )}
 
+      {p.newNotes && p.newNotes.length > 0 && (
+        <section className="mb-5 overflow-hidden rounded-2xl border border-brand/50 bg-surface">
+          <div className="flex items-center justify-between px-4 pt-3">
+            <h2 className="text-xs font-semibold uppercase tracking-widest text-brand">New for you</h2>
+            <span className="flex items-center gap-3">
+              <Link href="/notifications" className="text-xs font-bold text-muted">
+                {p.unreadNotes > p.newNotes.length ? `See all ${p.unreadNotes}` : "See all"}
+              </Link>
+              <form action={clearNotifications}>
+                <button className="min-h-8 text-xs font-bold text-muted">Clear</button>
+              </form>
+            </span>
+          </div>
+          <div className="divide-y divide-line">
+            {p.newNotes.map((n) => (
+              <Link key={n.id} href={`/notifications/open/${n.id}`} prefetch={false} className="flex min-h-14 items-center gap-3 px-4 py-2.5 active:bg-surface-2">
+                <span className="h-2 w-2 shrink-0 rounded-full bg-brand" />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate font-extrabold leading-tight">{n.title}</span>
+                  <span className="block truncate text-sm text-muted">{n.body}</span>
+                </span>
+                <span className="text-muted" aria-hidden>›</span>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
       {p.showTodo && (
         <section className="mb-5">
           <h2 className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted">To do</h2>
@@ -202,6 +207,8 @@ export function ClientHome(p: HomeProps) {
           )}
         </section>
       )}
+
+      {p.camp}
 
       {p.week && (
         <Link href="/train" className="mb-5 block rounded-2xl border border-line bg-surface p-4">
@@ -235,7 +242,33 @@ export function ClientHome(p: HomeProps) {
         </Link>
       )}
 
+      {p.weight && <QuickWeight {...p.weight} />}
+
+      {p.team}
+
       {p.card && <CardStrip card={p.card} />}
+
+      {p.trend && (
+        <Link href="/train/history" className="mb-5 block rounded-2xl border border-line bg-surface p-4">
+          <div className="flex items-baseline justify-between gap-3">
+            <h2 className="text-xs font-semibold uppercase tracking-widest text-muted">Your trend</h2>
+            <span className="text-sm font-black">{p.trend.latest}</span>
+          </div>
+          <p className="mt-1 font-extrabold">{p.trend.message ?? `${p.trend.title}: keep logging to see your trend`}</p>
+          <MiniChart points={p.trend.points} kind={p.trend.kind} className="mt-3 !h-14" />
+        </Link>
+      )}
+
+      {p.booking && (
+        <Link href="/book" className="mb-5 flex items-center justify-between gap-3 rounded-2xl border border-line bg-surface p-4">
+          <span className="min-w-0">
+            <span className="block font-extrabold">{p.booking.label}</span>
+            {p.booking.cadence && <span className="block text-sm text-muted">Included in your plan: {p.booking.cadence === "per_session" ? "book each session" : `${p.booking.cadence} catch-ups`}</span>}
+          </span>
+          <span className="shrink-0 rounded-xl bg-brand px-4 py-2 text-sm font-extrabold uppercase text-white">Book</span>
+        </Link>
+      )}
+
       {p.quote && (
         <figure className="relative mb-5 overflow-hidden rounded-2xl border border-line bg-surface px-4 pb-3.5 pt-4">
           <span aria-hidden className="pointer-events-none absolute -top-3 right-3 font-serif text-7xl font-black leading-none text-brand/20">&rdquo;</span>
@@ -248,36 +281,6 @@ export function ClientHome(p: HomeProps) {
             </figcaption>
           )}
         </figure>
-      )}
-      {p.team}
-      {p.weight && <QuickWeight {...p.weight} />}
-
-      {p.booking && (
-        <Link href="/book" className="mb-5 flex items-center justify-between gap-3 rounded-2xl border border-line bg-surface p-4">
-          <span className="min-w-0">
-            <span className="block font-extrabold">{p.booking.label}</span>
-            {p.booking.cadence && <span className="block text-sm text-muted">Included in your plan: {p.booking.cadence === "per_session" ? "book each session" : `${p.booking.cadence} catch-ups`}</span>}
-          </span>
-          <span className="shrink-0 rounded-xl bg-brand px-4 py-2 text-sm font-extrabold uppercase text-white">Book</span>
-        </Link>
-      )}
-
-      {p.me.goal && (
-        <Link href="/profile#about" className="mb-5 block rounded-2xl border border-line bg-surface px-4 py-3">
-          <span className="text-xs font-semibold uppercase tracking-widest text-muted">Your goal</span>
-          <span className="block font-extrabold">{p.me.goal}</span>
-        </Link>
-      )}
-
-      {p.trend && (
-        <Link href="/train/history" className="mb-5 block rounded-2xl border border-line bg-surface p-4">
-          <div className="flex items-baseline justify-between gap-3">
-            <h2 className="text-xs font-semibold uppercase tracking-widest text-muted">Your trend</h2>
-            <span className="text-sm font-black">{p.trend.latest}</span>
-          </div>
-          <p className="mt-1 font-extrabold">{p.trend.message ?? `${p.trend.title}: keep logging to see your trend`}</p>
-          <MiniChart points={p.trend.points} kind={p.trend.kind} className="mt-3 !h-14" />
-        </Link>
       )}
 
       {p.empty && <p className="rounded-2xl border border-line bg-surface p-4 text-muted">Your coach hasn&apos;t switched on any features for you yet.</p>}

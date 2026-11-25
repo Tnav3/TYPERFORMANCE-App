@@ -26,13 +26,11 @@ self.addEventListener("notificationclick", (event) => {
   const url = (event.notification.data && event.notification.data.url) || "/";
   event.waitUntil(
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((wins) => {
-      for (const w of wins) {
-        if ("focus" in w) {
-          w.navigate(url);
-          return w.focus();
-        }
-      }
-      return self.clients.openWindow(url);
+      const w = wins.find((x) => "focus" in x);
+      if (!w) return self.clients.openWindow(url);
+      // Some phones (older iOS) can't navigate an existing window: focus it, then open the screen if needed.
+      const go = typeof w.navigate === "function" ? w.navigate(url).catch(() => null) : Promise.resolve(null);
+      return go.then((moved) => (moved ? moved.focus() : w.focus().then(() => (typeof w.navigate === "function" ? null : self.clients.openWindow(url)))));
     }),
   );
 });
