@@ -34,7 +34,7 @@ export function WeightChart({
   const hi = Math.ceil(Math.max(...vals) + 1);
   const plotH = H - padB - padT;
   const bw = (W - padL) / points.length;
-  const labelEvery = bw < 44 ? 2 : 1; // thin x labels on narrow screens
+  const labelEvery = Math.max(1, Math.ceil(44 / bw)); // about one label per 44 px, however many points
   const x = (i: number) => padL + bw * i + bw / 2;
   const y = (v: number) => padT + plotH - ((v - lo) / (hi - lo)) * plotH;
   const path = points

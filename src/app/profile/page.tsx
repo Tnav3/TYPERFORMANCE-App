@@ -52,13 +52,14 @@ export default async function EditProfilePage({ searchParams }: { searchParams: 
           </label>
           {sp.saved === "about" && <p className="text-sm font-bold text-ok">Saved.</p>}
           {sp.error === "about" && <p className="text-sm font-bold text-brand">That didn&apos;t save. Please try again.</p>}
-          <button className="min-h-11 w-full rounded-xl bg-brand font-extrabold uppercase text-white">Save</button>
+          <button className="min-h-11 w-full rounded-xl bg-brand font-extrabold uppercase text-white">Save about you</button>
         </form>
       </section>
+      <h2 className="mb-2 px-1 text-xs font-semibold uppercase tracking-widest text-muted">Training & competition</h2>
       <ProfileForm
         profile={profile}
         disciplines={list}
-        submitLabel="Save changes"
+        submitLabel="Save training details"
         today={todayISO()}
       />
       {state === "athlete" && (

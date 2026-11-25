@@ -22,7 +22,7 @@ export default async function MobilityPage() {
 
   return (
     <Screen>
-      <BackLink href="/" label="Home" />
+      <BackLink href="/more" label="More" />
       <Heading>Mobility</Heading>
       <Tip profile={profile} tipKey="mobility" />
       <Card className="mb-6">

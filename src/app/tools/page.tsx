@@ -27,7 +27,7 @@ export default async function ToolsPage() {
   if (tools.length === 0) redirect("/athlete");
   return (
     <Screen>
-      <BackLink href="/" label="Home" />
+      <BackLink href="/more" label="More" />
       <Heading sub="Calculators and charts for your training.">
         Training Tools
       </Heading>

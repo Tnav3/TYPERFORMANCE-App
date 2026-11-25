@@ -10,7 +10,7 @@ export default async function PhotosPage() {
   const { supabase, user } = await requireFeature(["athlete"], "photos");
   return (
     <Screen>
-      <BackLink href="/" label="Home" />
+      <BackLink href="/more" label="More" />
       <Heading sub="Private: only you and your coach can see these. Same spot, same light, same time of day each time.">Progress photos</Heading>
       <Card className="mb-6">
         <PhotoUploader userId={user!.id} today={todayISO()} />

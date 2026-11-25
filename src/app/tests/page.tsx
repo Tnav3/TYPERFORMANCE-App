@@ -62,8 +62,8 @@ export default async function TestsHome() {
           <h2 className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted">
             {g.label}
           </h2>
-          <div className="space-y-2">
-            {g.items.map((s) => {
+          {(() => {
+            const card = (s: (typeof g.items)[number]) => {
               const h = s.latest
                 ? headlineValue(s.def.key, s.latest.values)
                 : null;
@@ -114,8 +114,26 @@ export default async function TestsHome() {
                   </Card>
                 </Link>
               );
-            })}
-          </div>
+            };
+            const done = g.items.filter((s) => s.latest);
+            const todo = g.items.filter((s) => !s.latest);
+            // Show what they've tested; tuck untried tests away unless nothing is done yet
+            if (!done.length) return <div className="space-y-2">{todo.map(card)}</div>;
+            return (
+              <div className="space-y-2">
+                {done.map(card)}
+                {todo.length > 0 && (
+                  <details className="group">
+                    <summary className="min-h-10 cursor-pointer list-none text-sm font-bold text-muted">
+                      <span className="group-open:hidden">{todo.length} more test{todo.length === 1 ? "" : "s"} you haven&apos;t done</span>
+                      <span className="hidden group-open:inline">Hide untried tests</span>
+                    </summary>
+                    <div className="space-y-2">{todo.map(card)}</div>
+                  </details>
+                )}
+              </div>
+            );
+          })()}
         </section>
       ))}
 

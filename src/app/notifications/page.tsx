@@ -21,13 +21,15 @@ const check = "h-5 w-5 accent-[var(--color-brand)]";
 const input = "min-h-11 rounded-xl border border-line bg-surface-2 px-3 text-text";
 
 export default async function NotificationsPage({ searchParams }: { searchParams: Promise<{ saved?: string }> }) {
-  const { supabase, profile, state } = await requireState(["athlete", "coach"]);
+  const { supabase, user, profile, state, viewAs } = await requireState(["athlete", "coach"]);
   const { data: inbox } = await supabase
     .from("notifications")
     .select("id, kind, title, body, url, created_at, read_at")
+    .eq("user_id", user!.id)
     .order("created_at", { ascending: false })
     .limit(40);
-  if ((inbox ?? []).some((n) => !n.read_at)) await supabase.rpc("mark_notifications_read");
+  // Viewing as a client never marks anything read
+  if (!viewAs && (inbox ?? []).some((n) => !n.read_at)) await supabase.rpc("mark_notifications_read");
   const { saved } = await searchParams;
   const p = profile as typeof profile & {
     notify_messages?: boolean;
