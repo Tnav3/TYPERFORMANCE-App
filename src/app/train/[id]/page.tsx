@@ -8,6 +8,7 @@ import { ReadinessCheck } from "@/components/ReadinessCheck";
 import { readinessAdvice, readinessTone } from "@/lib/programming/rewards";
 import { WorkoutLogger } from "@/components/WorkoutLogger";
 import { loadGlossary } from "@/lib/glossary-data";
+import { tipSeen } from "@/lib/tutorial";
 import { Alert, BackLink, Heading, Screen } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
@@ -17,7 +18,7 @@ export default async function WorkoutLogPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const { supabase, user, state, viewAs } = await requireFeature(["athlete", "coach"], "program");
+  const { supabase, user, state, viewAs, profile } = await requireFeature(["athlete", "coach"], "program");
   const { id } = await params;
   if (state === "coach") redirect(`/coach/workouts/${id}`);
   const [d, glossary] = await Promise.all([loadLoggerData(supabase, id, user!.id), loadGlossary(supabase)]);
@@ -74,6 +75,7 @@ export default async function WorkoutLogPage({
         readOnly={locked || early}
         athleteId={viewAs ? user!.id : undefined}
         glossary={glossary}
+        guide={!viewAs && profile.role === "athlete" && !tipSeen(profile, "logger")}
       />
       {workout.created_by === user!.id && !viewAs && (
         <div className="mt-6 text-center">

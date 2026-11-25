@@ -10,6 +10,7 @@ import { ExerciseSheet } from "@/components/ExerciseSheet";
 import { SwapSheet } from "@/components/SwapSheet";
 import { IntensityDial } from "@/components/IntensityDial";
 import { GlossaryChips } from "@/components/GlossaryChips";
+import { LoggerGuide } from "@/components/LoggerGuide";
 import { termsIn, type GlossaryTerm } from "@/lib/glossary";
 import { swapExercise } from "@/app/train/actions";
 import { SWAP_REASONS } from "@/lib/programming/types";
@@ -85,6 +86,7 @@ export function WorkoutLogger({
   athleteId,
   embedded = false,
   glossary = [],
+  guide = false,
 }: {
   workoutId: string;
   blocks: LoggerBlock[];
@@ -101,6 +103,8 @@ export function WorkoutLogger({
   embedded?: boolean;
   /** Training terms; any used by an exercise get a "?" chip */
   glossary?: GlossaryTerm[];
+  /** First workout: walk the client through the controls */
+  guide?: boolean;
 }) {
   const router = useRouter();
   const [blocks, setBlocks] = useState(initial);
@@ -289,6 +293,7 @@ export function WorkoutLogger({
           <button
             type="button"
             onClick={() => setView(view === "focus" ? "list" : "focus")}
+            data-guide="view"
             className="flex min-h-9 items-center gap-1 rounded-lg border border-line px-2.5 text-xs font-bold text-muted"
           >
             <List size={14} /> {view === "focus" ? "See all" : "One at a time"}
@@ -380,6 +385,7 @@ export function WorkoutLogger({
                         <button
                           type="button"
                           onClick={() => setSheet({ id: it.exerciseId!, name: it.name })}
+                          data-guide="howto"
                           className="inline-flex min-h-9 items-center gap-1.5 text-sm font-bold text-brand"
                         >
                           {it.videoUrl ? <PlayCircle size={16} /> : <Info size={16} />}
@@ -406,7 +412,7 @@ export function WorkoutLogger({
                         </p>
                       ) : (
                         it.exerciseId && !readOnly && (
-                          <button type="button" onClick={() => setSwapFor(it)} className="inline-flex min-h-9 items-center gap-1.5 text-sm font-bold text-muted hover:text-text">
+                          <button type="button" onClick={() => setSwapFor(it)} data-guide="swap" className="inline-flex min-h-9 items-center gap-1.5 text-sm font-bold text-muted hover:text-text">
                             <ArrowLeftRight size={15} /> Swap
                           </button>
                         )
@@ -415,7 +421,7 @@ export function WorkoutLogger({
                     {it.exerciseId && <MyExerciseNote exerciseId={it.exerciseId} initial={it.myNote} readOnly={readOnly} />}
                     <div className="mt-1 flex flex-wrap items-center gap-2">
                       {it.prev && (
-                        <p className="inline-flex rounded-lg bg-surface-2 px-2.5 py-1 text-xs">
+                        <p data-guide="last" className="inline-flex rounded-lg bg-surface-2 px-2.5 py-1 text-xs">
                           <span className="mr-1.5 font-bold uppercase tracking-wide text-muted">Last</span> {it.prev}
                         </p>
                       )}
@@ -447,6 +453,7 @@ export function WorkoutLogger({
                         return (
                           <div
                             key={s.setNo}
+                            data-guide={s.setNo === 1 ? "set" : undefined}
                             className={`grid items-center gap-2 rounded-xl p-1 transition ${s.done ? "bg-ok/10" : ""}`}
                             style={{ gridTemplateColumns: it.fields.length > 4 ? "1.75rem minmax(0, 1fr) 3rem" : `1.75rem repeat(${it.fields.length}, minmax(0, 1fr)) 3rem` }}
                           >
@@ -504,6 +511,7 @@ export function WorkoutLogger({
                               onClick={() => (st === "error" ? saveSet(it, s) : toggleSet(it, s.setNo))}
                               disabled={readOnly}
                               aria-pressed={s.done}
+                              data-guide={s.setNo === 1 ? "tick" : undefined}
                               aria-label={st === "error" ? "Retry saving" : s.done ? `Undo set ${s.setNo}` : `Complete set ${s.setNo}`}
                               className={`flex h-11 w-12 items-center justify-center rounded-xl border-2 transition ${
                                 st === "error"
@@ -611,6 +619,8 @@ export function WorkoutLogger({
 
       </>)}
 
+      {guide && !readOnly && !finished && !embedded && <LoggerGuide />}
+
       {/* Bottom bar: Back · Timers · Next */}
       {view === "focus" && !embedded && (
         <div className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-ink/95 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur">
@@ -622,12 +632,13 @@ export function WorkoutLogger({
               type="button"
               onClick={() => setTimersOpen(true)}
               disabled={readOnly}
+              data-guide="timer"
               className="flex h-12 items-center gap-1.5 rounded-full border border-line bg-surface-2 px-4 text-sm font-bold disabled:opacity-40"
             >
               <Timer size={18} className="text-brand" /> Timer
             </button>
             {idx < blocks.length ? (
-              <button type="button" onClick={() => go(idx + 1)} className="flex min-h-12 items-center justify-end gap-1 rounded-xl px-2 font-black text-brand">
+              <button type="button" onClick={() => go(idx + 1)} data-guide="next" className="flex min-h-12 items-center justify-end gap-1 rounded-xl px-2 font-black text-brand">
                 {idx === blocks.length - 1 ? "Wrap up" : "Next"} <ChevronRight size={20} />
               </button>
             ) : (

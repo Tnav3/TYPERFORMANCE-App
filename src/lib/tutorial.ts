@@ -96,6 +96,10 @@ export function welcomeSteps(p: P, videos: Record<string, string> = {}): TourSte
 
 /** One-time tip at the top of each feature page. */
 export const TIPS: Record<string, { title: string; body: string }> = {
+  logger: {
+    title: "Your first workout",
+    body: "A short guide that points at each button the first time a client opens a workout.",
+  },
   log: {
     title: "Logging a session",
     body: "Pick the day, discipline and what you did, then duration and RPE. Start time is the last box before Save. Load = RPE × minutes, worked out for you.",

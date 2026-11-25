@@ -20,7 +20,7 @@ export function GlossaryChips({ terms, backTo }: { terms: GlossaryTerm[]; backTo
   if (!terms.length) return null;
   return (
     <>
-      <span className="mt-1 flex flex-wrap gap-1.5">
+      <span data-guide="glossary" className="mt-1 flex flex-wrap gap-1.5">
         {terms.map((t) => (
           <button
             key={t.key}
