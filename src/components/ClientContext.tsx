@@ -25,6 +25,13 @@ export async function ClientContext({ athleteId }: { athleteId: string }) {
       .order("swapped_at", { ascending: false })
       .limit(3),
   ]);
+  const { data: myNotes } = await supabase
+    .from("client_notes")
+    .select("id, title, body, exercises(name)")
+    .eq("athlete_id", athleteId)
+    .order("updated_at", { ascending: false })
+    .limit(12);
+  const notes = (myNotes ?? []) as unknown as { id: string; title: string | null; body: string; exercises: { name: string } | null }[];
   const fight = fightCountdown(p?.next_fight_date ?? null, today);
   const auto: string[] = [];
   if (fight && !fight.past) auto.push(`🥊 Fight ${fight.label}${p?.weight_class ? ` · ${p.weight_class}` : ""}${p?.weight_class_limit_kg ? ` (${Number(p.weight_class_limit_kg)} kg)` : ""}`);
@@ -58,6 +65,18 @@ export async function ClientContext({ athleteId }: { athleteId: string }) {
           </div>
         ))}
         {auto.map((a) => <p key={a} className="px-1 text-xs text-muted">{a}</p>)}
+        {notes.length > 0 && (
+          <details className="px-1 text-xs">
+            <summary className="cursor-pointer text-muted">📝 Their own notes ({notes.length})</summary>
+            <ul className="mt-1 space-y-1">
+              {notes.map((n) => (
+                <li key={n.id}>
+                  <b>{n.exercises?.name ?? n.title ?? "Note"}:</b> <span className="text-muted">{n.body}</span>
+                </li>
+              ))}
+            </ul>
+          </details>
+        )}
         <form action={addFlag} className="flex flex-wrap gap-2 pt-1">
           <input type="hidden" name="athlete_id" value={athleteId} />
           <select name="kind" className={`${box} w-32`} aria-label="Type">

@@ -79,6 +79,13 @@ export async function loadLoggerData(supabase: SupabaseClient, workoutId: string
     lastFor(swapIds),
   ]);
   for (const e of (swapRows ?? []) as Exercise[]) exercises.set(e.id, e);
+  // The client's own setup notes (rack height, seat position, Keiser settings…)
+  const { data: noteRows } = await supabase
+    .from("client_notes")
+    .select("exercise_id, body")
+    .eq("athlete_id", athleteId)
+    .in("exercise_id", [...exercises.keys()]);
+  const myNotes = new Map((noteRows ?? []).map((n) => [n.exercise_id as string, n.body as string]));
   const liftMap = new Map(lifts.map((l) => [l.key, l]));
   const latest = latestByLift(maxes);
   const sets = (setRows ?? []) as SetLog[];
@@ -120,7 +127,7 @@ export async function loadLoggerData(supabase: SupabaseClient, workoutId: string
       if (it.kind === "text" || !ex)
         return {
           id: it.id, kind: "text", label, name: it.title ?? "Notes", exerciseId: null, rx: "", meta: "",
-          notes: it.notes, cues: null, videoUrl: null, loadChip: null, warn: null, prev: null,
+          notes: it.notes, cues: null, myNote: null, videoUrl: null, loadChip: null, warn: null, prev: null,
           fields: [], restSec: null, sets: [], comment: il?.comment ?? "", done: !!il?.done, swap: null, plannedId: null, category: null,
         };
       const base = baseFor(ex.lift_key, liftMap, latest);
@@ -151,6 +158,7 @@ export async function loadLoggerData(supabase: SupabaseClient, workoutId: string
           }) || "As prescribed",
         meta: [it.tempo && `tempo ${it.tempo}`, it.rest_sec ? `rest ${formatRest(it.rest_sec)}` : null].filter(Boolean).join(" · "),
         notes: it.notes,
+        myNote: myNotes.get(ex.id) ?? null,
         cues: ex.cues,
         videoUrl: ex.video_url,
         loadChip: load ? `${load.addedToBodyweight ? "+" : "~"}${suggestedDisplayWeight(load.kg, units)} ${units.weight_unit}` : null,

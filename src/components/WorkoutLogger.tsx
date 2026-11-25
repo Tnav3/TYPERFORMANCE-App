@@ -1,4 +1,5 @@
 "use client";
+import { MyExerciseNote } from "./MyExerciseNote";
 import { BAND_LEVELS } from "@/lib/programming/fields";
 // TrainHeroic-style logging: tap a set to complete it (saves instantly),
 // rest timer starts automatically, progress bar for the session.
@@ -43,6 +44,8 @@ export interface LoggerItem {
   meta: string;
   notes: string | null;
   cues: string | null;
+  /** The client's own setup note for this exercise. */
+  myNote: string | null;
   videoUrl: string | null;
   loadChip: string | null;
   warn: string | null;
@@ -355,6 +358,7 @@ export function WorkoutLogger({
                     </p>
                     {it.warn && <p className="text-xs text-warn">{it.warn}</p>}
                     {it.notes && <p className="mt-1 text-sm">{it.notes}</p>}
+                    {it.exerciseId && <MyExerciseNote exerciseId={it.exerciseId} initial={it.myNote} readOnly={readOnly} />}
                     {it.exerciseId && (
                       <button
                         type="button"

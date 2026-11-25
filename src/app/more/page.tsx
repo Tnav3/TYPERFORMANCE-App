@@ -21,6 +21,7 @@ import {
   Utensils,
   Wrench,
   type LucideIcon,
+  NotebookPen,
 } from "lucide-react";
 import { requireState } from "@/lib/session";
 import { todayISO } from "@/lib/dates";
@@ -80,6 +81,7 @@ export default async function MorePage() {
 
       <div className="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-surface">
         {[
+          ["/notes", "My notes", NotebookPen],
           ["/trophies", "Trophy cabinet", Trophy],
           ["/notifications", "Notifications", Bell],
           ["/profile", "My profile", UserRound],

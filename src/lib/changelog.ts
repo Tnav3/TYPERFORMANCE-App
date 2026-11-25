@@ -9,6 +9,7 @@ export const CHANGELOG: Release[] = [
     version: "0.9.0",
     date: "2026-11-25",
     items: [
+      { who: "client", text: "My notes: keep rack heights and machine settings, shown right on each exercise." },
       { who: "client", text: "Log band tension (Light to X-Heavy) and Keiser resistance + peak watts." },
       { who: "client", text: "Logging is quicker: empty boxes fill from your plan or last session, plus a Log all button." },
       { who: "client", text: "Team feed on Home: see when your group trains (if your coach turns it on)." },
