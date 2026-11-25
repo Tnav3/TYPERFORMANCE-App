@@ -6,7 +6,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { addDays, mondayOf } from "@/lib/week";
 import { formatDate } from "@/lib/dates";
 import { formatPrescription, formatSetPlan, itemLabel } from "@/lib/prescription";
-import { addBlockDay, renameAssignment, shiftAssignment, swapInAssignment, unassign } from "@/app/coach/workouts/actions";
+import { addBlockDay, renameAssignment, setBlockLength, shiftAssignment, swapInAssignment, unassign } from "@/app/coach/workouts/actions";
 
 type Assignment = { id: string; program_name: string; start_date: string };
 type W = { id: string; workout_date: string; title: string };
@@ -204,6 +204,31 @@ export async function BlockOverview({
               </form>
             </div>
           </details>
+          {workouts.length > 0 && (
+            <details data-popover className="relative">
+              <summary className="flex min-h-10 cursor-pointer list-none items-center rounded-xl border border-line bg-surface-2 px-3 font-bold">
+                Length · {weekCount} wk{weekCount === 1 ? "" : "s"}
+              </summary>
+              <div className="absolute right-0 z-30 mt-2 w-[min(92vw,340px)] rounded-2xl border border-line bg-surface p-3 shadow-2xl">
+                <form action={setBlockLength} className="space-y-2">
+                  <input type="hidden" name="assignment_id" value={pick.id} />
+                  <input type="hidden" name="back" value={blockBack} />
+                  <label className="flex items-center justify-between gap-3 text-sm font-bold">
+                    Run this block for
+                    <select name="weeks" defaultValue={weekCount} className={`${input} !w-28`} aria-label="Weeks">
+                      {Array.from({ length: Math.max(16, weekCount + 8) }, (_, k) => k + 1).map((n) => (
+                        <option key={n} value={n}>{n} week{n === 1 ? "" : "s"}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <button className="min-h-10 w-full rounded-xl bg-brand font-extrabold uppercase text-white">Set length</button>
+                  <p className="text-[11px] leading-snug text-muted">
+                    Longer copies week {weekCount} into each new week, so tweak the loads after. Shorter removes upcoming days past the new end. Logged sessions never change.
+                  </p>
+                </form>
+              </div>
+            </details>
+          )}
           <details data-popover className="relative">
             <summary className="flex min-h-10 cursor-pointer list-none items-center rounded-xl border border-line bg-surface-2 px-3 font-bold">Move / rename</summary>
             <div className="absolute right-0 z-30 mt-2 w-[min(92vw,340px)] space-y-3 rounded-2xl border border-line bg-surface p-3 shadow-2xl">

@@ -12,6 +12,7 @@ export const CHANGELOG: Release[] = [
       { who: "coach", text: "Programming tab shows the block week by week: current block and week highlighted, every day's exercises, click a day to edit just that day." },
       { who: "coach", text: "Swap an exercise on one day only, or every upcoming day in a block." },
       { who: "coach", text: "11 more loading schemes (5x5, linear %, heavy triples, top set + back-offs, strength-speed, speed-strength and more)." },
+      { who: "coach", text: "Programming tab: change a block's length. Longer copies the last week forward; shorter removes upcoming days. Logged sessions never change." },
       { who: "client", text: "First workout guide: the first time you open a session, it points at each button (log a set, tick, last time, how-to, swap, ?, timers, finish). Replay it from your profile." },
       { who: "client", text: "Welcome tour: new step on looking up training terms; trophies step points to the trophy on Home." },
       { who: "client", text: "Learn: look up any training term (AMRAP, tempo, RIR, cluster sets…). A ? button under an exercise explains the ones it uses." },

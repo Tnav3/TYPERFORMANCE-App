@@ -1,6 +1,8 @@
 "use server";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { addDays, mondayOf } from "@/lib/week";
+import { todayISO } from "@/lib/dates";
 import { coachOnly, friendly, ISO_DATE, safePath, str, UUID } from "@/lib/programming/server";
 
 function go(path: string, error?: string): never {
@@ -194,4 +196,71 @@ export async function addBlockDay(fd: FormData) {
   if (error) go(back, friendly(error.message));
   revalidatePath(back.split(/[?#]/)[0]);
   redirect(`/coach/workouts/${data!.id}?ret=programming&block=${id}`);
+}
+
+/**
+ * Change how many weeks a client's block runs.
+ * Shorter: removes upcoming, unlogged days after the new last week (logged days stay).
+ * Longer: copies the block's last week into each new week.
+ */
+export async function setBlockLength(fd: FormData) {
+  const supabase = await coachOnly();
+  const back = safePath(fd.get("back"), "/coach");
+  const id = String(fd.get("assignment_id") ?? "");
+  const weeks = Number(fd.get("weeks"));
+  if (!UUID.test(id)) go(back);
+  if (!Number.isInteger(weeks) || weeks < 1 || weeks > 26) go(back, "Pick 1 to 26 weeks.");
+  const { data: ws, error } = await supabase
+    .from("workouts")
+    .select("id, athlete_id, workout_date, position, title, notes")
+    .eq("assignment_id", id)
+    .is("overrides_id", null)
+    .not("athlete_id", "is", null)
+    .order("workout_date");
+  if (error) go(back, friendly(error.message));
+  if (!ws?.length) go(back, "Add a day to this block first, then set its length.");
+  const firstMon = mondayOf(ws![0].workout_date);
+  const lastMon = mondayOf(ws![ws!.length - 1].workout_date);
+  const current = Math.round((Date.parse(lastMon) - Date.parse(firstMon)) / 604800000) + 1;
+  const sep = back.includes("?") ? "&" : "?";
+  if (weeks === current) go(back);
+
+  if (weeks < current) {
+    const cutoff = addDays(firstMon, weeks * 7);
+    const today = todayISO();
+    const cut = ws!.filter((w) => w.workout_date >= cutoff);
+    const { data: logs } = await supabase.from("workout_logs").select("workout_id").in("workout_id", cut.map((w) => w.id));
+    const logged = new Set((logs ?? []).map((l) => l.workout_id as string));
+    const remove = cut.filter((w) => !logged.has(w.id) && w.workout_date >= today).map((w) => w.id);
+    const kept = cut.length - remove.length;
+    if (remove.length) {
+      const { error: dErr } = await supabase.from("workouts").delete().in("id", remove);
+      if (dErr) go(back, friendly(dErr.message));
+    }
+    go(`${back}${sep}length=${weeks}${kept ? `&kept=${kept}` : ""}`);
+  }
+
+  // Longer: copy the last week forward
+  const src = ws!.filter((w) => w.workout_date >= lastMon);
+  const { data: items, error: iErr } = await supabase
+    .from("workout_items")
+    .select("workout_id, position, kind, exercise_id, block, slot, sets, reps, load_type, percent, rpe, load_kg, tempo, rest_sec, title, notes, block_title, velocity, fields, set_plan")
+    .in("workout_id", src.map((w) => w.id));
+  if (iErr) go(back, friendly(iErr.message));
+  for (let k = 1; k <= weeks - current; k++) {
+    for (const w of src) {
+      const { data: nw, error: wErr } = await supabase
+        .from("workouts")
+        .insert({ athlete_id: w.athlete_id, assignment_id: id, workout_date: addDays(w.workout_date, k * 7), position: w.position, title: w.title, notes: w.notes })
+        .select("id")
+        .single();
+      if (wErr) go(back, friendly(wErr.message));
+      const rows = (items ?? []).filter((i) => i.workout_id === w.id).map((i) => ({ ...Object.fromEntries(Object.entries(i).filter(([k]) => k !== "workout_id")), workout_id: nw!.id }));
+      if (rows.length) {
+        const { error: rErr } = await supabase.from("workout_items").insert(rows);
+        if (rErr) go(back, friendly(rErr.message));
+      }
+    }
+  }
+  go(`${back}${sep}length=${weeks}`);
 }

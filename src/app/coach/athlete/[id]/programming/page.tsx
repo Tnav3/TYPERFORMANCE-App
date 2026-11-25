@@ -22,7 +22,7 @@ export default async function ClientProgrammingPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ error?: string; removed?: string; swapped?: string; shifted?: string; block?: string }>;
+  searchParams: Promise<{ error?: string; removed?: string; swapped?: string; shifted?: string; block?: string; length?: string; kept?: string }>;
 }) {
   const { supabase } = await requireState(["coach"]);
   const { id } = await params;
@@ -68,6 +68,12 @@ export default async function ClientProgrammingPage({
       {sp.error && <Alert>{sp.error}</Alert>}
       {sp.swapped && <Alert tone="ok">Swapped on {sp.swapped} upcoming line{sp.swapped === "1" ? "" : "s"}.</Alert>}
       {sp.shifted && <Alert tone="ok">Moved {sp.shifted} upcoming workout{sp.shifted === "1" ? "" : "s"}. Logged ones stayed put.</Alert>}
+      {sp.length && (
+        <Alert tone="ok">
+          Block is now {sp.length} week{sp.length === "1" ? "" : "s"}.
+          {sp.kept ? ` ${sp.kept} logged or past session${sp.kept === "1" ? "" : "s"} after the new end stayed put.` : ""}
+        </Alert>
+      )}
       {sp.removed && <Alert tone="ok">Removed {sp.removed} upcoming workouts. Past and logged ones are kept.</Alert>}
 
       <BlockOverview supabase={supabase} athleteId={id} assignments={(assignments ?? []) as { id: string; program_name: string; start_date: string }[]} selected={sp.block} today={today} back={back} />
