@@ -24,3 +24,13 @@ describe("titles (083)", () => {
     await expect(asUser(db, alice, () => q(`insert into titles (org, colour) values ('WBA', 'pink')`))).rejects.toThrow();
   });
 });
+
+describe("fight level (084)", () => {
+  it("fights default to amateur, can be pro; profile stores the current level", async () => {
+    await asUser(db, alice, () => q(`insert into fights (fought_on, result, rounds) values ('2026-01-01', 'win', 3)`));
+    await asUser(db, alice, () => q(`insert into fights (fought_on, result, rounds, level) values ('2026-06-01', 'win', 5, 'pro')`));
+    expect((await q(`select level from fights where athlete_id = $1 order by fought_on`, [alice])).rows.map((r) => r.level)).toEqual(["amateur", "pro"]);
+    await asUser(db, alice, () => q(`update profiles set fight_level = 'pro' where id = $1`, [alice]));
+    await expect(q(`update profiles set fight_level = 'semi' where id = $1`, [alice])).rejects.toThrow();
+  });
+});

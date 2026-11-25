@@ -35,7 +35,7 @@ export async function saveFight(
 
   const { error } = await supabase
     .from("fights")
-    .insert({ athlete_id: athleteId, fought_on: date, result, rounds });
+    .insert({ athlete_id: athleteId, fought_on: date, result, rounds, level: String(fd.get("level")) === "pro" ? "pro" : "amateur" });
   if (error)
     return {
       message: /switched off/i.test(error.message)
@@ -111,4 +111,22 @@ export async function deleteTitle(fd: FormData) {
   revalidatePath(back);
   revalidatePath("/trophies");
   redirect(`${back}#titles`);
+}
+
+/** Amateur or pro: what they compete as now (the default for new fights). */
+export async function setFightLevel(fd: FormData) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+  const requested = String(fd.get("athlete_id") ?? "");
+  const athleteId = UUID.test(requested) ? requested : user.id;
+  const level = String(fd.get("level") ?? "");
+  const next = String(fd.get("next") ?? "/fights");
+  const back = next.startsWith("/") && !next.startsWith("//") ? next.split("?")[0] : "/fights";
+  if (level === "amateur" || level === "pro") await supabase.from("profiles").update({ fight_level: level }).eq("id", athleteId);
+  revalidatePath(back);
+  revalidatePath("/trophies");
+  redirect(back);
 }

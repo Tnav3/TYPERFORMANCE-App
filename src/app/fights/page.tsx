@@ -5,6 +5,7 @@ import type { Fight } from "@/lib/fights";
 import { FightForm } from "@/components/FightForm";
 import { FightRecordView } from "@/components/FightRecordView";
 import { TitlesEditor } from "@/components/TitlesEditor";
+import { FightLevelPicker } from "@/components/FightLevelPicker";
 import type { Title } from "@/lib/titles";
 import { BackLink, Card, Heading, Screen } from "@/components/ui";
 
@@ -19,7 +20,7 @@ export default async function FightsPage({ searchParams }: { searchParams: Promi
   const today = todayISO();
   const { data } = await supabase
     .from("fights")
-    .select("id, athlete_id, fought_on, result, rounds, created_at")
+    .select("id, athlete_id, fought_on, result, rounds, created_at, level")
     .eq("athlete_id", user!.id);
   const { data: titles } = await supabase.from("titles").select("id, org, name, colour, won_on").eq("athlete_id", user!.id).order("won_on", { ascending: false, nullsFirst: false });
   const planned = profile.next_fight_date;
@@ -32,6 +33,7 @@ export default async function FightsPage({ searchParams }: { searchParams: Promi
         Competition Tracker
       </Heading>
       <Tip profile={profile} tipKey="fights" />
+      <FightLevelPicker level={(profile as unknown as { fight_level: "amateur" | "pro" | null }).fight_level ?? null} next="/fights" readOnly={!!viewAs} />
       <FightRecordView
         fights={(data ?? []) as Fight[]}
         back="/fights"
@@ -43,7 +45,7 @@ export default async function FightsPage({ searchParams }: { searchParams: Promi
       <div id="log" className="scroll-mt-6" />
       <Card className="mt-6">
         <h2 className="mb-4 text-lg font-black uppercase">Log a fight</h2>
-        <FightForm defaultDate={defaultDate} today={today} />
+        <FightForm defaultDate={defaultDate} today={today} defaultLevel={(profile as unknown as { fight_level: "amateur" | "pro" | null }).fight_level ?? "amateur"} />
       </Card>
     </Screen>
   );

@@ -1,6 +1,7 @@
 import { deleteFight } from "@/app/fights/actions";
 import { formatDate } from "@/lib/dates";
 import {
+  LEVEL_LABEL,
   RESULT_LABEL,
   byYear,
   recordOf,
@@ -26,6 +27,9 @@ export function FightRecordView({
   thisYear: number;
 }) {
   const all = recordOf(fights);
+  const pro = fights.filter((f) => f.level === "pro");
+  const am = fights.filter((f) => f.level !== "pro");
+  const split = pro.length > 0 && am.length > 0;
   const years = byYear(fights);
   const year = years.find((y) => y.year === thisYear);
   const sorted = [...fights].sort(
@@ -36,6 +40,17 @@ export function FightRecordView({
 
   return (
     <>
+      {split && (
+        <div className="mb-3 grid grid-cols-2 gap-3">
+          {([["Pro record", pro], ["Amateur record", am]] as const).map(([label, fs]) => (
+            <Card key={label} className="!p-4">
+              <p className="text-xs font-semibold uppercase tracking-widest text-brand">{label}</p>
+              <p className="text-3xl font-black">{recordString(recordOf(fs))}</p>
+              <p className="text-xs text-muted">W-L-D · {fs.length} fight{fs.length === 1 ? "" : "s"}</p>
+            </Card>
+          ))}
+        </div>
+      )}
       <div className="mb-4 grid grid-cols-2 gap-3">
         <Card className="!p-4">
           <p className="text-xs font-semibold uppercase tracking-widest text-muted">
@@ -104,6 +119,9 @@ export function FightRecordView({
                   className={`rounded-md px-2 py-0.5 text-xs font-extrabold uppercase ${RESULT_CLS[f.result]}`}
                 >
                   {RESULT_LABEL[f.result]}
+                </span>
+                <span className="rounded-md border border-line px-1.5 py-0.5 text-[10px] font-extrabold uppercase text-muted">
+                  {LEVEL_LABEL[f.level ?? "amateur"]}
                 </span>
                 <span className="text-sm">
                   {formatDate(f.fought_on)} · {f.rounds} round

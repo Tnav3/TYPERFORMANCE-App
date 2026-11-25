@@ -19,7 +19,7 @@ export default async function TrophiesPage() {
     supabase.from("badges").select("key, detail, earned_on").eq("athlete_id", me),
     supabase.from("workout_logs").select("id", { count: "exact", head: true }).eq("athlete_id", me).not("completed_at", "is", null),
     loggedSets(supabase, me),
-    supabase.from("fights").select("result").eq("athlete_id", me),
+    supabase.from("fights").select("result, level").eq("athlete_id", me),
   ]);
   const nFights = fights?.length ?? 0;
   const wins = (fights ?? []).filter((f) => f.result === "win").length;
@@ -32,7 +32,7 @@ export default async function TrophiesPage() {
   const pbCount = pbEvents(all).length;
   const [card, { data: me2 }] = await Promise.all([
     loadPlayerCard(supabase, me, profile ?? {}, todayISO(), { pbs: pbCount, sessions: workouts ?? 0, viewAsCoach: !!viewAs }),
-    supabase.from("profiles").select("full_name, nickname, avatar_path, weight_class, disciplines(name)").eq("id", me).maybeSingle(),
+    supabase.from("profiles").select("full_name, nickname, avatar_path, weight_class, fight_level, disciplines(name)").eq("id", me).maybeSingle(),
   ]);
   const top = heaviestLift(all);
   const [{ data: titles }, { data: topEx }] = await Promise.all([
@@ -41,7 +41,12 @@ export default async function TrophiesPage() {
   ]);
   if (!viewAs) await saveSeenCard(supabase, me, card, todayISO());
   const who = me2 as unknown as { full_name: string | null; nickname: string | null; avatar_path: string | null; weight_class: string | null; disciplines: { name: string } | null } | null;
-  const record = nFights ? `${wins}-${(fights ?? []).filter((f) => f.result === "loss").length}-${(fights ?? []).filter((f) => f.result === "draw").length}` : null;
+  const lvl = (me2 as unknown as { fight_level: "amateur" | "pro" | null } | null)?.fight_level ?? null;
+  const fsAll = (fights ?? []) as { result: string; level: string | null }[];
+  // Show the record for the level they compete at now (all fights if they haven't picked).
+  const fs = lvl ? fsAll.filter((f) => (f.level ?? "amateur") === lvl) : fsAll;
+  const wld = `${fs.filter((f) => f.result === "win").length}-${fs.filter((f) => f.result === "loss").length}-${fs.filter((f) => f.result === "draw").length}`;
+  const record = fs.length ? `${lvl === "pro" ? "Pro record " : lvl === "amateur" ? "Am record " : ""}${wld}` : null;
   const { views, earned: got, total } = cabinet(tracks({ workouts: workouts ?? 0, pbs: pbEvents(all).length, fights: nFights, wins }), new Set(held.keys()));
 
   return (
@@ -54,7 +59,7 @@ export default async function TrophiesPage() {
           name={who?.full_name ?? "Athlete"}
           nickname={who?.nickname}
           avatarPath={who?.avatar_path}
-          tagline={[who?.disciplines?.name, who?.weight_class].filter(Boolean).join(" · ") || null}
+          tagline={[lvl === "pro" ? "Pro" : lvl === "amateur" ? "Amateur" : null, who?.disciplines?.name, who?.weight_class].filter(Boolean).join(" · ") || null}
           record={record}
           trophies={got}
           titles={(titles ?? []) as Title[]}

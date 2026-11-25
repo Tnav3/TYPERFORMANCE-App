@@ -85,7 +85,7 @@ export function PlayerCard({
         </div>
         {/* footer */}
         <div className="flex items-center justify-between px-4 pb-3 pt-2 text-[10px] font-bold uppercase tracking-widest text-white/40">
-          <span>{record ? `Record ${record}` : "TYPERFORMANCE"}</span>
+          <span>{record ? (/^\d/.test(record) ? `Record ${record}` : record) : "TYPERFORMANCE"}</span>
           <span>🏆 {trophies}</span>
         </div>
       </div>

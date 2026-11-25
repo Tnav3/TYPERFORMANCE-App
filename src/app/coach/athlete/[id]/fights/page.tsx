@@ -6,6 +6,7 @@ import type { Fight } from "@/lib/fights";
 import { FightForm } from "@/components/FightForm";
 import { FightRecordView } from "@/components/FightRecordView";
 import { TitlesEditor } from "@/components/TitlesEditor";
+import { FightLevelPicker } from "@/components/FightLevelPicker";
 import type { Title } from "@/lib/titles";
 import { Card, Screen } from "@/components/ui";
 
@@ -25,12 +26,12 @@ export default async function CoachAthleteFights({
   const [{ data: p }, { data }, { data: titles }] = await Promise.all([
     supabase
       .from("profiles")
-      .select("full_name, email, next_fight_date")
+      .select("full_name, email, next_fight_date, fight_level")
       .eq("id", id)
       .maybeSingle(),
     supabase
       .from("fights")
-      .select("id, athlete_id, fought_on, result, rounds, created_at")
+      .select("id, athlete_id, fought_on, result, rounds, created_at, level")
       .eq("athlete_id", id),
     supabase.from("titles").select("id, org, name, colour, won_on").eq("athlete_id", id).order("won_on", { ascending: false, nullsFirst: false }),
   ]);
@@ -43,6 +44,7 @@ export default async function CoachAthleteFights({
       <ClientTabs id={id} name={p.full_name ?? p.email} active="fights" />
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_440px]">
       <div>
+      <FightLevelPicker level={(p.fight_level as "amateur" | "pro" | null) ?? null} athleteId={id} next={back} who="Competes as" />
       <FightRecordView
         fights={(data ?? []) as Fight[]}
         back={back}
@@ -60,6 +62,7 @@ export default async function CoachAthleteFights({
           athleteId={id}
           defaultDate={planned && planned <= today ? planned : today}
           today={today}
+          defaultLevel={(p.fight_level as "amateur" | "pro" | null) ?? "amateur"}
         />
       </Card>
       </div>

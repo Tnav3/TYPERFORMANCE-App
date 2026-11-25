@@ -9,6 +9,7 @@ export const CHANGELOG: Release[] = [
     version: "0.9.0",
     date: "2026-11-25",
     items: [
+      { who: "client", text: "Pick amateur or pro. Each fight keeps its level, so the two records stay separate." },
       { who: "client", text: "Titles and belts (WBC, ISKA and more) show as badges on your player card, plus your heaviest lift." },
       { who: "client", text: "Home shows your newest notifications up top, plus a trophy button that lights up when your card improves." },
       { who: "client", text: "Plan your week: drag a workout to another day, or tap its handle then tap a day." },

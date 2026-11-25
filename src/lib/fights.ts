@@ -8,7 +8,11 @@ export interface Fight {
   result: FightResult;
   rounds: number;
   created_at: string;
+  level?: FightLevel;
 }
+
+export type FightLevel = "amateur" | "pro";
+export const LEVEL_LABEL: Record<FightLevel, string> = { amateur: "Amateur", pro: "Pro" };
 
 export const RESULT_LABEL: Record<FightResult, string> = { win: "Win", loss: "Loss", draw: "Draw" };
 export const MAX_ROUNDS = 15;

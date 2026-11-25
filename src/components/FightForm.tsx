@@ -1,7 +1,7 @@
 "use client";
 import { useActionState, useState, useTransition } from "react";
 import { saveFight, type FightState } from "@/app/fights/actions";
-import { MAX_ROUNDS, RESULT_LABEL, type FightResult } from "@/lib/fights";
+import { LEVEL_LABEL, MAX_ROUNDS, RESULT_LABEL, type FightLevel, type FightResult } from "@/lib/fights";
 import { Alert, Button } from "./ui";
 
 const inputCls =
@@ -11,11 +11,14 @@ export function FightForm({
   athleteId,
   defaultDate,
   today,
+  defaultLevel = "amateur",
 }: {
   athleteId?: string;
   defaultDate: string;
   today: string;
+  defaultLevel?: FightLevel;
 }) {
+  const [level, setLevel] = useState<FightLevel>(defaultLevel);
   const [state, action, pending] = useActionState<FightState, FormData>(
     saveFight,
     {},
@@ -56,6 +59,24 @@ export function FightForm({
       {athleteId && <input type="hidden" name="athlete_id" value={athleteId} />}
       <input type="hidden" name="result" value={result} />
       <input type="hidden" name="rounds" value={rounds} />
+      <input type="hidden" name="level" value={level} />
+
+      <fieldset className="mb-4">
+        <legend className="mb-1.5 text-sm font-semibold">Amateur or pro bout</legend>
+        <div className="grid grid-cols-2 gap-2">
+          {(["amateur", "pro"] as const).map((l) => (
+            <button
+              key={l}
+              type="button"
+              aria-pressed={level === l}
+              onClick={() => setLevel(l)}
+              className={`min-h-12 rounded-xl border text-sm font-extrabold uppercase tracking-wide ${level === l ? "border-text bg-text text-ink" : "border-line bg-surface-2 text-muted"}`}
+            >
+              {LEVEL_LABEL[l]}
+            </button>
+          ))}
+        </div>
+      </fieldset>
 
       <label className="mb-4 block">
         <span className="mb-1.5 block text-sm font-semibold">Fight date</span>
