@@ -15,7 +15,7 @@ beforeEach(async () => {
 
 describe("quotes (073)", () => {
   it("clients read active quotes only and can't write", async () => {
-    await asUser(db, coach, () => q(`update quotes set active = false where body like 'Strong is%'`));
+    await asUser(db, coach, () => q(`update quotes set active = false where author = 'Wayne Gretzky'`));
     const r = await asUser(db, alice, () => q(`select count(*)::int n from quotes`));
     expect(r.rows[0].n).toBe(6);
     await expect(asUser(db, alice, () => q(`insert into quotes (body) values ('hello there')`))).rejects.toThrow();

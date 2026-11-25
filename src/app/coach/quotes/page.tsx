@@ -15,12 +15,13 @@ export default async function QuotesPage({ searchParams }: { searchParams: Promi
   const today = quoteOfDay(quotes.filter((q) => q.active), todayISO());
   return (
     <Screen>
-      <Heading sub="One shows on every client's Home each day. Only add quotes you know the source of, or write your own.">Daily quotes</Heading>
+      <Heading sub="One shows on every client's Home each day. Every quote here is traced to where it was said. Add a source for new ones so you can stand behind them.">Daily quotes</Heading>
       {error && <Alert>{error}</Alert>}
       <Card className="mb-4">
         <form action={addQuote} className="space-y-2">
           <textarea name="body" rows={2} maxLength={240} required placeholder="Your line" className={`${input} py-2`} />
-          <input name="author" maxLength={80} defaultValue="TYPERFORMANCE" placeholder="Who said it" className={input} />
+          <input name="author" maxLength={80} required placeholder="Who said it, e.g. Mike Tyson" className={input} />
+          <input name="source" maxLength={200} placeholder="Where it was said, e.g. ESPN interview, 2013" className={input} />
           <button className="min-h-11 w-full rounded-xl bg-brand font-bold text-white">Add quote</button>
         </form>
       </Card>
@@ -30,6 +31,7 @@ export default async function QuotesPage({ searchParams }: { searchParams: Promi
             {q.id === today?.id && <p className="text-xs font-bold uppercase text-brand">Showing today</p>}
             <p>{q.body}</p>
             {q.author && <p className="text-xs text-muted">{q.author}</p>}
+            {q.source && <p className="text-[11px] italic text-muted/70">Source: {q.source}</p>}
             <div className="mt-2 flex gap-4 text-sm">
               <form action={toggleQuote}><input type="hidden" name="id" value={q.id} /><input type="hidden" name="active" value={String(q.active)} /><button className="text-muted underline">{q.active ? "Switch off" : "Switch on"}</button></form>
               <form action={deleteQuote}><input type="hidden" name="id" value={q.id} /><button className="text-red-400">Delete</button></form>

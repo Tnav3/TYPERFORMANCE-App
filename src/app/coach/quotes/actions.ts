@@ -13,7 +13,7 @@ export async function addQuote(fd: FormData) {
   const supabase = await coachOnly();
   const body = str(fd.get("body"), 240);
   if (!body || body.length < 5) go("Write at least a few words.");
-  const { error } = await supabase.from("quotes").insert({ body: noEmDash(body!), author: str(fd.get("author"), 80) });
+  const { error } = await supabase.from("quotes").insert({ body: noEmDash(body!), author: str(fd.get("author"), 80), source: str(fd.get("source"), 200) });
   go(error ? friendly(error.message) : undefined);
 }
 export async function toggleQuote(fd: FormData) {
