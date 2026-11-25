@@ -86,4 +86,9 @@ textarea {
   .meal-plan .border-brand { border-color: #D2141E !important; }
   .meal-card { break-inside: avoid; }
   .print-break { break-before: page; }
+  .print-avoid { break-inside: avoid; }
+  body:has(.print-sheet) .lg\:pl-64 { padding-left: 0 !important; padding-bottom: 0 !important; }
+  .print-sheet { padding: 0 !important; }
+  .print-sheet * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
+@page { margin: 12mm; }

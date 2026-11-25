@@ -2,6 +2,7 @@
 // as a row and every day as a column, with each workout's exercises listed. Click a
 // workout to edit that one day; block-wide tools (rename, move, swap) sit in the header.
 import Link from "next/link";
+import { Printer } from "lucide-react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { addDays, mondayOf } from "@/lib/week";
 import { formatDate } from "@/lib/dates";
@@ -184,6 +185,16 @@ export async function BlockOverview({
           </p>
         </div>
         <div className="flex flex-wrap gap-2 text-sm">
+          {workouts.length > 0 && (
+            <Link
+              href={`/coach/athlete/${athleteId}/programming/print?block=${pick.id}`}
+              target="_blank"
+              className="flex min-h-10 items-center gap-1.5 rounded-xl border border-line bg-surface-2 px-3 font-bold"
+              title="Print or save as PDF for a physio or email"
+            >
+              <Printer size={16} aria-hidden /> PDF
+            </Link>
+          )}
           <details data-popover className="relative">
             <summary className="flex min-h-10 cursor-pointer list-none items-center rounded-xl border border-line bg-surface-2 px-3 font-bold">Swap an exercise</summary>
             <div className="absolute right-0 z-30 mt-2 w-[min(92vw,380px)] rounded-2xl border border-line bg-surface p-3 shadow-2xl">
