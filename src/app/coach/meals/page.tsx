@@ -3,6 +3,7 @@ import { requireState } from "@/lib/session";
 import { Alert, Card, Heading, Screen } from "@/components/ui";
 import { ingredientsText, type LibraryMeal } from "@/lib/nutrition/plan-content";
 import { deleteMeal, saveMeal } from "./actions";
+import { ProductPicker, type FoodProduct } from "@/components/ProductPicker";
 
 export const dynamic = "force-dynamic";
 
@@ -11,7 +12,7 @@ const input =
 const area = "w-full rounded-xl border border-line bg-surface-2 p-3 text-sm text-text placeholder:text-muted/60 focus:border-brand focus:outline-none";
 const SLOTS: [string, string][] = [["breakfast", "Breakfast"], ["lunch", "Lunch"], ["dinner", "Dinner"], ["snack", "Snack"]];
 
-function MealForm({ m }: { m?: LibraryMeal }) {
+function MealForm({ m, products }: { m?: LibraryMeal; products: FoodProduct[] }) {
   return (
     <form action={saveMeal} className="space-y-3">
       {m && <input type="hidden" name="id" value={m.id} />}
@@ -28,6 +29,7 @@ function MealForm({ m }: { m?: LibraryMeal }) {
         ))}
       </div>
       <p className="text-xs text-muted">Use your AU database numbers. The app checks P×4 + C×4 + F×9 matches the calories.</p>
+      {products.length > 0 && <ProductPicker products={products} />}
       <label className="block text-sm text-muted">Ingredients, one per line: item | amount | brand
         <textarea name="ingredients" rows={5} defaultValue={m ? ingredientsText(m.ingredients) : ""} placeholder={"Chicken thigh, skin on | 150 g | Lilydale\nBroccolini | 1 bunch"} className={area} />
       </label>
@@ -45,7 +47,11 @@ function MealForm({ m }: { m?: LibraryMeal }) {
 export default async function MealLibraryPage({ searchParams }: { searchParams: Promise<{ error?: string; edit?: string; new?: string; slot?: string }> }) {
   const { supabase } = await requireState(["coach"]);
   const sp = await searchParams;
-  const { data } = await supabase.from("meal_library").select("*").order("slot").order("name");
+  const [{ data }, { data: prodRows }] = await Promise.all([
+    supabase.from("meal_library").select("*").order("slot").order("name"),
+    supabase.from("food_products").select("id, category, brand, name, serve, store, kcal, protein_g, carbs_g, fat_g, notes, verified").order("category").order("name"),
+  ]);
+  const products = ((prodRows ?? []) as FoodProduct[]).map((p) => ({ ...p, serve: p.serve != null ? Number(p.serve) : null, kcal: p.kcal != null ? Number(p.kcal) : null, protein_g: p.protein_g != null ? Number(p.protein_g) : null, carbs_g: p.carbs_g != null ? Number(p.carbs_g) : null, fat_g: p.fat_g != null ? Number(p.fat_g) : null }));
   const meals = (data ?? []) as LibraryMeal[];
   const slot = SLOTS.some(([k]) => k === sp.slot) ? sp.slot : null;
   const shown = slot ? meals.filter((m) => m.slot === slot) : meals;
@@ -58,13 +64,13 @@ export default async function MealLibraryPage({ searchParams }: { searchParams: 
       {editing ? (
         <Card className="mb-4 lg:max-w-2xl">
           <div className="mb-3 flex items-center justify-between"><h2 className="font-bold">Edit meal</h2><Link href="/coach/meals" className="text-sm text-muted">Cancel</Link></div>
-          <MealForm m={editing} />
+          <MealForm m={editing} products={products} />
           <form action={deleteMeal} className="mt-3"><input type="hidden" name="id" value={editing.id} /><button className="text-sm text-red-400">Delete meal</button></form>
         </Card>
       ) : (
         <details className="mb-4 lg:max-w-2xl" open={!!sp.new || meals.length === 0}>
           <summary className="min-h-11 cursor-pointer rounded-xl border border-line bg-surface px-4 py-3 font-bold">+ Add a meal</summary>
-          <Card className="mt-2"><MealForm /></Card>
+          <Card className="mt-2"><MealForm products={products} /></Card>
         </details>
       )}
       <div className="mb-3 flex gap-2 overflow-x-auto">

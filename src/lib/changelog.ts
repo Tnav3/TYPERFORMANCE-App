@@ -9,6 +9,10 @@ export const CHANGELOG: Release[] = [
     version: "0.9.0",
     date: "2026-11-25",
     items: [
+      { who: "coach", text: "Programming tab shows the block week by week: current block and week highlighted, every day's exercises, click a day to edit just that day." },
+      { who: "coach", text: "Swap an exercise on one day only, or every upcoming day in a block." },
+      { who: "coach", text: "11 more loading schemes (5x5, linear %, heavy triples, top set + back-offs, strength-speed, speed-strength and more)." },
+      { who: "coach", text: "Meal library: search 219 AU supermarket products and add them with their macros in one tap." },
       { who: "client", text: "Card leaderboard (opt-in): top rated and movers this month. Opens once enough athletes join." },
       { who: "client", text: "Testing shows the tests you've done first; untried ones tuck away. Bodyweight chart dates no longer overlap." },
       { who: "client", text: "Fixed: the LAST line in a workout now shows your most recent session, not your oldest." },
