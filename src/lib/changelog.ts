@@ -9,6 +9,8 @@ export const CHANGELOG: Release[] = [
     version: "0.9.0",
     date: "2026-11-25",
     items: [
+      { who: "client", text: "Fixed: the LAST line in a workout now shows your most recent session, not your oldest." },
+      { who: "client", text: "Tidier workout screen, Progress page and Competition Tracker; the meal plan keeps the bottom tabs." },
       { who: "client", text: "Cleaner home: today's workout first, goal under your name, no doubled-up fight countdown." },
       { who: "client", text: "Training has one calendar: tap a day to see it, drag or tap the handle to move a session." },
       { who: "client", text: "Progress photos: pick from your gallery, and they upload faster." },

@@ -54,11 +54,11 @@ export async function loadLoggerData(supabase: SupabaseClient, workoutId: string
     ids.length
       ? supabase
           .from("set_logs")
-          .select("reps, load_kg, value, metrics, exercise_id, workout_items!inner(workout_id), workout_logs!inner(workout_date, athlete_id)")
+          .select("set_no, reps, load_kg, value, metrics, exercise_id, workout_items!inner(workout_id), workout_logs!inner(workout_date, athlete_id)")
           .eq("workout_logs.athlete_id", athleteId)
           .in("exercise_id", ids)
           .neq("workout_items.workout_id", workoutId)
-          .order("workout_date", { referencedTable: "workout_logs", ascending: false })
+          .order("workout_logs(workout_date)", { ascending: false }) // sorts the set rows by their session date, newest first
           .limit(300)
       : Promise.resolve({ data: [] });
   const exIds = [...new Set(items.map((i) => i.exercise_id).filter(Boolean))] as string[];
@@ -92,14 +92,20 @@ export async function loadLoggerData(supabase: SupabaseClient, workoutId: string
 
   // Most recent previous session per exercise: "5 × 100 kg, 5 × 100 kg…"
   const last = new Map<string, { date: string; sets: { reps: number | null; load_kg: number | null; value: number | null; metrics: Record<string, number | null> }[] }>();
-  for (const r of [...(lastRows ?? []), ...(swapLast ?? [])] as unknown as {
+  type LastRow = {
+    set_no: number;
     reps: number | null;
     load_kg: string | null;
     value: string | null;
     metrics: Record<string, number | null> | null;
     exercise_id: string;
     workout_logs: { workout_date: string };
-  }[]) {
+  };
+  // Newest session first (belt and braces: don't rely on the database order alone)
+  const lastSorted = ([...(lastRows ?? []), ...(swapLast ?? [])] as unknown as LastRow[]).sort((a, b) =>
+    b.workout_logs.workout_date.localeCompare(a.workout_logs.workout_date) || a.set_no - b.set_no,
+  );
+  for (const r of lastSorted) {
     const ex = r.exercise_id;
     const date = r.workout_logs.workout_date;
     const cur = last.get(ex);

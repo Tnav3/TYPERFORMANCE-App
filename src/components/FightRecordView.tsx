@@ -52,7 +52,7 @@ export function FightRecordView({
         </div>
       )}
       <div className="mb-4 grid grid-cols-2 gap-3">
-        <Card className="!p-4">
+        <Card className={`!p-4 ${split ? "hidden" : ""}`}>
           <p className="text-xs font-semibold uppercase tracking-widest text-muted">
             All time
           </p>

@@ -25,7 +25,7 @@ export async function findExercises(search: string): Promise<PickExercise[]> {
     .select("exercise_id, exercises(name, category, subcategory), workout_logs!inner(athlete_id, workout_date)")
     .eq("workout_logs.athlete_id", user.id)
     .not("exercise_id", "is", null)
-    .order("workout_date", { referencedTable: "workout_logs", ascending: false })
+    .order("workout_logs(workout_date)", { ascending: false }) // sorts the set rows by their session date, newest first
     .limit(300);
   const seen = new Map<string, PickExercise>();
   for (const r of (data ?? []) as unknown as { exercise_id: string; exercises: { name: string; category: string; subcategory: string | null } | null }[]) {

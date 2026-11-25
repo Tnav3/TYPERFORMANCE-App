@@ -358,42 +358,44 @@ export function WorkoutLogger({
                     </p>
                     {it.warn && <p className="text-xs text-warn">{it.warn}</p>}
                     {it.notes && <p className="mt-1 text-sm">{it.notes}</p>}
-                    {it.exerciseId && <MyExerciseNote exerciseId={it.exerciseId} initial={it.myNote} readOnly={readOnly} />}
-                    {it.exerciseId && (
-                      <button
-                        type="button"
-                        onClick={() => setSheet({ id: it.exerciseId!, name: it.name })}
-                        className="mt-1 inline-flex min-h-9 items-center gap-1.5 text-sm font-bold text-brand"
-                      >
-                        {it.videoUrl ? <PlayCircle size={16} /> : <Info size={16} />}
-                        {it.videoUrl ? "Demo, how-to & my history" : "How-to & my history"}
-                      </button>
-                    )}
-                    {it.swap ? (
-                      <p className="mt-1 flex flex-wrap items-center gap-x-2 text-xs text-muted">
-                        <span className="rounded-md bg-warn/15 px-1.5 py-0.5 font-bold text-warn">Swapped</span>
-                        <span>
-                          for {it.swap.fromName}
-                          {it.swap.reason && ` · ${SWAP_REASONS.find((r) => r[0] === it.swap!.reason)?.[1] ?? ""}`}
-                          {it.swap.note && ` · “${it.swap.note}”`}
-                        </span>
-                        {!readOnly && (
-                          <button
-                            type="button"
-                            onClick={() => start(async () => { const r = await swapExercise({ workoutId, athleteId, itemId: it.id, exerciseId: null }); if (r.ok) router.refresh(); })}
-                            className="min-h-9 font-bold text-brand underline underline-offset-4"
-                          >
-                            Undo
-                          </button>
-                        )}
-                      </p>
-                    ) : (
-                      it.exerciseId && !readOnly && (
-                        <button type="button" onClick={() => setSwapFor(it)} className="ml-3 mt-1 inline-flex min-h-9 items-center gap-1.5 text-sm font-bold text-muted hover:text-text">
-                          <ArrowLeftRight size={15} /> Swap
+                    <div className="mt-1 flex flex-wrap items-center gap-x-4">
+                      {it.exerciseId && (
+                        <button
+                          type="button"
+                          onClick={() => setSheet({ id: it.exerciseId!, name: it.name })}
+                          className="inline-flex min-h-9 items-center gap-1.5 text-sm font-bold text-brand"
+                        >
+                          {it.videoUrl ? <PlayCircle size={16} /> : <Info size={16} />}
+                          {it.videoUrl ? "Demo, how-to & my history" : "How-to & my history"}
                         </button>
-                      )
-                    )}
+                      )}
+                      {it.swap ? (
+                        <p className="flex w-full flex-wrap items-center gap-x-2 text-xs text-muted">
+                          <span className="rounded-md bg-warn/15 px-1.5 py-0.5 font-bold text-warn">Swapped</span>
+                          <span>
+                            for {it.swap.fromName}
+                            {it.swap.reason && ` · ${SWAP_REASONS.find((r) => r[0] === it.swap!.reason)?.[1] ?? ""}`}
+                            {it.swap.note && ` · “${it.swap.note}”`}
+                          </span>
+                          {!readOnly && (
+                            <button
+                              type="button"
+                              onClick={() => start(async () => { const r = await swapExercise({ workoutId, athleteId, itemId: it.id, exerciseId: null }); if (r.ok) router.refresh(); })}
+                              className="min-h-9 font-bold text-brand underline underline-offset-4"
+                            >
+                              Undo
+                            </button>
+                          )}
+                        </p>
+                      ) : (
+                        it.exerciseId && !readOnly && (
+                          <button type="button" onClick={() => setSwapFor(it)} className="inline-flex min-h-9 items-center gap-1.5 text-sm font-bold text-muted hover:text-text">
+                            <ArrowLeftRight size={15} /> Swap
+                          </button>
+                        )
+                      )}
+                    </div>
+                    {it.exerciseId && <MyExerciseNote exerciseId={it.exerciseId} initial={it.myNote} readOnly={readOnly} />}
                     <div className="mt-1 flex flex-wrap items-center gap-2">
                       {it.prev && (
                         <p className="inline-flex rounded-lg bg-surface-2 px-2.5 py-1 text-xs">

@@ -1,4 +1,6 @@
+import Link from "next/link";
 import { ClientNavBar } from "@/components/ClientNavBar";
+import { hasFeature } from "@/lib/features";
 import { requireFeature } from "@/lib/session";
 import { bodyweights } from "@/lib/programming/history-data";
 import { ACTIVITY, dayTotals, sampleDay, targets, type Goal, type Sex } from "@/lib/programming/mealplan";
@@ -31,10 +33,15 @@ export default async function MealPlanPage({
     return (
       <Screen wide>
         <div className="mx-auto max-w-5xl">
-        <BackLink href="/macros" label="Macros" />
+        {hasFeature(profile, "macros") && (
+          <div className="no-print mb-2 flex justify-end">
+            <Link href="/macros" className="text-sm font-bold text-brand">Track macros →</Link>
+          </div>
+        )}
         <PublishedMealPlan plan={published.snapshot as MealSnapshot} day={(sp.d ?? "train_a") as DayKey} publishedAt={formatDate(published.published_at.slice(0, 10))} />
         <p className="no-print mt-4 text-center text-xs text-muted">Questions about your plan? Message your coach.</p>
         </div>
+        <div className="no-print"><ClientNavBar supabase={supabase} profile={profile} userId={user!.id} /></div>
       </Screen>
     );
   }

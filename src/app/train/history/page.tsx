@@ -33,13 +33,14 @@ export default async function HistoryPage() {
         )}
       </div>
       {(badges ?? []).length > 0 && (
-        <div className="mb-5 flex flex-wrap gap-2">
-          {(badges ?? []).map((b) => (
-            <span key={b.key} className="rounded-full border border-brand/50 bg-brand/10 px-3 py-1 text-xs font-bold" title={b.earned_on}>
-              🏅 {b.detail ?? b.key}
-            </span>
-          ))}
-        </div>
+        <Link href="/trophies" className="mb-5 flex items-center gap-3 rounded-2xl border border-line bg-surface px-4 py-3">
+          <span className="text-xl" aria-hidden>🏅</span>
+          <span className="min-w-0 flex-1">
+            <span className="block font-extrabold">{(badges ?? []).length} badge{(badges ?? []).length === 1 ? "" : "s"} earned</span>
+            <span className="block truncate text-xs text-muted">Latest: {(badges ?? [])[0].detail ?? (badges ?? [])[0].key}</span>
+          </span>
+          <span className="text-sm font-bold text-brand">Trophy cabinet →</span>
+        </Link>
       )}
       <ExerciseList rows={rows} exercises={exercises} hrefBase="/train/history" />
       <ClientTabBar train chat={menu.chatOn} progress chatBadge={menu.unreadChat} moreBadge={menu.formsDue} food={menu.food} />

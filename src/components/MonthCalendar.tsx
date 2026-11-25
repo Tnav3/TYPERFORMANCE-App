@@ -53,8 +53,9 @@ export function MonthCalendar({
   const [m, setM] = useState(0);
   const byDay = new Map<string, MonthWorkout[]>();
   for (const w of workouts) byDay.set(w.date, [...(byDay.get(w.date) ?? []), w]);
-  const firstAhead = initial.filter((w) => w.date >= today).sort((a, b) => a.date.localeCompare(b.date))[0]?.date;
-  const [sel, setSel] = useState<string>(initial.some((w) => w.date === today) ? today : firstAhead ?? today);
+  // Today already has its own cards above, so open on the next training day
+  const firstAhead = initial.filter((w) => w.date > today).sort((a, b) => a.date.localeCompare(b.date))[0]?.date;
+  const [sel, setSel] = useState<string>(firstAhead ?? today);
   const [picked, setPicked] = useState<string | null>(null);
   const [drag, setDrag] = useState<{ id: string; x: number; y: number; over: string | null } | null>(null);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
@@ -167,7 +168,7 @@ export function MonthCalendar({
           })}
         </div>
         <div className="mt-2 flex flex-wrap justify-center gap-3 text-[11px] text-muted">
-          {(["done", "planned", "missed"] as const).map((k) => (
+          {(["done", ...(workouts.some((w) => w.status === "partial") ? ["partial" as const] : []), "planned", "missed"] as const).map((k) => (
             <span key={k} className="flex items-center gap-1"><span className={`h-2 w-2 rounded-full ${DOT[k]}`} />{LABEL[k]}</span>
           ))}
         </div>

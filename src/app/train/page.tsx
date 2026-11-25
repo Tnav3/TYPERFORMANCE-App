@@ -118,7 +118,16 @@ export default async function TrainPage() {
       {missed.length > 0 && (
         <section className="mb-6 space-y-2">
           <h2 className="text-xs font-semibold uppercase tracking-widest text-warn">Not logged yet</h2>
-          {missed.map((w) => <Row key={w.id} w={w} />)}
+          {missed.slice(0, 2).map((w) => <Row key={w.id} w={w} />)}
+          {missed.length > 2 && (
+            <details className="group">
+              <summary className="min-h-10 cursor-pointer list-none text-sm font-bold text-muted">
+                <span className="group-open:hidden">Show {missed.length - 2} more</span>
+                <span className="hidden group-open:inline">Show fewer</span>
+              </summary>
+              <div className="space-y-2">{missed.slice(2).map((w) => <Row key={w.id} w={w} />)}</div>
+            </details>
+          )}
         </section>
       )}
 

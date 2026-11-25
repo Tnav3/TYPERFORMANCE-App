@@ -103,6 +103,7 @@ export default async function AthleteHome() {
   const { data: newNotes, count: unreadNotes } = await supabase
     .from("notifications")
     .select("id, title, body, url, kind", { count: "exact" })
+    .eq("user_id", user!.id)
     .is("read_at", null)
     .order("created_at", { ascending: false })
     .limit(2);
