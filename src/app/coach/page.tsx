@@ -9,6 +9,7 @@ import type { AccountStatus, Profile } from "@/lib/types";
 import { Card, Logo, Screen, SignOutButton } from "@/components/ui";
 import { TrafficLight } from "@/components/TrafficLight";
 import { CoachOverview } from "@/components/CoachOverview";
+import { RecentActivity } from "@/components/RecentActivity";
 import { setAthleteStatus } from "./actions";
 import { activityTone, byLeastRecent, lastSeenLabel } from "@/lib/activity";
 
@@ -67,6 +68,8 @@ export default async function CoachHome() {
           ))}
         </Section>
       )}
+
+      <RecentActivity supabase={supabase} />
 
       <CoachOverview
         supabase={supabase}

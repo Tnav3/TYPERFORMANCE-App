@@ -85,6 +85,12 @@ export default async function SummaryPage({ params }: { params: Promise<{ id: st
       {celebrate && <Celebrate />}
       <p className="pt-4 text-center text-xs uppercase tracking-widest text-brand">Workout complete</p>
       <Heading sub={formatDate(workout.workout_date)}>{workout.title}</Heading>
+      {(log as { coach_reaction?: string | null }).coach_reaction && (
+        <p className="mb-4 rounded-2xl border border-brand/40 bg-brand/10 p-3 text-sm font-bold">
+          <span className="mr-2 text-2xl align-middle">{(log as { coach_reaction?: string }).coach_reaction}</span>
+          Your coach reacted to this session.
+        </p>
+      )}
 
       <div className="mb-4 grid grid-cols-3 gap-2 text-center">
         <Card className="!p-3">
