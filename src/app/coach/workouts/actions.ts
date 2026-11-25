@@ -117,6 +117,7 @@ export async function updateGroup(fd: FormData) {
   const name = str(fd.get("name"), 60);
   if (name) patch.name = name;
   if (fd.has("archived")) patch.archived = fd.get("archived") === "true";
+  if (fd.has("show_activity")) patch.show_activity = fd.get("show_activity") === "true";
   const { error } = await supabase.from("groups").update(patch).eq("id", id);
   go(patch.archived === true ? "/coach/groups" : `/coach/groups/${id}`, error ? friendly(error.message) : undefined);
 }

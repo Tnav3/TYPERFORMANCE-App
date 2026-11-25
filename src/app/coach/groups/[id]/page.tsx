@@ -163,6 +163,15 @@ export default async function GroupPage({
           <input name="name" defaultValue={group.name} maxLength={60} className={input} aria-label="Group name" />
           <button className={smallBtn}>Rename</button>
         </form>
+        <form action={updateGroup} className="mt-3 flex flex-wrap items-center gap-3 rounded-xl border border-line p-3">
+          <input type="hidden" name="id" value={id} />
+          <input type="hidden" name="show_activity" value={String(!(group as { show_activity?: boolean }).show_activity)} />
+          <div className="min-w-0 flex-1 text-sm">
+            <p className="font-bold">Team feed {(group as { show_activity?: boolean }).show_activity ? "is on" : "is off"}</p>
+            <p className="text-xs text-muted">Members see when others in this group finish a workout (first name, photo and workout name only).</p>
+          </div>
+          <button className={smallBtn}>{(group as { show_activity?: boolean }).show_activity ? "Turn off" : "Turn on"}</button>
+        </form>
         <form action={updateGroup} className="mt-3">
           <input type="hidden" name="id" value={id} />
           <input type="hidden" name="archived" value={String(!group.archived)} />

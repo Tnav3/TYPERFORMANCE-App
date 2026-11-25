@@ -11,6 +11,7 @@ import { Logo, Screen } from "@/components/ui";
 export interface HomeProps {
   tour: ReactNode;
   camp?: ReactNode;
+  team?: ReactNode;
   quote?: { body: string; author: string | null } | null;
   first: string;
   me: { name: string; avatar: string | null; nickname: string | null; goal: string | null };
@@ -156,6 +157,7 @@ export function ClientHome(p: HomeProps) {
         </Link>
       )}
 
+      {p.team}
       {p.weight && <QuickWeight {...p.weight} />}
 
       {p.booking && (
