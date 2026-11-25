@@ -100,7 +100,12 @@ export default async function AthleteHome() {
   };
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(thisWeek, i));
   const doneCount = week.filter((w) => logBy.get(w.id)?.completed_at).length;
-  const { count: unreadNotes } = await supabase.from("notifications").select("id", { count: "exact", head: true }).is("read_at", null);
+  const { data: newNotes, count: unreadNotes } = await supabase
+    .from("notifications")
+    .select("id, title, body, url, kind", { count: "exact" })
+    .is("read_at", null)
+    .order("created_at", { ascending: false })
+    .limit(2);
   // Their planned fight date has passed: ask how it went
   const fightToLog = on.fights && profile.next_fight_date && profile.next_fight_date < today;
   const nextFight = plannedFights.find((f) => !f.past);
@@ -184,6 +189,7 @@ export default async function AthleteHome() {
       me={{ name: profile.full_name ?? profile.email, avatar: (profile as unknown as { avatar_path: string | null }).avatar_path ?? null, nickname: (profile as unknown as { nickname: string | null }).nickname ?? null, goal: (profile as unknown as { goal_text: string | null }).goal_text ?? null }}
       fightLabel={nextFight ? nextFight.label.replace(" out", "") : null}
       unreadNotes={unreadNotes ?? 0}
+      newNotes={(newNotes ?? []).map((n) => ({ id: n.id as string, title: n.title as string, body: n.body as string, url: n.url as string }))}
       programOn={programOn}
       today={today}
       todayWorkouts={todayWorkouts.map((w) => ({ id: w.id, title: w.title, done: !!logBy.get(w.id)?.completed_at, ...sizeOf(w.id) }))}

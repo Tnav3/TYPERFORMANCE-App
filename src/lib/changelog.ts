@@ -9,6 +9,7 @@ export const CHANGELOG: Release[] = [
     version: "0.9.0",
     date: "2026-11-25",
     items: [
+      { who: "client", text: "Home shows your newest notifications up top, plus a trophy button that lights up when your card improves." },
       { who: "client", text: "Plan your week: drag a workout to another day, or tap its handle then tap a day." },
       { who: "client", text: "Your player card rating now shows on home, with a heads-up when it goes up." },
       { who: "coach", text: "Exercises can record up to 8 things per set. Distance in metres, km, miles or yards, set right in the builder." },

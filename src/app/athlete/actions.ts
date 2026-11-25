@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { todayISO } from "@/lib/dates";
 import { addPlanned, removePlanned } from "@/lib/planned-fights";
+import { requireState } from "@/lib/session";
 
 export type PlannedState = { error?: string; ok?: number };
 
@@ -34,5 +35,12 @@ export async function addPlannedFight(_prev: PlannedState, fd: FormData): Promis
 export async function removePlannedFight(fd: FormData) {
   const { supabase, id, p } = await me();
   await supabase.from("profiles").update(removePlanned(p, String(fd.get("date") ?? ""))).eq("id", id);
+  revalidatePath("/athlete");
+}
+
+/** "Clear" on the home screen's New for you box. */
+export async function clearNotifications() {
+  const { supabase } = await requireState(["athlete"]);
+  await supabase.rpc("mark_notifications_read");
   revalidatePath("/athlete");
 }

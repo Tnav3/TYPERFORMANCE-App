@@ -4,8 +4,9 @@ import { MiniChart } from "./MiniChart";
 import { Avatar } from "./Avatar";
 import { QuickWeight } from "./QuickWeight";
 import type { ReactNode } from "react";
-import { Bell } from "lucide-react";
+import { Bell, Trophy } from "lucide-react";
 import { ClientTabBar } from "@/components/ClientTabBar";
+import { clearNotifications } from "@/app/athlete/actions";
 import { Logo, Screen } from "@/components/ui";
 
 export interface HomeProps {
@@ -18,6 +19,7 @@ export interface HomeProps {
   me: { name: string; avatar: string | null; nickname: string | null; goal: string | null };
   fightLabel: string | null;
   unreadNotes: number;
+  newNotes?: { id: string; title: string; body: string; url: string }[];
   programOn: boolean;
   today: string;
   todayWorkouts: { id: string; title: string; done: boolean; exercises: number; mins: number }[];
@@ -83,7 +85,7 @@ export function ClientHome(p: HomeProps) {
   return (
     <Screen>
       {p.tour}
-      <header className="mb-4 flex items-center gap-3">
+      <header className="mb-4 flex items-center gap-2">
         <Link href="/profile#about" aria-label="My profile">
           {p.me.avatar ? <Avatar name={p.me.name} path={p.me.avatar} /> : <Logo size={36} />}
         </Link>
@@ -93,8 +95,18 @@ export function ClientHome(p: HomeProps) {
           {p.fightLabel && <p className="text-xs font-bold text-brand">Fight in {p.fightLabel}</p>}
         </div>
         <Link
-          href="/notifications"
+          href="/trophies"
           className="relative flex h-11 w-11 items-center justify-center rounded-xl border border-line text-muted"
+          aria-label="Trophy cabinet and player card"
+        >
+          <Trophy size={20} />
+          {p.card && p.card.overall != null && p.card.seen != null && p.card.overall > p.card.seen ? (
+            <span className="absolute -right-1 -top-1 h-3 w-3 rounded-full border-2 border-ink bg-brand" aria-hidden />
+          ) : null}
+        </Link>
+        <Link
+          href="/notifications"
+          className={`relative flex h-11 w-11 items-center justify-center rounded-xl border ${p.unreadNotes ? "border-brand bg-brand/10 text-brand" : "border-line text-muted"}`}
           aria-label={p.unreadNotes ? `${p.unreadNotes} new notifications` : "Notifications"}
         >
           <Bell size={20} />
@@ -104,6 +116,33 @@ export function ClientHome(p: HomeProps) {
         </Link>
       </header>
 
+      {p.newNotes && p.newNotes.length > 0 && (
+        <section className="mb-5 overflow-hidden rounded-2xl border border-brand/50 bg-surface">
+          <div className="flex items-center justify-between px-4 pt-3">
+            <h2 className="text-xs font-semibold uppercase tracking-widest text-brand">New for you</h2>
+            <span className="flex items-center gap-3">
+              <Link href="/notifications" className="text-xs font-bold text-muted">
+                {p.unreadNotes > p.newNotes.length ? `See all ${p.unreadNotes}` : "See all"}
+              </Link>
+              <form action={clearNotifications}>
+                <button className="min-h-8 text-xs font-bold text-muted">Clear</button>
+              </form>
+            </span>
+          </div>
+          <div className="divide-y divide-line">
+            {p.newNotes.map((n) => (
+              <Link key={n.id} href={n.url} className="flex min-h-14 items-center gap-3 px-4 py-2.5 active:bg-surface-2">
+                <span className="h-2 w-2 shrink-0 rounded-full bg-brand" />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate font-extrabold leading-tight">{n.title}</span>
+                  <span className="block truncate text-sm text-muted">{n.body}</span>
+                </span>
+                <span className="text-muted" aria-hidden>›</span>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
       {p.camp}
       {p.programOn && (
         <Link href={p.todayWorkouts.length === 1 ? `/train/${p.todayWorkouts[0].id}` : "/train"} className="mb-5 block">
