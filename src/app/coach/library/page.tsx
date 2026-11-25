@@ -1,3 +1,4 @@
+import { allExerciseRows } from "@/lib/programming/all-exercises";
 import Link from "next/link";
 import { requireState } from "@/lib/session";
 import { getLifts } from "@/lib/lift-data";
@@ -176,11 +177,11 @@ export default async function LibraryPage({
   const { supabase } = await requireState(["coach"]);
   const { error, q = "", cat = "", sub = "", hidden, tag = "", novideo } = await searchParams;
   const [{ data }, lifts, cats] = await Promise.all([
-    supabase.from("exercises").select("*").order("name"),
+    allExerciseRows(supabase).then((data) => ({ data })),
     getLifts(supabase),
     loadCategories(supabase),
   ]);
-  const all = (data ?? []) as Exercise[];
+  const all = (data ?? []) as unknown as Exercise[];
   const pool = all.filter((e) => (hidden ? !e.active : e.active));
   const needle = q.trim().toLowerCase();
   const shown = pool.filter(

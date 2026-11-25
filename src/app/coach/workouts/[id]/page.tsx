@@ -1,3 +1,4 @@
+import { allExercises } from "@/lib/programming/all-exercises";
 import { ClientContext } from "@/components/ClientContext";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -28,7 +29,7 @@ export default async function CoachWorkoutPage({
   const [{ data: w }, { data: items }, { data: exercises }, { data: logs }] = await Promise.all([
     supabase.from("workouts").select("*").eq("id", id).maybeSingle<Workout>(),
     supabase.from("workout_items").select(ITEM_COLUMNS).eq("workout_id", id).order("position"),
-    supabase.from("exercises").select("id, name, active").order("name"),
+    allExercises(supabase).then((data) => ({ data })),
     supabase
       .from("workout_logs")
       .select("id, athlete_id, completed_at, session_rpe, profiles(full_name, email)")

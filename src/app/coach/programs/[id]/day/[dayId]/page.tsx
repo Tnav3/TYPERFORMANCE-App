@@ -1,3 +1,4 @@
+import { allExercises } from "@/lib/programming/all-exercises";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireState } from "@/lib/session";
@@ -28,7 +29,7 @@ export default async function ProgramDayPage({
       supabase.from("program_days").select("*").eq("id", dayId).eq("program_id", id).maybeSingle<ProgramDay>(),
       supabase.from("programs").select("id, name, weeks").eq("id", id).maybeSingle(),
       supabase.from("program_items").select(ITEM_COLUMNS).eq("day_id", dayId).order("position"),
-      supabase.from("exercises").select("id, name, active").order("name"),
+      allExercises(supabase).then((data) => ({ data })),
       supabase.from("program_days").select("id, week_no, day_no").eq("program_id", id).order("week_no").order("day_no"),
     ]);
   if (!day || !program) notFound();

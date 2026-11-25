@@ -112,6 +112,8 @@ function toRow(p: RowPatch): Res<Record<string, unknown>> {
   if (p.notes !== undefined) row.notes = p.notes.trim().slice(0, 2000) || null;
   if (p.title !== undefined) row.title = p.title?.trim().slice(0, 80) || null;
   if (p.block_title !== undefined) row.block_title = p.block_title?.trim().slice(0, 60) || null;
+  // Typing sets/reps/load by hand replaces any loading-scheme plan on this line
+  if (p.sets !== undefined || p.reps !== undefined || p.load_type !== undefined) row.set_plan = null;
   if (p.fields !== undefined) {
     const f = p.fields.filter((x) => (FIELD_KEYS as readonly string[]).includes(x));
     if (f.length > 4) return { error: "Pick up to 4 things to record." };
@@ -508,4 +510,11 @@ export async function builderApplyScheme(
   }
   touch(back);
   return { data: { weeks: targets.length } };
+}
+
+export async function listSchemes(): Promise<Res<{ id: string; name: string; weeks: number }[]>> {
+  const supabase = await coachOnly();
+  const { data, error } = await supabase.from("loading_schemes").select("id, name, weeks").order("sort").order("name");
+  if (error) return { error: friendly(error.message) };
+  return { data: (data ?? []).map((s) => ({ id: s.id, name: s.name, weeks: (s.weeks as unknown[]).length })) };
 }
