@@ -73,3 +73,17 @@ textarea {
   background: #fff;
   border: 3px solid var(--color-ink, #0b0b0b);
 }
+
+/* Meal plan print: TYPERFORMANCE brand (red #D2141E, charcoal #282828) on white */
+.print-only { display: none; }
+@media print {
+  .no-print, nav, header, .view-as-banner { display: none !important; }
+  .print-only { display: block !important; }
+  h2.print-only { display: block !important; }
+  body { background: #fff !important; color: #282828 !important; }
+  .meal-plan * { color: #282828 !important; background: transparent !important; border-color: #ddd !important; }
+  .meal-plan .text-brand { color: #D2141E !important; }
+  .meal-plan .border-brand { border-color: #D2141E !important; }
+  .meal-card { break-inside: avoid; }
+  .print-break { break-before: page; }
+}

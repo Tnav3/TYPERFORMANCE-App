@@ -4,7 +4,7 @@ import { Eye, MessageCircle, Timer } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Avatar } from "./Avatar";
 
-export type ClientTab = "overview" | "program" | "progress" | "forms" | "tests" | "lifestyle" | "mobility" | "fights" | "profile";
+export type ClientTab = "overview" | "program" | "progress" | "forms" | "tests" | "lifestyle" | "meals" | "mobility" | "fights" | "profile";
 
 const TABS: [ClientTab, string, string][] = [
   ["program", "Calendar", "/program"],
@@ -12,6 +12,7 @@ const TABS: [ClientTab, string, string][] = [
   ["progress", "Progress", "/progress"],
   ["forms", "Check-ins", "/forms"],
   ["lifestyle", "Habits & food", "/lifestyle"],
+  ["meals", "Meal plan", "/meal-plans"],
   ["tests", "Testing", "/tests"],
   ["mobility", "Mobility", "/mobility"],
   ["fights", "Fights", "/fights"],

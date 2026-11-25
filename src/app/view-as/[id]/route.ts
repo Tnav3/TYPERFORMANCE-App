@@ -11,7 +11,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   if (me?.role !== "coach" || me.status !== "active" || !VIEW_AS_UUID.test(id)) return NextResponse.redirect(new URL("/", req.url));
   const { data: client } = await supabase.from("profiles").select("id, full_name, email").eq("id", id).eq("role", "athlete").maybeSingle();
   if (!client) return NextResponse.redirect(new URL("/coach/clients", req.url));
-  const res = NextResponse.redirect(new URL("/athlete", req.url));
+  const next = req.nextUrl.searchParams.get("next") ?? "";
+  const dest = /^\/(meal-plan|train|progress|athlete)(\/[\w-]*)?$/.test(next) ? next : "/athlete";
+  const res = NextResponse.redirect(new URL(dest, req.url));
   const opts = { path: "/", sameSite: "lax" as const, secure: true, maxAge: 60 * 60 * 2 };
   res.cookies.set(VIEW_AS_COOKIE, client.id, { ...opts, httpOnly: true });
   res.cookies.set(VIEW_AS_NAME, encodeURIComponent(client.full_name ?? client.email), opts);

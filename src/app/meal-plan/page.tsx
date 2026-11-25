@@ -3,6 +3,9 @@ import { requireFeature } from "@/lib/session";
 import { bodyweights } from "@/lib/programming/history-data";
 import { ACTIVITY, dayTotals, sampleDay, targets, type Goal, type Sex } from "@/lib/programming/mealplan";
 import { Alert, BackLink, Card, Heading, Screen } from "@/components/ui";
+import { PublishedMealPlan, type MealSnapshot } from "@/components/PublishedMealPlan";
+import { formatDate } from "@/lib/dates";
+import type { DayKey } from "@/lib/nutrition/plan-content";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +19,23 @@ export default async function MealPlanPage({
 }) {
   const { supabase, user, profile } = await requireFeature(["athlete"], "mealplan");
   const sp = await searchParams;
+  const { data: published } = await supabase
+    .from("meal_plans")
+    .select("snapshot, published_at")
+    .eq("athlete_id", user!.id)
+    .eq("status", "published")
+    .order("published_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (published?.snapshot && sp.sample !== "1") {
+    return (
+      <Screen>
+        <BackLink href="/macros" label="Macros" />
+        <PublishedMealPlan plan={published.snapshot as MealSnapshot} day={(sp.d ?? "train_a") as DayKey} publishedAt={formatDate(published.published_at.slice(0, 10))} />
+        <p className="no-print mt-4 text-center text-xs text-muted">Questions about your plan? Message your coach.</p>
+      </Screen>
+    );
+  }
   const [weights, { data: coachTargets }] = await Promise.all([
     bodyweights(supabase, user!.id, 1),
     supabase.from("macro_targets").select("*").eq("athlete_id", user!.id).maybeSingle(),

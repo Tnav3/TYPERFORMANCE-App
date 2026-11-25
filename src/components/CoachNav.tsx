@@ -29,6 +29,7 @@ import {
   Zap,
   X,
   type LucideIcon,
+  Utensils,
 } from "lucide-react";
 
 type Item = { href: string; label: string; icon: LucideIcon; badge?: number };
@@ -64,6 +65,7 @@ export function CoachNav({ unread, notes = 0 }: { unread: number; notes?: number
         { href: "/coach/automations", label: "Automations", icon: Zap },
         { href: "/coach/sequences", label: "Onboarding sequences", icon: Workflow },
         { href: "/coach/files", label: "File library", icon: FolderOpen },
+        { href: "/coach/meals", label: "Meal library", icon: Utensils },
         { href: "/coach/settings/plans", label: "Plans & booking", icon: CalendarCheck },
         { href: "/coach/feedback", label: "Beta feedback", icon: MessageSquareWarning },
       ],

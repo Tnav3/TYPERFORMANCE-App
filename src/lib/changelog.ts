@@ -9,6 +9,8 @@ export const CHANGELOG: Release[] = [
     version: "0.9.0",
     date: "2026-11-25",
     items: [
+      { who: "client", text: "Your meal plan from your coach: training and rest days, shopping list, print to PDF." },
+      { who: "coach", text: "Meal library and meal plan builder with targets, live macro totals and publish." },
       { who: "client", text: "Swap an exercise mid-workout and pick from similar ones." },
       { who: "client", text: "Rate the session from 1 to 10 at the end of every workout." },
       { who: "client", text: "Move a workout to another day, or add your own." },
