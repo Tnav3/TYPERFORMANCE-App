@@ -146,8 +146,9 @@ export function CoachNav({ unread, notes = 0 }: { unread: number; notes?: number
     <>
       {/* Desktop side panel */}
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-line bg-surface lg:flex">
-        <Link href="/coach" className="flex h-16 items-center gap-2 px-5 text-sm font-black tracking-[0.25em]">
-          <span className="text-brand">TY</span>PERFORMANCE
+        <Link href="/coach" className="flex items-center justify-center px-5 pb-2 pt-4" aria-label="TYPERFORMANCE home">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo-full-rev.png" alt="TYPERFORMANCE" width={140} height={67} className="h-auto w-[140px]" />
         </Link>
         <nav className="flex-1 overflow-y-auto px-3 pb-6 pt-2">{list()}</nav>
       </aside>

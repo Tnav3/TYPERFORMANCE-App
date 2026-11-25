@@ -1,4 +1,5 @@
 import { ClientTabs } from "@/components/ClientTabs";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireState } from "@/lib/session";
 import { formatDate, todayISO } from "@/lib/dates";
@@ -113,6 +114,17 @@ export default async function CoachAthleteTests({
   return (
     <Screen wide>
       <ClientTabs id={id} name={p.full_name ?? p.email} active="tests" />
+
+      <Link
+        href={`/coach/athlete/${id}/tests/report`}
+        className="mb-4 flex items-center justify-between gap-3 rounded-2xl border border-brand/40 bg-brand/10 px-4 py-3"
+      >
+        <span>
+          <span className="block font-extrabold">Performance report</span>
+          <span className="block text-sm text-muted">Pick testing dates, see what improved, print or save as PDF for the client.</span>
+        </span>
+        <span className="shrink-0 font-black text-brand">Open →</span>
+      </Link>
 
       <div className="mb-6 grid gap-3 sm:grid-cols-2">
         <Card>
