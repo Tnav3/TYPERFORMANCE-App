@@ -89,3 +89,16 @@ describe("default cue (106)", () => {
     ]);
   });
 });
+
+describe("stale maxes (109)", () => {
+  it("has a 2–52 week setting (default 8) and accepts session-saved maxes", async () => {
+    expect((await q(`select stale_max_weeks from app_settings`)).rows[0].stale_max_weeks).toBe(8);
+    await expect(q(`update app_settings set stale_max_weeks = 1`)).rejects.toThrow();
+    const a = (await q(`insert into auth.users (email) values ('x@typ.test') returning id`)).rows[0].id;
+    const r = await q(
+      `insert into lift_maxes (athlete_id, lift_key, load_kg, reps, entered_by, source) values ($1, 'back_squat', 100, 7, $1, 'session') returning e1rm_kg::float e`,
+      [a],
+    );
+    expect(r.rows[0].e).toBeGreaterThan(115);
+  });
+});

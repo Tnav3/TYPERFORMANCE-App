@@ -9,6 +9,8 @@ export const CHANGELOG: Release[] = [
     version: "0.9.0",
     date: "2026-11-25",
     items: [
+      { who: "client", text: "Back on a lift after a break? If your last max is old, your loads show as a cautious estimate and you'll be asked to build to a top set at RPE 8. Log its RPE and your max updates from it." },
+      { who: "coach", text: "Old maxes: set when a saved e1RM counts as old (default 8 weeks) in Settings > Calculator lifts. Clients see a 90% estimate plus an RPE build-up, a top set with an RPE saves a fresh max, and Keep in mind lists each client's old maxes." },
       { who: "coach", text: "Client Programming tab: drag a workout to another day to move it (hold Alt/Option as you drop to copy). Logged workouts stay put. Desktop only for now." },
       { who: "coach", text: "Every exercise now has a default cue (edit it in the library under Default prescription). It drops into the coach notes when you add the exercise to a workout, and swaps over if you change the exercise." },
       { who: "coach", text: "Conditioning templates: rest between rounds, reps, sprints and sets is now in the Rest box (so the rest timer runs), not only in the notes." },

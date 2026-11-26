@@ -5,6 +5,7 @@ import { formatDate, todayISO } from "@/lib/dates";
 import { addDays } from "@/lib/week";
 import { fightCountdown } from "@/lib/fight";
 import { addFlag, resolveFlag } from "@/app/coach/flags/actions";
+import { DEFAULT_STALE_WEEKS, weeksSince } from "@/lib/programming/stale-max";
 
 const ICON: Record<string, string> = { injury: "🩹", competition: "🥊", note: "📌" };
 const box = "h-9 min-w-0 rounded-lg border border-line bg-surface-2 px-2 text-sm text-text placeholder:text-muted/60 focus:border-brand focus:outline-none";
@@ -31,12 +32,27 @@ export async function ClientContext({ athleteId }: { athleteId: string }) {
     .eq("athlete_id", athleteId)
     .order("updated_at", { ascending: false })
     .limit(12);
+  // Lifts whose newest e1RM is older than the cut-off: due a re-test (RPE build-up) before % loads.
+  const [{ data: maxRows }, { data: st }] = await Promise.all([
+    supabase.from("lift_maxes").select("lift_key, saved_on, lifts(name, active)").eq("athlete_id", athleteId).order("created_at", { ascending: false }),
+    supabase.from("app_settings").select("stale_max_weeks").maybeSingle(),
+  ]);
+  const cut = st?.stale_max_weeks ?? DEFAULT_STALE_WEEKS;
+  const seen = new Set<string>();
+  const old: string[] = [];
+  for (const m of (maxRows ?? []) as unknown as { lift_key: string; saved_on: string; lifts: { name: string; active: boolean } | null }[]) {
+    if (seen.has(m.lift_key)) continue;
+    seen.add(m.lift_key);
+    const wk = weeksSince(m.saved_on, today);
+    if (wk >= cut && m.lifts?.active !== false) old.push(`${m.lifts?.name ?? m.lift_key} (${wk} wks)`);
+  }
   const notes = (myNotes ?? []) as unknown as { id: string; title: string | null; body: string; exercises: { name: string } | null }[];
   const fight = fightCountdown(p?.next_fight_date ?? null, today);
   const auto: string[] = [];
   if (fight && !fight.past) auto.push(`🥊 Fight ${fight.label}${p?.weight_class ? ` · ${p.weight_class}` : ""}${p?.weight_class_limit_kg ? ` (${Number(p.weight_class_limit_kg)} kg)` : ""}`);
   for (const c of checks ?? []) auto.push(`⚠️ Niggle w/c ${formatDate(c.week_start)}${c.niggle_note ? `: ${c.niggle_note}` : ""}`);
   for (const s of swaps ?? []) auto.push(`↔️ Swapped for pain ${formatDate(String(s.swapped_at).slice(0, 10))}${s.swap_note ? `: ${s.swap_note}` : ""}`);
+  if (old.length) auto.push(`🕰️ Old maxes, re-test with an RPE build-up: ${old.slice(0, 5).join(", ")}${old.length > 5 ? ` +${old.length - 5} more` : ""}`);
   const list = flags ?? [];
 
   return (

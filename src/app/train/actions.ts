@@ -6,6 +6,7 @@ const SWAP_KEYS: string[] = SWAP_REASONS.map((r) => r[0]);
 import { revalidatePath } from "next/cache";
 import { todayISO } from "@/lib/dates";
 import { friendly, signedIn, UUID } from "@/lib/programming/server";
+import { DEFAULT_STALE_WEEKS, isStale, repMaxEquivalent } from "@/lib/programming/stale-max";
 import {
   DEFAULT_UNITS,
   fieldsFor,
@@ -87,6 +88,8 @@ export async function logSet(input: {
     else if (f === "weight") kg = v == null ? null : Math.min(600, v);
     else if (v != null) metrics[f] = Math.min(100000, v);
   }
+  const rpeIn = Number(String(input.values?.rpe ?? "").replace(",", "."));
+  if (metrics.rpe == null && rpeIn >= 1 && rpeIn <= 10) metrics.rpe = rpeIn;
   const { error: e } = await ctx.supabase.from("set_logs").upsert(
     {
       log_id: log.id,
@@ -100,7 +103,52 @@ export async function logSet(input: {
     },
     { onConflict: "log_id,item_id,set_no" },
   );
-  return e ? { ok: false, error: friendly(e.message) } : { ok: true };
+  if (e) return { ok: false, error: friendly(e.message) };
+  const rpeRaw = Number(String(input.values?.rpe ?? "").replace(",", "."));
+  if (reps && kg && Number.isFinite(rpeRaw) && rpeRaw > 0) {
+    try {
+      await refreshStaleMax(ctx, whoFor(ctx, input.athleteId), log.id, input.itemId, reps, kg, rpeRaw);
+    } catch {
+      /* best effort: the set itself is saved */
+    }
+  }
+  return { ok: true };
+}
+
+/**
+ * Back on a lift after a break: a logged top set with an RPE saves a fresh e1RM when the
+ * saved one is older than the coach's cut-off (or there isn't one). Barbell lifts only.
+ * One per lift per day; a better set that day replaces it.
+ */
+async function refreshStaleMax(ctx: Ctx, who: string, logId: string, itemId: string, reps: number, kg: number, rpe: number) {
+  const repMax = repMaxEquivalent(reps, rpe);
+  if (!repMax) return;
+  const db = ctx.supabase;
+  const [{ data: item }, { data: il }] = await Promise.all([
+    db.from("workout_items").select("exercises(lift_key)").eq("id", itemId).maybeSingle(),
+    db.from("item_logs").select("swap_exercise_id").eq("log_id", logId).eq("item_id", itemId).maybeSingle(),
+  ]);
+  let liftKey = (item?.exercises as unknown as { lift_key: string | null } | null)?.lift_key ?? null;
+  if (il?.swap_exercise_id) {
+    const { data: sw } = await db.from("exercises").select("lift_key").eq("id", il.swap_exercise_id).maybeSingle();
+    liftKey = sw?.lift_key ?? null;
+  }
+  if (!liftKey) return;
+  const { data: lift } = await db.from("lifts").select("kind").eq("key", liftKey).maybeSingle();
+  if (lift?.kind !== "barbell") return;
+  const [{ data: last }, { data: settings }] = await Promise.all([
+    db.from("lift_maxes").select("id, saved_on, source, e1rm_kg").eq("athlete_id", who).eq("lift_key", liftKey).order("created_at", { ascending: false }).limit(1).maybeSingle(),
+    db.from("app_settings").select("stale_max_weeks").maybeSingle(),
+  ]);
+  const today = todayISO();
+  const fromToday = last?.source === "session" && last.saved_on === today;
+  if (last && !fromToday && !isStale(last.saved_on, today, settings?.stale_max_weeks ?? DEFAULT_STALE_WEEKS)) return;
+  const { data: est } = await db.rpc("e1rm", { load: kg, reps: repMax });
+  if (fromToday) {
+    if (est != null && Number(est) <= Number(last!.e1rm_kg)) return;
+    await db.from("lift_maxes").delete().eq("id", last!.id);
+  }
+  await db.from("lift_maxes").insert({ athlete_id: who, lift_key: liftKey, load_kg: kg, reps: repMax, source: "session", saved_on: today });
 }
 
 /** Exercise / text-block note and done tick. */

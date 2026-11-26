@@ -6,6 +6,7 @@ import { addDays, editableFrom } from "@/lib/week";
 import { getLifts, getMaxes, latestBodyweight } from "@/lib/lift-data";
 import { formatPrescription, formatRest, formatSetPlan, itemLabel, setCount, targetReps } from "@/lib/prescription";
 import { baseFor, latestByLift, lineLoad } from "@/lib/programming/loads";
+import { DEFAULT_STALE_WEEKS, isStale, latestDates, STALE_FACTOR, weeksSince } from "@/lib/programming/stale-max";
 import {
   DEFAULT_UNITS,
   describeSet,
@@ -42,13 +43,15 @@ export async function loadLoggerData(supabase: SupabaseClient, workoutId: string
     .eq("athlete_id", athleteId)
     .eq("checked_on", todayISO())
     .maybeSingle();
-  const [{ data: itemRows }, { data: log }, lifts, maxes, bodyweight] = await Promise.all([
+  const [{ data: itemRows }, { data: log }, lifts, maxes, bodyweight, { data: settings }] = await Promise.all([
     supabase.from("workout_items").select(ITEM_COLUMNS).eq("workout_id", workoutId).order("position"),
     supabase.from("workout_logs").select("*").eq("workout_id", workoutId).eq("athlete_id", athleteId).maybeSingle<WorkoutLog>(),
     getLifts(supabase),
     getMaxes(supabase, athleteId),
     latestBodyweight(supabase, athleteId),
+    supabase.from("app_settings").select("stale_max_weeks").maybeSingle(),
   ]);
+  const staleWeeks = settings?.stale_max_weeks ?? DEFAULT_STALE_WEEKS;
   const items = (itemRows ?? []) as unknown as ItemFields[];
   const lastFor = (ids: string[]) =>
     ids.length
@@ -88,6 +91,7 @@ export async function loadLoggerData(supabase: SupabaseClient, workoutId: string
   const myNotes = new Map((noteRows ?? []).map((n) => [n.exercise_id as string, n.body as string]));
   const liftMap = new Map(lifts.map((l) => [l.key, l]));
   const latest = latestByLift(maxes);
+  const savedOn = latestDates(maxes);
   const sets = (setRows ?? []) as SetLog[];
 
   // Most recent previous session per exercise: "5 × 100 kg, 5 × 100 kg…"
@@ -136,12 +140,20 @@ export async function loadLoggerData(supabase: SupabaseClient, workoutId: string
           notes: it.notes, cues: null, myNote: null, videoUrl: null, loadChip: null, warn: null, prev: null,
           fields: [], restSec: null, sets: [], comment: il?.comment ?? "", done: !!il?.done, swap: null, plannedId: null, category: null,
         };
-      const base = baseFor(ex.lift_key, liftMap, latest);
+      const tested = baseFor(ex.lift_key, liftMap, latest);
+      // An old e1RM (client back on a lift after a break): cautious estimate + build to an RPE top set.
+      const lk = ex.lift_key ? liftMap.get(ex.lift_key) : undefined;
+      const maxKey = lk ? (lk.kind === "jump" ? lk.parent_key : lk.key) : null;
+      const maxDate = maxKey ? savedOn.get(maxKey) : undefined;
+      const stale = !!tested && it.load_type === "percent" && isStale(maxDate, todayISO(), staleWeeks);
+      const base = stale && tested ? { ...tested, e1rm: tested.e1rm * STALE_FACTOR } : tested;
       const load = lineLoad(it, base, bodyweight);
       const logged = sets.filter((x) => x.item_id === it.id);
       const plan = (it.set_plan ?? null) as SetTarget[] | null;
       const rows = Math.max(plan?.length ?? 0, setCount(it.sets), ...logged.map((x) => x.set_no));
-      const fields = fieldsFor(ex, it);
+      const baseFields = fieldsFor(ex, it);
+      // Stale max: make sure RPE can be logged, so a top set refreshes the e1RM.
+      const fields = stale && !baseFields.includes("rpe") && baseFields.includes("weight") ? [...baseFields, "rpe" as const] : baseFields;
       const units: Units = { ...DEFAULT_UNITS, ...(ex.weight_unit ? { weight_unit: ex.weight_unit } : {}), ...(ex.distance_unit ? { distance_unit: ex.distance_unit } : {}), ...(ex.speed_unit ? { speed_unit: ex.speed_unit } : {}) };
       const prev = last.get(ex.id);
       const target = targetReps(it.reps);
@@ -167,9 +179,11 @@ export async function loadLoggerData(supabase: SupabaseClient, workoutId: string
         myNote: myNotes.get(ex.id) ?? null,
         cues: ex.cues,
         videoUrl: ex.video_url,
-        loadChip: load ? `${load.addedToBodyweight ? "+" : "~"}${suggestedDisplayWeight(load.kg, units)} ${units.weight_unit}` : null,
+        loadChip: load ? `${load.addedToBodyweight ? "+" : "~"}${suggestedDisplayWeight(load.kg, units)} ${units.weight_unit}${stale ? " (est.)" : ""}` : null,
         warn:
-          it.load_type === "percent" && !base && swapped
+          stale && maxDate
+            ? `Your last max here was ${weeksSince(maxDate, todayISO())} weeks ago, so these loads are a cautious estimate. Build up to a top set at RPE 8 today and log its RPE: your max updates from it.`
+            : it.load_type === "percent" && !base && swapped
             ? "Swapped exercise: pick a weight that feels as hard as planned."
             : it.load_type === "percent" && !base
             ? "Save a 1RM in the calculator to see your load."

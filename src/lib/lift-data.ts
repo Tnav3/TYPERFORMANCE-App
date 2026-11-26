@@ -9,6 +9,8 @@ export interface LiftMax {
   bodyweight_kg: number | null;
   e1rm_kg: number;
   saved_on: string;
+  /** "session" when the app saved it from a logged top set with an RPE */
+  source?: string | null;
   created_at: string;
 }
 
@@ -27,7 +29,7 @@ export async function getMaxes(
 ): Promise<LiftMax[]> {
   const { data } = await supabase
     .from("lift_maxes")
-    .select("id, lift_key, load_kg, reps, bodyweight_kg, e1rm_kg, saved_on, created_at")
+    .select("id, lift_key, load_kg, reps, bodyweight_kg, e1rm_kg, saved_on, created_at, source")
     .eq("athlete_id", athleteId)
     .order("created_at", { ascending: false });
   return (data ?? []).map((r) => ({

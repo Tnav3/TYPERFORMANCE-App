@@ -152,3 +152,13 @@ export async function move(fd: FormData) {
   const err = results.find((r) => r.error)?.error;
   done(err ? dbError(err.message) : undefined);
 }
+
+/** Weeks after which a saved e1RM counts as old (RPE build-up + cautious estimate). */
+export async function setStaleWeeks(fd: FormData) {
+  const supabase = await createClient();
+  const n = Number(fd.get("weeks"));
+  if (!Number.isInteger(n) || n < 2 || n > 52) redirect("/coach/settings/lifts?error=" + encodeURIComponent("Pick 2 to 52 weeks."));
+  const { error } = await supabase.from("app_settings").update({ stale_max_weeks: n }).eq("id", true);
+  revalidatePath("/coach/settings/lifts");
+  redirect(error ? "/coach/settings/lifts?error=" + encodeURIComponent("Only the coach can change this.") : "/coach/settings/lifts");
+}

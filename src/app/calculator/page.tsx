@@ -76,7 +76,7 @@ export default async function CalculatorPage({
                     {names[m.lift_key] ?? m.lift_key}
                   </p>
                   <p className="text-xs text-muted">
-                    {m.load_kg} kg × {m.reps}
+                    {m.source === "session" ? `Saved from your session: ${m.load_kg} kg top set, RPE-adjusted` : `${m.load_kg} kg × ${m.reps}`}
                     {m.bodyweight_kg != null
                       ? ` at ${m.bodyweight_kg} kg BW`
                       : ""}{" "}

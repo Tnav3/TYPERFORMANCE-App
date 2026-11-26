@@ -7,6 +7,8 @@ import {
   setLiftActive,
   setLiftParent,
 } from "@/app/calculator/actions";
+import { setStaleWeeks } from "@/app/coach/settings/actions";
+import { DEFAULT_STALE_WEEKS } from "@/lib/programming/stale-max";
 import { Alert, BackLink, Card, Heading, Screen } from "@/components/ui";
 
 const input =
@@ -26,6 +28,8 @@ export default async function LiftSettings({
   const lifts = await getLifts(supabase);
   const parents = lifts.filter((l) => l.kind !== "jump");
   const groups = groupLifts(lifts);
+  const { data: st } = await supabase.from("app_settings").select("stale_max_weeks").maybeSingle();
+  const staleWeeks = st?.stale_max_weeks ?? DEFAULT_STALE_WEEKS;
 
   return (
     <Screen wide>
@@ -34,6 +38,21 @@ export default async function LiftSettings({
         Calculator lifts
       </Heading>
       {error && <Alert>{error}</Alert>}
+
+      <Card>
+        <form action={setStaleWeeks} className="flex flex-wrap items-end gap-3">
+          <label className="min-w-0 flex-1 text-sm font-bold">
+            A saved max counts as old after
+            <select name="weeks" defaultValue={staleWeeks} className={`${input} mt-1`}>
+              {[4, 6, 8, 10, 12, 16, 20, 26].map((n) => <option key={n} value={n}>{n} weeks</option>)}
+            </select>
+          </label>
+          <button className={smallBtn}>Save</button>
+          <p className="w-full text-xs text-muted">
+            When a client&apos;s last e1RM for a lift is older than this, % loads show a cautious estimate (90%) and they&apos;re asked to build to a top set at RPE 8. Logging that set with its RPE saves a fresh max.
+          </p>
+        </form>
+      </Card>
 
       <div className="space-y-6">
         {groups.map((g) => (
