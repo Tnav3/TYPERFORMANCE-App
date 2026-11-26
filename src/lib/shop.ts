@@ -3,6 +3,7 @@ export type Billing = "once" | "weekly" | "monthly";
 
 /** "$14.99 AUD a week for 8 weeks" · "$99 AUD" · "$29.99 AUD a month" */
 export function priceLabel(cents: number, currency: string, billing: Billing, count: number | null): string {
+  if (cents === 0) return "Free";
   const amt = cents % 100 === 0 ? String(cents / 100) : (cents / 100).toFixed(2);
   const base = `$${amt} ${currency}`;
   if (billing === "once") return base;

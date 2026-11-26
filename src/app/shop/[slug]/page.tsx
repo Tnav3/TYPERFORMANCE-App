@@ -48,7 +48,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
         {total != null && p.billing !== "once" && <p className="text-sm text-muted">${(total / 100).toFixed(2)} {p.currency} in total</p>}
         {p.checkout_url ? (
           <a href={p.checkout_url} rel="noopener" className="mt-4 flex min-h-12 items-center justify-center rounded-xl bg-brand text-base font-extrabold uppercase text-white">
-            Get the program
+            {p.price_cents === 0 ? "Start free" : "Get the program"}
           </a>
         ) : (
           <p className="mt-4 rounded-xl bg-surface-2 p-3 text-center text-sm font-bold text-muted">Coming soon</p>

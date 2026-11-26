@@ -23,3 +23,10 @@ describe("shop helpers", () => {
     expect(parsePrice("-3")).toBeNull();
   });
 });
+
+describe("free products", () => {
+  it("label a $0 product as Free (for trial weeks)", async () => {
+    const { priceLabel } = await import("@/lib/shop");
+    expect(priceLabel(0, "AUD", "once", null)).toBe("Free");
+  });
+});

@@ -125,6 +125,11 @@ export default async function CoachAthleteTests({
         </span>
         <span className="shrink-0 font-black text-brand">Open →</span>
       </Link>
+      <p className="-mt-2 mb-4 px-1 text-xs text-muted">
+        Download as a spreadsheet (CSV):{" "}
+        <a href={`/coach/athlete/${id}/export?type=tests`} className="font-bold text-brand underline underline-offset-4">tests &amp; mobility</a>{" · "}
+        <a href={`/coach/athlete/${id}/export?type=sets`} className="font-bold text-brand underline underline-offset-4">every logged set</a>
+      </p>
 
       <div className="mb-6 grid gap-3 sm:grid-cols-2">
         <Card>
