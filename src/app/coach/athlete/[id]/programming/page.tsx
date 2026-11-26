@@ -8,14 +8,14 @@ import { addDays } from "@/lib/week";
 import { allExercises } from "@/lib/programming/all-exercises";
 import { ClientTabs } from "@/components/ClientTabs";
 import { SeasonList } from "@/components/SeasonList";
-import { Alert, Card, Screen } from "@/components/ui";
+import { Alert, Screen } from "@/components/ui";
 import { BlockOverview } from "@/components/BlockOverview";
 import { createClientBlock, importBlock } from "../program/actions";
 
 export const dynamic = "force-dynamic";
 
 
-// Planning side of a client: what to keep in mind, season plan, build/import blocks, manage blocks.
+// Planning side of a client: what to keep in mind, training plan, build/import blocks, manage blocks.
 // The Calendar tab stays a clean month view.
 export default async function ClientProgrammingPage({
   params,
@@ -76,14 +76,15 @@ export default async function ClientProgrammingPage({
       )}
       {sp.removed && <Alert tone="ok">Removed {sp.removed} upcoming workouts. Past and logged ones are kept.</Alert>}
 
-      <BlockOverview supabase={supabase} athleteId={id} assignments={(assignments ?? []) as { id: string; program_name: string; start_date: string }[]} selected={sp.block} today={today} back={back} />
-      <h2 className="mb-2 mt-2 text-xs font-black uppercase tracking-widest text-muted">Season plan</h2>
-      <div className="mb-6">
+      <div className="mb-3">
         <SeasonList supabase={supabase} target={{ athlete_id: id }} back={back} today={today} />
       </div>
-      <div id="blocks" className="grid gap-3 lg:grid-cols-2">
-        <Card className="!p-4">
-          <h2 className="font-extrabold">Build a new block for {client.full_name?.split(" ")[0] ?? "this client"}</h2>
+      <div id="blocks" className="mb-2 grid gap-2 lg:grid-cols-2">
+        <details className="group rounded-2xl border border-line bg-surface open:p-4 [&:not([open])]:p-0">
+          <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 rounded-xl px-4 font-extrabold group-open:mb-2 group-open:px-0 [&::-webkit-details-marker]:hidden">
+            <span>+ Build a new block for {client.full_name?.split(" ")[0] ?? "this client"}</span>
+            <span className="text-muted transition group-open:rotate-180" aria-hidden>▾</span>
+          </summary>
           <p className="mb-3 text-sm text-muted">Goes straight onto their calendar. Then tap each day to add exercises, and use &quot;copy week forward&quot; to repeat it.</p>
           <form action={createClientBlock} className="space-y-3">
             <input type="hidden" name="athlete_id" value={id} />
@@ -105,9 +106,12 @@ export default async function ClientProgrammingPage({
             </fieldset>
             <button className="min-h-11 w-full rounded-xl bg-brand font-extrabold uppercase text-white">Create block</button>
           </form>
-        </Card>
-        <Card className="!p-4">
-          <h2 className="font-extrabold">Import a program</h2>
+        </details>
+        <details className="group rounded-2xl border border-line bg-surface open:p-4 [&:not([open])]:p-0">
+          <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 rounded-xl px-4 font-extrabold group-open:mb-2 group-open:px-0 [&::-webkit-details-marker]:hidden">
+            <span>Import a program</span>
+            <span className="text-muted transition group-open:rotate-180" aria-hidden>▾</span>
+          </summary>
           <p className="mb-3 text-sm text-muted">Copy a program from your folders, or a block another client is doing. It&apos;s theirs to edit after that; the original doesn&apos;t change.</p>
           <form action={importBlock} className="space-y-3">
             <input type="hidden" name="athlete_id" value={id} />
@@ -127,24 +131,12 @@ export default async function ClientProgrammingPage({
             <label className="block text-xs text-muted">Start on<input type="date" name="start" required defaultValue={nextMonday} className={blockInput} /></label>
             <button className="min-h-11 w-full rounded-xl border border-line bg-surface-2 font-extrabold uppercase">Import</button>
           </form>
-        </Card>
+        </details>
       </div>
-
-      <div className="mt-3 grid gap-3">
-        <Card className="!p-4">
-          <h2 className="mb-2 font-extrabold">All blocks</h2>
-          {(assignments ?? []).length === 0 && <p className="text-sm text-muted">None assigned yet.</p>}
-          <ul className="flex flex-wrap gap-2 text-sm">
-            {(assignments ?? []).map((a) => (
-              <li key={a.id}>
-                <Link href={`${back}?block=${a.id}#overview`} className="inline-flex min-h-9 items-center rounded-lg border border-line bg-surface-2 px-3 font-bold">
-                  {a.program_name} <span className="ml-1.5 text-xs font-normal text-muted">from {a.start_date}</span>
-                </Link>
-              </li>
-            ))}
-          </ul>
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-2 px-1 text-sm">
+        <div className="text-muted">
           {(groups ?? []).length > 0 && (
-            <p className="mt-3 text-sm text-muted">
+            <p className="text-sm text-muted">
               Also gets workouts from:{" "}
               {(groups ?? []).map((g, i) => {
                 const grp = g.groups as unknown as { id: string; name: string };
@@ -159,11 +151,11 @@ export default async function ClientProgrammingPage({
               })}
             </p>
           )}
-          <Link href="/coach/programs" className="mt-3 inline-block text-sm font-bold text-brand">
-            Build or edit programs →
-          </Link>
-        </Card>
+        </div>
+        <Link href="/coach/programs" className="font-bold text-brand">Build or edit programs →</Link>
       </div>
+
+      <BlockOverview supabase={supabase} athleteId={id} assignments={(assignments ?? []) as { id: string; program_name: string; start_date: string }[]} selected={sp.block} today={today} back={back} />
 
       <datalist id="swap-ex">
         {exList.map((e) => <option key={e.id} value={e.name} />)}
