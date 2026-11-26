@@ -62,6 +62,8 @@ export interface Exercise {
   default_load_type?: string | null;
   default_load_value?: number | string | null;
   default_rest_sec?: number | null;
+  /** Short coaching cue copied into the coach notes when added to a workout */
+  default_notes?: string | null;
   tags?: string[];
   source?: string | null;
 }

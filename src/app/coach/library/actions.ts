@@ -45,7 +45,7 @@ const LOAD_TYPES = ["percent", "rpe", "kg", "bodyweight", "velocity", "none"];
 /** Default prescription filled in when this exercise is added to a day. */
 function defaults(fd: FormData):
   | { error: string }
-  | { default_sets: number | null; default_reps: string | null; default_load_type: string | null; default_load_value: number | null; default_rest_sec: number | null } {
+  | { default_sets: number | null; default_reps: string | null; default_load_type: string | null; default_load_value: number | null; default_rest_sec: number | null; default_notes: string | null } {
   const setsRaw = String(fd.get("default_sets") ?? "").trim();
   const sets = setsRaw ? Number(setsRaw) : null;
   if (sets !== null && (!Number.isInteger(sets) || sets < 1 || sets > 20)) return { error: "Default sets must be 1–20." };
@@ -71,6 +71,7 @@ function defaults(fd: FormData):
     default_load_type: any ? type : null,
     default_load_value: val,
     default_rest_sec: rest,
+    default_notes: str(fd.get("default_notes"), 300)?.replace(/\s+/g, " ") ?? null,
   };
 }
 

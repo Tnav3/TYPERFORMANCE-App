@@ -23,7 +23,7 @@ const letter = (n: number) => String.fromCharCode(65 + Math.min(25, n));
 async function findExercise(supabase: Supa, name: string) {
   const { data } = await supabase
     .from("exercises")
-    .select("id, name, default_sets, default_reps, default_load_type, default_load_value, default_rest_sec")
+    .select("id, name, default_sets, default_reps, default_load_type, default_load_value, default_rest_sec, default_notes")
     .ilike("name", name.replace(/[%_\\]/g, (c) => `\\${c}`))
     .limit(1)
     .maybeSingle();
@@ -136,6 +136,19 @@ export async function builderUpdate(table: string, parent: string, id: string, p
     const ex = await findExercise(supabase, patch.exercise.trim());
     if (!ex) return { error: `"${patch.exercise}" isn't in your exercise library.` };
     row.exercise_id = ex.id;
+    // Swapping the exercise: bring its cue along unless the coach wrote their own notes.
+    if (patch.notes === undefined) {
+      const { data: cur } = await supabase.from(table).select("notes, exercise_id").eq("id", id).maybeSingle();
+      if (cur && cur.exercise_id !== ex.id) {
+        const note = (cur.notes ?? "").trim();
+        let oldCue: string | null = null;
+        if (note && cur.exercise_id) {
+          const { data: old } = await supabase.from("exercises").select("default_notes").eq("id", cur.exercise_id).maybeSingle();
+          oldCue = old?.default_notes?.trim() ?? null;
+        }
+        if (!note || note === oldCue) row.notes = ex.default_notes?.trim() || null;
+      }
+    }
   }
   const { error } = await supabase.from(table).update(row).eq("id", id).eq(TABLES[table], parent);
   if (error) return { error: friendly(error.message) };
@@ -194,6 +207,7 @@ export async function builderAdd(
       });
       if (d.data) Object.assign(row, d.data);
     }
+    if (!row.notes && ex.default_notes?.trim()) row.notes = ex.default_notes.trim();
   } else if (!row.title && !row.notes) row.title = "Notes";
   const { error } = await supabase.from(table).insert(row);
   if (error) return { error: friendly(error.message) };

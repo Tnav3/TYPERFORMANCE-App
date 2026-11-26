@@ -141,6 +141,16 @@ function ExerciseFields({
           <label>Value<input name="default_load_value" defaultValue={e?.default_load_value ?? ""} inputMode="decimal" className={input} /></label>
           <label>Rest<input name="default_rest" defaultValue={e?.default_rest_sec != null ? (e.default_rest_sec >= 60 && e.default_rest_sec % 30 === 0 ? `${e.default_rest_sec / 60}m` : `${e.default_rest_sec}s`) : ""} placeholder="90s, 2m" className={input} /></label>
         </div>
+        <label className="mt-2 block text-xs text-muted">
+          Default cue (goes into the coach notes)
+          <input
+            name="default_notes"
+            defaultValue={e?.default_notes ?? ""}
+            maxLength={300}
+            placeholder="Push the floor away; bar stays close"
+            className={input}
+          />
+        </label>
       </fieldset>
       <input
         name="video_url"
