@@ -41,7 +41,7 @@ export const CHANGELOG: Release[] = [
       { who: "client", text: "Learn: look up any training term (AMRAP, tempo, RIR, cluster sets…). A ? button under an exercise explains the ones it uses." },
       { who: "client", text: "Habits can come with instructions and links: tap 'How to do this'." },
       { who: "coach", text: "Training glossary and habit library (copied from your Trainerize library); add a library habit to a client in one tap." },
-      { who: "client", text: "329 daily quotes from athletes and coaches, so the home screen quote changes almost every day of the year." },
+      { who: "client", text: "365 daily quotes from athletes, fighters and coaches: a new one on the home screen every day of the year." },
       { who: "coach", text: "1RM calculator, MAS calculator and Log my own training keep the coach sidebar on desktop." },
       { who: "coach", text: "Programming tab: tap + on any empty day to add a session to that block, including blocks that start empty." },
       { who: "coach", text: "Exercise library is tidier: one short line per exercise, tags show when you open it, tag filters sit under one button." },
