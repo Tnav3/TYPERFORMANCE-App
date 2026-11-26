@@ -11,7 +11,7 @@ import { FIELD_KEYS, FIELD_LABEL } from "@/lib/programming/fields";
 import { EQUIPMENT_LIST, equipmentLabel } from "@/lib/programming/equipment";
 import { labelOf, loadCategories, type Categories } from "@/lib/programming/categories-data";
 import { addExercise, bulkExercises, fillInstructions, setExerciseActive, updateExercise } from "./actions";
-import { hasSteps, stepsFor } from "@/lib/exercise-instructions";
+import { hasSteps, planCues } from "@/lib/exercise-instructions";
 
 export const dynamic = "force-dynamic";
 
@@ -208,7 +208,7 @@ export default async function LibraryPage({
   const topTags = [...tagCount.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).slice(0, 24);
   const noVideo = pool.filter((e) => !e.video_url).length;
   const noSteps = pool.filter((e) => !hasSteps(e.cues));
-  const canFill = noSteps.filter((e) => stepsFor(e.name)).length;
+  const canFill = pool.filter((e) => planCues(e.name, e.cues)).length;
   const link = (over: Record<string, string | undefined>) => {
     const p = new URLSearchParams();
     const cur: Record<string, string | undefined> = { q: q || undefined, cat: cat || undefined, sub: sub || undefined, tag: tag || undefined, novideo, nosteps, hidden, n: limit > PAGE ? String(limit) : undefined, ...over };
@@ -232,10 +232,10 @@ export default async function LibraryPage({
         Exercise library
       </Heading>
       {error && <Alert>{error}</Alert>}
-      {filled && <Alert tone="ok">Added step-by-step instructions to {filled} exercises. Your own notes are kept under &quot;Coach notes&quot;.</Alert>}
+      {filled && <Alert tone="ok">Updated instructions on {filled} exercises. Your own notes and steps are kept.</Alert>}
       {canFill > 0 && (
         <form action={fillInstructions} className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-line bg-surface p-3 text-sm">
-          <span>{canFill} exercises have written step-by-step instructions ready to add. Your existing notes stay, under &quot;Coach notes&quot;.</span>
+          <span>{canFill} exercises have new or improved step-by-step instructions or tips ready. Your own notes and steps stay as they are.</span>
           <button className="min-h-10 rounded-xl bg-brand px-4 text-xs font-extrabold uppercase text-white">Add instructions</button>
         </form>
       )}

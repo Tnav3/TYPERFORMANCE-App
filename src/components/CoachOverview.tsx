@@ -278,8 +278,21 @@ export async function CoachOverview({
 
   return (
     <div className="mb-8">
+      <h2 className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted">Needs your attention</h2>
+      {todo.length ? (
+        <div className="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-surface">
+          {todo.map((i) => <Row key={i.k + i.label} i={i} />)}
+        </div>
+      ) : (
+        <div className="rounded-2xl border border-ok/40 bg-ok/10 px-4 py-4 font-bold text-ok">All clear. Nothing needs you right now.</div>
+      )}
+      {wins.length > 0 && (
+        <div className="mt-2 divide-y divide-line overflow-hidden rounded-2xl border border-line bg-surface">
+          {wins.map((i) => <Row key={i.k} i={i} />)}
+        </div>
+      )}
       {(show("compliance") || show("signin")) && (
-        <div className="mb-4 grid grid-cols-2 gap-2">
+        <div className="mt-4 grid grid-cols-2 gap-2">
           {show("compliance") && (
             <div className="rounded-2xl border border-line bg-surface p-4">
               <p className="text-xs font-semibold uppercase tracking-widest text-muted">Workouts done</p>
@@ -299,19 +312,6 @@ export async function CoachOverview({
         </div>
       )}
 
-      <h2 className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted">Needs your attention</h2>
-      {todo.length ? (
-        <div className="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-surface">
-          {todo.map((i) => <Row key={i.k + i.label} i={i} />)}
-        </div>
-      ) : (
-        <div className="rounded-2xl border border-ok/40 bg-ok/10 px-4 py-4 font-bold text-ok">All clear. Nothing needs you right now.</div>
-      )}
-      {wins.length > 0 && (
-        <div className="mt-2 divide-y divide-line overflow-hidden rounded-2xl border border-line bg-surface">
-          {wins.map((i) => <Row key={i.k} i={i} />)}
-        </div>
-      )}
       {show("compliance") && comp.per.some((p) => p.pct != null) && (
         <details className="mt-2 overflow-hidden rounded-2xl border border-line bg-surface">
           <summary className="flex min-h-12 cursor-pointer items-center px-4 text-sm font-bold text-muted">Workouts done per client</summary>

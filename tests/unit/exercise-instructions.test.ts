@@ -27,3 +27,12 @@ describe("exercise instructions", () => {
     }
   });
 });
+
+describe("planCues", () => {
+  it("leaves the coach's own text alone unless a tip is missing", async () => {
+    const { planCues } = await import("@/lib/exercise-instructions");
+    expect(planCues("Not a real exercise", "1. Do it")).toBeNull();
+    expect(planCues("Glute Bridge", "Steps\n1. Something the coach rewrote")).toBeNull();
+    expect(planCues("Glute Bridge", null)).toMatch(/^Steps\n1\. /);
+  });
+});

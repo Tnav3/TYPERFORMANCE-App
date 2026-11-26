@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { titleCase } from "@/lib/calculator";
 import { coachOnly, friendly, str, UUID } from "@/lib/programming/server";
-import { hasSteps, mergeCues, stepsFor } from "@/lib/exercise-instructions";
+import { planCues } from "@/lib/exercise-instructions";
 import { FIELD_KEYS, MAX_FIELDS } from "@/lib/programming/fields";
 import { EQUIPMENT_KEYS } from "@/lib/programming/equipment";
 import {
@@ -188,9 +188,7 @@ export async function fillInstructions() {
     if (!data || data.length < 1000) break;
   }
   const todo = rows.flatMap((e) => {
-    if (hasSteps(e.cues)) return [];
-    const steps = stepsFor(e.name);
-    const cues = steps && mergeCues(steps, e.cues);
+    const cues = planCues(e.name, e.cues);
     return cues ? [{ id: e.id, cues }] : [];
   });
   let done = 0;

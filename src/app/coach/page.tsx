@@ -69,8 +69,6 @@ export default async function CoachHome() {
         </Section>
       )}
 
-      <RecentActivity supabase={supabase} />
-
       <CoachOverview
         supabase={supabase}
         today={today}
@@ -79,6 +77,8 @@ export default async function CoachHome() {
           .filter((r) => r.missedLastWeek)
           .map((r) => ({ id: r.profile.id, name: r.profile.full_name ?? r.profile.email }))}
       />
+
+      <RecentActivity supabase={supabase} />
 
       <section className="mb-8" id="clients">
         <div className="mb-2 flex items-baseline justify-between gap-2">
