@@ -7,11 +7,13 @@ import { ISO_DATE } from "@/lib/programming/patterns";
 import type { CalStatus } from "@/components/WorkoutCalendar";
 import { WorkoutCalendar } from "@/components/WorkoutCalendar";
 import { SeasonList } from "@/components/SeasonList";
+import { GroupBoard } from "@/components/GroupBoard";
 import { Alert, BackLink, Card, Heading, Screen } from "@/components/ui";
 import {
   addMember,
   addWorkout,
   removeMember,
+  setGroupBoard,
   unassign,
   updateGroup,
 } from "@/app/coach/workouts/actions";
@@ -86,6 +88,19 @@ export default async function GroupPage({
       {sp.removed && <Alert tone="ok">Removed {sp.removed} upcoming workouts.</Alert>}
 
       <div className="mb-6 grid gap-3 sm:grid-cols-2">
+        <div className="space-y-2 sm:col-span-2">
+          <GroupBoard supabase={supabase} groupId={id} />
+          <form action={setGroupBoard} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-line bg-surface px-3 py-2 text-sm">
+            <input type="hidden" name="group_id" value={id} />
+            <input type="hidden" name="on" value={(group as { leaderboard?: boolean }).leaderboard ? "0" : "1"} />
+            <span>
+              {(group as { leaderboard?: boolean }).leaderboard
+                ? "Members can see this board in their app (first names, sessions, sets and PB count. No weights)."
+                : "Only you can see this board. Turn it on to show members how the group is going."}
+            </span>
+            <button className={smallBtn}>{(group as { leaderboard?: boolean }).leaderboard ? "Hide from members" : "Show to members"}</button>
+          </form>
+        </div>
         <Card className="!p-4">
           <h2 className="mb-2 font-extrabold">Members</h2>
           <ul className="space-y-1">

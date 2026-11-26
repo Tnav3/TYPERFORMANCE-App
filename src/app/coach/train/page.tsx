@@ -45,9 +45,30 @@ export default async function TrainTogether({ searchParams }: { searchParams: Pr
     );
     const byClient = new Map(todays);
     const sorted = [...(clients ?? [])].sort((a, b) => (byClient.get(b.id)?.length ?? 0) - (byClient.get(a.id)?.length ?? 0));
+    // Semi-private groups: one tap loads everyone in the group (up to 4)
+    const [{ data: groups }, { data: gm }] = await Promise.all([
+      supabase.from("groups").select("id, name").eq("archived", false).order("name"),
+      supabase.from("group_members").select("group_id, athlete_id"),
+    ]);
+    const active = new Set((clients ?? []).map((c) => c.id));
+    const groupChips = (groups ?? [])
+      .map((g) => ({ ...g, ids: (gm ?? []).filter((m) => m.group_id === g.id && active.has(m.athlete_id)).map((m) => m.athlete_id) }))
+      .filter((g) => g.ids.length >= 1 && g.ids.length <= 4);
     return (
       <Screen wide>
         <Heading sub="Log your clients' sets while you train them. Pick 1 on a phone, up to 4 on an iPad.">Train together</Heading>
+        {groupChips.length > 0 && (
+          <div className="mb-4 max-w-2xl">
+            <p className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-muted">Start a group session</p>
+            <div className="flex flex-wrap gap-2">
+              {groupChips.map((g) => (
+                <Link key={g.id} href={qs({ c: g.ids })} className="flex min-h-12 items-center gap-2 rounded-xl border border-brand/50 bg-brand/10 px-4 font-extrabold">
+                  {g.name} <span className="text-xs font-normal text-muted">{g.ids.length} people</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
         <form className="max-w-2xl">
           <input type="hidden" name="d" value={date} />
           <div className="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-surface">

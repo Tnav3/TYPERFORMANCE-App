@@ -1,3 +1,4 @@
+import { GroupBoard } from "@/components/GroupBoard";
 import { loadWidgets } from "@/lib/programming/widgets-data";
 import { defaultHomeTrend, trendMessage, type HomeTrend } from "@/lib/programming/widgets";
 import { requireState } from "@/lib/session";
@@ -176,11 +177,16 @@ export default async function AthleteHome() {
   const { data: quoteRows } = await supabase.from("quotes").select("id, body, author, source").eq("active", true);
   const quote = quoteOfDay(quoteRows ?? [], today);
   const card = programOn ? await homeCard(supabase, user!.id, profile as never, today, !!viewAs).catch(() => null) : null;
+  // Semi-private group boards (only groups where the coach has switched the board on return rows)
+  const { data: myGroups } = await supabase.from("group_members").select("group_id").eq("athlete_id", user!.id);
+  const boards = (myGroups ?? []).map((g) => <GroupBoard key={g.group_id} supabase={supabase} groupId={g.group_id} />);
+  const teamFeed = (teamRows ?? []).length ? <TeamFeed rows={teamRows as TeamRow[]} now={Date.now()} /> : null;
+
   return (
     <ClientHome
       quote={quote}
       card={card}
-      team={(teamRows ?? []).length ? <TeamFeed rows={teamRows as TeamRow[]} now={Date.now()} /> : null}
+      team={teamFeed || boards.length ? <div className="space-y-3">{boards}{teamFeed}</div> : null}
       camp={camp ? <FightCampCard s={camp} limitKg={limitKg == null ? null : Number(limitKg)} /> : null}
       weight={weight}
       booking={booking}

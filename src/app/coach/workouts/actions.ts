@@ -114,6 +114,14 @@ export async function setRevealWeeks(fd: FormData) {
 }
 
 // ---------------- Groups ----------------
+export async function setGroupBoard(fd: FormData) {
+  const supabase = await coachOnly();
+  const id = String(fd.get("group_id") ?? "");
+  if (!UUID.test(id)) go("/coach/groups");
+  const { error } = await supabase.from("groups").update({ leaderboard: fd.get("on") === "1" }).eq("id", id);
+  go(`/coach/groups/${id}`, error ? friendly(error.message) : undefined);
+}
+
 export async function createGroup(fd: FormData) {
   const supabase = await coachOnly();
   const name = str(fd.get("name"), 60);
