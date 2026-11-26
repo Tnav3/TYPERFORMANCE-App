@@ -14,6 +14,8 @@ export async function moveWorkout(athleteId: string, workoutId: string, date: st
   if (!w) return { error: "Workout not found." };
   if (w.group_id) return { error: "That's a group workout. Move it from the group's calendar, or personalise it first." };
   if (w.athlete_id !== athleteId) return { error: "That workout belongs to someone else." };
+  const { data: log } = await supabase.from("workout_logs").select("completed_at").eq("workout_id", workoutId).not("completed_at", "is", null).limit(1).maybeSingle();
+  if (log) return { error: "That workout's already logged, so it stays on the day it was done." };
   const { error } = await supabase.from("workouts").update({ workout_date: date }).eq("id", workoutId);
   if (error) return { error: friendly(error.message) };
   revalidatePath(`/coach/athlete/${athleteId}/program`);

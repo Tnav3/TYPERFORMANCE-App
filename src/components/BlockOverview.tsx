@@ -7,6 +7,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { addDays, mondayOf } from "@/lib/week";
 import { formatDate } from "@/lib/dates";
 import { formatPrescription, formatSetPlan, itemLabel } from "@/lib/prescription";
+import { BlockDrag, DragCard, DropDay } from "@/components/BlockDrag";
 import { addBlockDay, renameAssignment, setBlockLength, setRevealWeeks, shiftAssignment, swapInAssignment, unassign } from "@/app/coach/workouts/actions";
 
 type Assignment = { id: string; program_name: string; start_date: string; reveal_weeks?: number | null; reveal_weekly?: boolean | null };
@@ -292,7 +293,11 @@ export async function BlockOverview({
         </p>
       )}
 
-      {/* Weeks × days */}
+      {/* Weeks × days (drag a workout to another day; Alt/Option-drop copies) */}
+      <BlockDrag athleteId={athleteId}>
+      {workouts.length > 0 && (
+        <p className="mb-1 hidden text-[11px] text-muted md:block">Drag a workout to another day to move it. Hold Alt/Option as you drop to copy it. Logged workouts stay put.</p>
+      )}
       <div className="overflow-x-auto">
         <div className="hidden min-w-[900px] md:block">
           <div className="grid grid-cols-[4.5rem_repeat(7,minmax(0,1fr))] gap-1.5 px-1 pb-1 text-center text-[11px] font-black uppercase tracking-widest text-muted">
@@ -313,10 +318,14 @@ export async function BlockOverview({
                   const date = addDays(mon, d);
                   const list = byDate.get(date) ?? [];
                   return (
-                    <div key={d} className={`min-h-16 space-y-1.5 rounded-lg ${date === today ? "outline outline-1 outline-brand/60" : ""}`}>
-                      {list.map((w) => <Card key={w.id} w={w} />)}
+                    <DropDay key={d} date={date} className={`min-h-16 space-y-1.5 rounded-lg ${date === today ? "outline outline-1 outline-brand/60" : ""}`}>
+                      {list.map((w) => (
+                        <DragCard key={w.id} id={w.id} date={w.workout_date} locked={done.get(w.id)}>
+                          <Card w={w} />
+                        </DragCard>
+                      ))}
                       {list.length === 0 && <AddDay date={date} />}
-                    </div>
+                    </DropDay>
                   );
                 })}
               </div>
@@ -324,6 +333,8 @@ export async function BlockOverview({
           })}
         </div>
       </div>
+
+      </BlockDrag>
 
       {/* Phone: week by week, training days only */}
       <div className="space-y-3 md:hidden">

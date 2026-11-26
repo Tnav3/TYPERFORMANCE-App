@@ -9,6 +9,7 @@ export const CHANGELOG: Release[] = [
     version: "0.9.0",
     date: "2026-11-25",
     items: [
+      { who: "coach", text: "Client Programming tab: drag a workout to another day to move it (hold Alt/Option as you drop to copy). Logged workouts stay put. Desktop only for now." },
       { who: "coach", text: "Every exercise now has a default cue (edit it in the library under Default prescription). It drops into the coach notes when you add the exercise to a workout, and swaps over if you change the exercise." },
       { who: "coach", text: "Conditioning templates: rest between rounds, reps, sprints and sets is now in the Rest box (so the rest timer runs), not only in the notes." },
       { who: "coach", text: "Programming tab shows the block week by week: current block and week highlighted, every day's exercises, click a day to edit just that day." },
