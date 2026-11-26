@@ -12,7 +12,7 @@ const label = "block text-xs font-bold uppercase tracking-wide text-muted";
 type Product = {
   id: string; program_id: string; slug: string; title: string; tagline: string | null; description: string | null;
   price_cents: number; currency: string; billing: Billing; billing_count: number | null; checkout_url: string | null;
-  match_name: string | null; start_rule: string; weeks: number | null; sessions_per_week: number | null; active: boolean;
+  match_name: string | null; start_rule: string; trial_days?: number | null; weeks: number | null; sessions_per_week: number | null; active: boolean;
 };
 
 export default async function ShopAdmin({ searchParams }: { searchParams: Promise<{ error?: string; saved?: string }> }) {
@@ -74,6 +74,7 @@ export default async function ShopAdmin({ searchParams }: { searchParams: Promis
                   {p.price_cents ? priceLabel(p.price_cents, p.currency, p.billing, p.billing_count) : "No price yet"}
                   {p.weeks ? ` · ${p.weeks} weeks` : ""}
                   {p.sessions_per_week ? ` · ${p.sessions_per_week} sessions a week` : ""}
+                  {p.trial_days ? ` · trial: first ${p.trial_days} days` : ""}
                 </span>
               </span>
               <span className="flex shrink-0 items-center gap-2 text-xs font-bold">
@@ -102,6 +103,14 @@ export default async function ShopAdmin({ searchParams }: { searchParams: Promis
                   <option value="next_monday">Next Monday</option><option value="purchase">The day they buy</option>
                 </select>
               </label>
+              <label><span className={label}>Free trial</span>
+                <select name="trial_days" defaultValue={p.trial_days ?? ""} className={input}>
+                  <option value="">No, the full program</option>
+                  <option value={7}>Yes, first week only</option>
+                  <option value={14}>Yes, first 2 weeks</option>
+                </select>
+              </label>
+              <p className="self-end pb-2 text-xs text-muted">For a trial, set the price to 0 and turn on the &quot;Trial ending&quot; automation so they get your upgrade message.</p>
               <label className="flex min-h-10 items-center gap-2 text-sm font-bold sm:col-span-2">
                 <input type="checkbox" name="active" defaultChecked={p.active} className="h-5 w-5 accent-[#D2141E]" /> On sale (shows in your shop)
               </label>

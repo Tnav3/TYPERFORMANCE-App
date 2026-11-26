@@ -46,4 +46,16 @@ describe("program shop (098)", () => {
     await expect(asUser(db, alice, () => q(`select fulfil_shop_purchase(gen_random_uuid())`))).rejects.toThrow(/permission|Not allowed/);
     await expect(asUser(db, alice, () => q(`insert into shop_products (program_id, slug, title, price_cents) values ($1, 'mine', 'Mine', 1)`, [prog]))).rejects.toThrow();
   });
+  it("trial product gives only the first week, and the trial-ending automation finds them until they buy", async () => {
+    const trial = (await q(`insert into shop_products (program_id, slug, title, price_cents, start_rule, trial_days, active) values ($1, 'pp-free-week', 'Power Puncher Free Week', 0, 'purchase', 7, true) returning id`, [prog])).rows[0].id;
+    const pur = (await q(`insert into shop_purchases (product_id, email) values ($1, 'alice@typ.test') returning id`, [trial])).rows[0].id;
+    expect((await q(`select fulfil_shop_purchase($1) r`, [pur])).rows[0].r).toMatch(/^trial assigned/);
+    expect((await q(`select count(*)::int n from workouts where athlete_id = $1`, [alice])).rows[0].n).toBe(2);
+    const auto = (await q(`insert into automations (created_by, name, trigger, threshold, audience, body, active) values ($1, 'Trial', 'trial_ending', 7, 'client', 'Hi', true) returning *`, [coach])).rows[0];
+    const hits = async () => (await q(`select count(*)::int n from private.automation_matches((select a from automations a where id = $1), sydney_today())`, [auto.id])).rows[0].n;
+    expect(await hits()).toBe(1);
+    const full = (await q(`insert into shop_purchases (product_id, email) values ($1, 'alice@typ.test') returning id`, [product])).rows[0].id;
+    await q(`select fulfil_shop_purchase($1)`, [full]);
+    expect(await hits()).toBe(0);
+  });
 });

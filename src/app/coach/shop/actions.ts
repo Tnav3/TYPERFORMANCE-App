@@ -74,6 +74,7 @@ export async function updateProduct(fd: FormData) {
       checkout_url: url,
       match_name: str(fd.get("match_name"), 100),
       start_rule: fd.get("start_rule") === "purchase" ? "purchase" : "next_monday",
+      trial_days: (() => { const t = Number(fd.get("trial_days")); return Number.isInteger(t) && t >= 1 && t <= 28 ? t : null; })(),
       active,
       ...(await stats(supabase, row!.program_id)),
     })
