@@ -73,5 +73,7 @@ export const OVERVIEW_CARDS = [
   ["expired", "Programs expired"],
   ["compliance", "Compliance"],
   ["signin", "Average sign-in"],
+  ["formchecks", "Form check videos to review"],
+  ["alerts", "Performance alerts (test drops, low wellness)"],
 ] as const;
 export type OverviewCard = (typeof OVERVIEW_CARDS)[number][0];

@@ -1,4 +1,5 @@
 "use client";
+import { FormCheckButton } from "./FormCheckButton";
 import { MyExerciseNote } from "./MyExerciseNote";
 import { BAND_LEVELS } from "@/lib/programming/fields";
 // TrainHeroic-style logging: tap a set to complete it (saves instantly),
@@ -536,6 +537,7 @@ export function WorkoutLogger({
                       )}
                     </div>
                     <ItemNote workoutId={workoutId} athleteId={athleteId} item={it} readOnly={readOnly} />
+                    {!readOnly && !athleteId && <FormCheckButton itemId={it.id} exerciseName={it.name} sets={it.sets.length} />}
                   </div>
                 ),
               )}

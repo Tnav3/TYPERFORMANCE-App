@@ -1,4 +1,5 @@
 // Coach overview cards (Trainerize-style "at a glance"). Each card can be hidden.
+import { testAlerts, wellnessAlerts } from "@/lib/alerts";
 import Link from "next/link";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ReactNode } from "react";
@@ -76,6 +77,33 @@ export async function CoachOverview({
     supabase.from("form_responses").select("id, athlete_id, form_id, due_on, coach_seen_at").gte("due_on", addDays(today, -62)),
   ]);
   const unread = (fResp ?? []).filter((r) => !r.coach_seen_at);
+
+  // Form checks and performance alerts
+  const twoWeeks = addDays(today, -14);
+  const [{ data: fcRows }, { data: coachMsgs }, { data: testRows }, { data: defRows }, { data: wellRows }] = await Promise.all([
+    show("formchecks")
+      ? supabase.from("messages").select("id, athlete_id, body, created_at").not("form_check_item", "is", null).gte("created_at", twoWeeks + "T00:00:00Z").order("created_at", { ascending: false })
+      : Promise.resolve({ data: [] }),
+    show("formchecks")
+      ? supabase.from("messages").select("athlete_id, sender_id, created_at").gte("created_at", twoWeeks + "T00:00:00Z")
+      : Promise.resolve({ data: [] }),
+    show("alerts") ? supabase.from("test_entries").select("athlete_id, test_key, tested_on, values").gte("tested_on", addDays(today, -365)) : Promise.resolve({ data: [] }),
+    show("alerts") ? supabase.from("test_definitions").select("key, name") : Promise.resolve({ data: [] }),
+    show("alerts") ? supabase.from("weekly_checkins").select("athlete_id, week_start, wellness").gte("week_start", addDays(today, -28)) : Promise.resolve({ data: [] }),
+  ]);
+  const lastCoachReply = new Map<string, string>();
+  for (const r of (coachMsgs ?? []) as { athlete_id: string; sender_id: string; created_at: string }[]) {
+    if (r.sender_id === r.athlete_id) continue; // the client's own message
+    if ((lastCoachReply.get(r.athlete_id) ?? "") < r.created_at) lastCoachReply.set(r.athlete_id, r.created_at);
+  }
+  const formChecks = ((fcRows ?? []) as { id: string; athlete_id: string; body: string; created_at: string }[]).filter(
+    (f) => (lastCoachReply.get(f.athlete_id) ?? "") < f.created_at,
+  );
+  const testNames = new Map(((defRows ?? []) as { key: string; name: string }[]).map((d) => [d.key, d.name.replace(/ \(ForceDecks\)$/, "")]));
+  const perfAlerts = [
+    ...testAlerts((testRows ?? []) as Parameters<typeof testAlerts>[0], testNames, twoWeeks),
+    ...wellnessAlerts((wellRows ?? []) as Parameters<typeof wellnessAlerts>[0], addDays(today, -13)),
+  ];
   const formOverdue = (fAsg ?? [])
     .filter((a) => !(a.forms as unknown as { archived: boolean } | null)?.archived)
     .map((a) => ({ a, due: currentDue({ repeat: a.repeat as Repeat, starts_on: a.starts_on }, today) }))
@@ -172,6 +200,26 @@ export async function CoachOverview({
   const soon = expiring.filter((r) => r.daysLeft! <= 7);
   type Item = { k: OverviewCard; label: string; count: number; win?: boolean; body: ReactNode };
   const items: Item[] = [
+    {
+      k: "formchecks",
+      label: "Form check videos to review",
+      count: formChecks.length,
+      body: formChecks.map((f) => (
+        <Person key={f.id} id={f.athlete_id} href={`/coach/chat/${f.athlete_id}`}>
+          {f.body.split("\n")[0].replace(/^🎥 Form check: /, "")} · {formatDate(f.created_at.slice(0, 10))}
+        </Person>
+      )),
+    },
+    {
+      k: "alerts",
+      label: "Performance alerts",
+      count: perfAlerts.length,
+      body: perfAlerts.map((a, i) => (
+        <Person key={a.athleteId + i} id={a.athleteId} href={a.href}>
+          <span className={a.severity === "red" ? "text-brand" : "text-warn"}>{a.text}</span> · {formatDate(a.date)}
+        </Person>
+      )),
+    },
     {
       k: "followups",
       label: "Follow-ups due",
