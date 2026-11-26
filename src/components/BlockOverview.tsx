@@ -7,9 +7,9 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { addDays, mondayOf } from "@/lib/week";
 import { formatDate } from "@/lib/dates";
 import { formatPrescription, formatSetPlan, itemLabel } from "@/lib/prescription";
-import { addBlockDay, renameAssignment, setBlockLength, shiftAssignment, swapInAssignment, unassign } from "@/app/coach/workouts/actions";
+import { addBlockDay, renameAssignment, setBlockLength, setRevealWeeks, shiftAssignment, swapInAssignment, unassign } from "@/app/coach/workouts/actions";
 
-type Assignment = { id: string; program_name: string; start_date: string };
+type Assignment = { id: string; program_name: string; start_date: string; reveal_weeks?: number | null; reveal_weekly?: boolean | null };
 type W = { id: string; workout_date: string; title: string };
 type Item = {
   workout_id: string; kind: string; block: string; slot: number; position: number; exercise_id: string | null; title: string | null;
@@ -263,6 +263,19 @@ export async function BlockOverview({
                   ))}
                 </div>
               </div>
+              <form action={setRevealWeeks} className="flex items-end gap-1">
+                <input type="hidden" name="assignment_id" value={pick.id} />
+                <input type="hidden" name="back" value={`${back}?block=${pick.id}`} />
+                <label className="min-w-0 flex-1 text-xs text-muted">
+                  Client can see
+                  <select name="weeks" defaultValue={pick.reveal_weeks ?? (pick.reveal_weekly ? 1 : "")} className={input}>
+                    <option value="">The whole block</option>
+                    <option value={1}>This week only</option>
+                    {[2, 3, 4].map((n) => <option key={n} value={n}>{n} weeks ahead</option>)}
+                  </select>
+                </label>
+                <button className="min-h-10 shrink-0 rounded-xl bg-brand px-3 text-xs font-extrabold text-white">Save</button>
+              </form>
               <form action={unassign}>
                 <input type="hidden" name="assignment_id" value={pick.id} />
                 <input type="hidden" name="back" value={back} />

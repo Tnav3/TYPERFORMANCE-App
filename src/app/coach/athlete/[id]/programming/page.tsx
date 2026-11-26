@@ -30,7 +30,7 @@ export default async function ClientProgrammingPage({
   const today = todayISO();
   const [{ data: client }, { data: assignments }, { data: groups }, { data: folderRows }, { data: otherBlocks }, exAll, { data: progs }] = await Promise.all([
     supabase.from("profiles").select("id, full_name, email").eq("id", id).maybeSingle(),
-    supabase.from("assignments").select("id, program_name, start_date").eq("athlete_id", id).order("start_date", { ascending: false }),
+    supabase.from("assignments").select("id, program_name, start_date, reveal_weeks, reveal_weekly").eq("athlete_id", id).order("start_date", { ascending: false }),
     supabase.from("group_members").select("groups(id, name)").eq("athlete_id", id),
     supabase.from("program_folders").select("id, name, parent_id, sort_order"),
     supabase
@@ -155,7 +155,7 @@ export default async function ClientProgrammingPage({
         <Link href="/coach/programs" className="font-bold text-brand">Build or edit programs →</Link>
       </div>
 
-      <BlockOverview supabase={supabase} athleteId={id} assignments={(assignments ?? []) as { id: string; program_name: string; start_date: string }[]} selected={sp.block} today={today} back={back} />
+      <BlockOverview supabase={supabase} athleteId={id} assignments={(assignments ?? []) as { id: string; program_name: string; start_date: string; reveal_weeks?: number | null; reveal_weekly?: boolean | null }[]} selected={sp.block} today={today} back={back} />
 
       <datalist id="swap-ex">
         {exList.map((e) => <option key={e.id} value={e.name} />)}

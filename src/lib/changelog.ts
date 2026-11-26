@@ -12,6 +12,7 @@ export const CHANGELOG: Release[] = [
       { who: "coach", text: "Programming tab shows the block week by week: current block and week highlighted, every day's exercises, click a day to edit just that day." },
       { who: "coach", text: "Swap an exercise on one day only, or every upcoming day in a block." },
       { who: "coach", text: "11 more loading schemes (5x5, linear %, heavy triples, top set + back-offs, strength-speed, speed-strength and more)." },
+      { who: "coach", text: "Choose how far ahead a client can see a block: whole block, this week only, or 2 to 4 weeks ahead (Move / rename on the block)." },
       { who: "client", text: "Send your coach a form check: film a set and send it from the exercise in your workout. Your coach replies in Messages." },
       { who: "coach", text: "Needs your attention now shows form check videos waiting for you, and performance alerts: a test that dropped since last time (CMJ by 8% or more, others by 10%) or wellness at 4/10 or down 3 points." },
       { who: "coach", text: "Program PDF for physios or email, the full ForceDecks test list with a picker, and a printable performance report with changes since the dates you pick." },

@@ -101,6 +101,18 @@ export async function renameAssignment(fd: FormData) {
   go(back, error ? friendly(error.message) : undefined);
 }
 
+/** How many weeks ahead the client can see this block ("" = all of it). */
+export async function setRevealWeeks(fd: FormData) {
+  const supabase = await coachOnly();
+  const id = String(fd.get("assignment_id") ?? "");
+  const back = safePath(fd.get("back"), "/coach");
+  const raw = String(fd.get("weeks") ?? "");
+  const n = raw === "" ? null : Number(raw);
+  if (!UUID.test(id) || (n != null && !(Number.isInteger(n) && n >= 1 && n <= 12))) go(back);
+  const { error } = await supabase.from("assignments").update({ reveal_weeks: n, reveal_weekly: false }).eq("id", id);
+  go(back, error ? friendly(error.message) : undefined);
+}
+
 // ---------------- Groups ----------------
 export async function createGroup(fd: FormData) {
   const supabase = await coachOnly();
